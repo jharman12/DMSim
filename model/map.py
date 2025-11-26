@@ -28,11 +28,11 @@ class Map:
     def moveActor(self, mover, coord):
         moverCoord = [x for x in list(self.arrayCenters) if self.arrayCenters[x] == mover][0]
         neighbors = self.neighbors(moverCoord)
-        ##print(neighbors)
+        print(neighbors)
         
                 
         distance = self.distanceCalc(list(self.arrayCenters).index(moverCoord), list(self.arrayCenters).index(coord))
-        #print('\t\t',mover.name,'is going from', moverCoord, 'to', coord,'which is a distance of', distance)
+        print('\t\t',mover.name,'is going from', moverCoord, 'to', coord,'which is a distance of', distance)
         curframe = inspect.currentframe()
         calframe = inspect.getouterframes(curframe, 2)
         #print(calframe[1][3])
@@ -48,14 +48,14 @@ class Map:
                     actor = self.arrayCenters[list(self.arrayCenters)[neig]]
                     #print(actor)
                     if actor in self.enemy and actor.reaction:
-                        #print('youre enemyList', actor.name,'and you should be able to react')
+                        print('youre enemyList', actor.name,'and you should be able to react')
                         takeReaction(actor, self, mover)
             if mover in self.enemy:
                 for neig in neighbors:
                     actor = self.arrayCenters[list(self.arrayCenters)[neig]]
                     #print(actor)
                     if actor in self.party and actor.reaction:
-                        #print('youre partyList', actor.name,'and you should be able to react')
+                        print('youre partyList', actor.name,'and you should be able to react')
                         takeReaction(actor, self, mover)
     
     def dashActor(self, mover, target):
@@ -229,6 +229,7 @@ class Map:
             minIndex = startIndex
             self.printCurrMap()
             #print(self.arrayCenters[list(self.arrayCenters)[startIndex]], 'going to', self.arrayCenters[list(self.arrayCenters)[endIndex]])
+        print("nearestFreehex", list(self.arrayCenters)[minIndex])
         return list(self.arrayCenters)[minIndex]
         #return minIndex
     

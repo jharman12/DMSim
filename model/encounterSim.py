@@ -8,6 +8,7 @@ import numpy as np
 import time
 from map import Map
 import sys
+import time
 
 import pathlib
 dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-6]
@@ -25,11 +26,11 @@ class Encounter:
         
         for i in range(sims):
             r.seed(i+1000)
-            try:
-                self.preCombat(partyList,npcList,enemyList)
-            except Exception as e:
-                print('The model crashed in seed', i, 'with error\n', e)
-                sys.exit()
+            #try:
+            self.preCombat(partyList,npcList,enemyList)
+            #except Exception as e:
+            #    print('The model crashed in seed', i, 'with error\n', e)
+            #    sys.exit()
         
         partyWinners = len([x[2] for x in self.winners if x[2] == 'Party'])
         enemyWinners = len([x[2] for x in self.winners if x[2] == 'Enemy'])
@@ -76,7 +77,9 @@ class Encounter:
             '''
             turn += 1
             for actor in list(sortedInitList.keys()):
+                
                 print('\t It is: '+actor.name+ ' turn w/ health = '+ str(actor.health) + '\n')
+                #time.sleep(10)
                 for healthCheck in list(sortedInitList.keys()):
                     print('\t\t', healthCheck.name, healthCheck.health)
                 if not actor in list(sortedInitList.keys()): # you've already been removed
@@ -103,7 +106,7 @@ class Encounter:
                 else: # if not on enemy list your enemy is enemyList
                     if len(map.enemy) == 0: # if enemies already down... skip turn
                         continue
-                    takeTurn(actor, map, interactive=True)
+                    takeTurn(actor, map, interactive=False)
                     removeDeadActors(map, sortedInitList)
 
                     for enemy in map.enemy:

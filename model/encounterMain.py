@@ -24,10 +24,11 @@ if __name__ == "__main__":
     party = createPartyList(['Ephraim', 'Darian', 'Root','Arabella'], path = path)
     enemy = createPartyList(['Darian'], path = path)
     enemy = createMonsterList(["Quenth"] + ["Demogorgon" for i in range(1)], path = path)
-    #map = Map(10, party, enemy)
-    print(party[0].Image)
+    map = Map(10, party, enemy)
+    #print(party[0].Image)
     #for spell in party[1].spells:
     #    print(spell)
+    #takeTurn(party[0], map, interactive=False)
     states = Encounter(party, [], enemyList=enemy, n =10)
 
     '''enemy = createMonsterList(["Quenth"] + ["Drow" for i in range(10)], path = path)

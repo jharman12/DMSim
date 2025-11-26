@@ -1,5 +1,6 @@
 import random as r
 from dataclasses import dataclass
+from typing import Optional
 import re
 import math
 import numpy as np
@@ -35,6 +36,7 @@ def takeTurn(actor, m, interactive = False):
     map = m
     player = 1
     healDownedTeammate = 0
+    print(actor.name, "called taketurns")
     if str(type(actor)) == "<class 'monster.Monster'>":
         player = 0
         actor.legActions = actor.maxLegActions # if monster reset legendary actions
@@ -80,23 +82,104 @@ def takeTurn(actor, m, interactive = False):
             toAttack = map.arrayCenters[list(map.arrayCenters)[index]]
     minDist = min(distance)
     closestGuy = map.arrayCenters[list(map.arrayCenters)[enemyList[distance.index(minDist)]]]
-    closestCoord = [coord for coord in list(map.arrayCenters) if map.arrayCenters[coord] == closestGuy]
-    closestIndex = list(map.arrayCenters).index(closestCoord[0])
+    closestCoord = [coord for coord in list(map.arrayCenters) if map.arrayCenters[coord] == closestGuy][0]
+    closestIndex = list(map.arrayCenters).index(closestCoord)
     distanceMatrix = [(map.distanceCalc(myIndex, index), map.distanceCalc(closestIndex, index)) for index in range(len(list(map.arrayCenters))) if map.arrayCenters[list(map.arrayCenters)[index]] == '']
     
     turnChoices = []
+    print(actor.name, " finding my array")
+    myCoord = list(map.arrayCenters)[myIndex]
+    
+    
     for weap in actor.weaponList:
+        print("in weaps")
         avgDmg = 0
         if int(minDist) > int((int(weap.range) + int(actor.speed))/5): # if you cant get within range, dmg = 0
             
-            turnChoices.append([weap.name, 'Wdmg', avgDmg])
-            continue
-        anyOpenSpot = [x for x in distanceMatrix if x[0] <= actor.speed/5 and x[1] <= int(weap.range)/5] 
-        if len(anyOpenSpot) == 0: # if no where to move to, dmg = 0
-            turnChoices.append([weap.name, 'Wdmg', avgDmg])
+            #turnChoices.append([weap.name, 'Wdmg', avgDmg])
+            turnChoices.append(
+                myAction(
+                    name=weap.name,
+                    type= 'Wdmg',
+                    mod=   0,
+                    numHit=0,
+                    currCoord=list(map.arrayCenters)[myIndex],
+                    moveCoord=list(map.arrayCenters)[myIndex], 
+                    targets= []
+
+
+                )
+            )
             continue
         
+        anyOpenSpot = [x for x in distanceMatrix if x[0] <= actor.speed/5 and x[1] <= int(weap.range)/5] 
+        if len(anyOpenSpot) == 0: # if no where to move to, dmg = 0
+            #turnChoices.append([weap.name, 'Wdmg', avgDmg])
+            turnChoices.append(
+                myAction(
+                    name=weap.name,
+                    type= 'Wdmg',
+                    mod=   0,
+                    numHit=0,
+                    currCoord=list(map.arrayCenters)[myIndex],
+                    moveCoord=list(map.arrayCenters)[myIndex], 
+                    targets= []
+
+
+                )
+            )
+            continue
+        print("Escaped avg Dmg = 0")
+        # decide what square to move to
+        line = drawLine(myCoord, closestCoord, map)
+        if weap.range/5 >= actor.optRange: # if i am not in optimal weapon range
+            print("i am not in optimal range")
+            if minDist >= actor.optRange + actor.speed/5:
+                print("I can get to option")    
+                
+                options = [x for x in line if map.distanceCalc(list(map.arrayCenters).index(myCoord), list(map.arrayCenters).index(x)) <= actor.speed/5] # places to move on the line
+                distance = map.distanceCalc(list(map.arrayCenters).index(myCoord), list(map.arrayCenters).index(options[-1]))
+                if map.arrayCenters[options[-1]] != '' and map.arrayCenters[options[-1]] != actor:
+                    newCoord =  map.nearestFreeHex(myCoord, closestCoord) 
+                else:
+                    
+                    newCoord = options[-1]
+            else:
+                
+                reach = weap.range
+                hexLimit = reach/5
+                dist = map.distanceCalc(list(map.arrayCenters).index(closestCoord), list(map.arrayCenters).index(myCoord))
+                print(dist)
+                if dist <= hexLimit:
+                    newCoord = myCoord
+                
+                ##print(line)
+                hexLimit = reach/5
+                moveTo = [coord for coord in line if map.distanceCalc(list(map.arrayCenters).index(closestCoord), list(map.arrayCenters).index(coord)) <= hexLimit][0] # closest inside reach
+                if map.arrayCenters[moveTo] != '':
+                    newCoord =  map.nearestFreeHex(myIndex, closestIndex)
+                else:
+                    newCoord = moveTo
+        else:
+            reach = weap.range
+            hexLimit = reach/5
+            dist = map.distanceCalc(list(map.arrayCenters).index(closestCoord), list(map.arrayCenters).index(myCoord))
+            ##print(dist)
+            if dist <= hexLimit:
+                newCoord = myCoord
+            
+            ##print(line)
+            hexLimit = reach/5
+            moveTo = [coord for coord in line if map.distanceCalc(list(map.arrayCenters).index(closestCoord), list(map.arrayCenters).index(coord)) <= hexLimit][0] # closest inside reach
+            if map.arrayCenters[moveTo] != '':
+                print(myCoord, closestCoord)
+                newCoord =  map.nearestFreeHex(myIndex, closestIndex) 
+            else:
+                newCoord = moveTo
+        
+        
         if not player: # if monster
+            print("I AM A MONSTER")
             if weap.name in actor.multiAttack.keys():
                 attackTimes = actor.multiAttack[weap.name]
             else:
@@ -107,16 +190,44 @@ def takeTurn(actor, m, interactive = False):
                 diceCount = weap.diceCount[weap.diceType.index(di)]
                 ##print(diceCount)
                 avgDmg +=  attackTimes * (0.5 + weap.dmgMod + diceCount * di / 2 )
-                turnChoices.append([weap.name, 'Wdmg', avgDmg, minDist, closestCoord])
+            #turnChoices.append([weap.name, 'Wdmg', avgDmg, minDist, closestCoord])
+            turnChoices.append(
+                myAction(
+                    name=weap.name,
+                    type= 'Wdmg',
+                    mod=   avgDmg,
+                    numHit=1,
+                    currCoord=list(map.arrayCenters)[myIndex],
+                    moveCoord=newCoord, 
+                    targets= [closestCoord]
+
+
+                )
+            )
         else: # your a player
+            print("I AM A PLAYER")
             attackTimes = 1 + actor.twoAttacks
             dice = int(re.findall(r'\d+',weap.diceType)[0])
             diceCount = weap.diceCount
             
             avgDmg +=  attackTimes * (0.5 + weap.dmgMod + diceCount * dice / 2 )
-            turnChoices.append([weap.name, 'Wdmg', avgDmg, minDist, closestCoord])
+            #turnChoices.append([weap.name, 'Wdmg', avgDmg, minDist, closestCoord])
+            turnChoices.append(
+                    myAction(
+                        name=weap.name,
+                        type= 'Wdmg',
+                        mod=   avgDmg,
+                        numHit=1,
+                        currCoord=list(map.arrayCenters)[myIndex],
+                        moveCoord=newCoord, 
+                        targets= [closestCoord]
+
+
+                    )
+                )
         #####
     
+    print("Escaped weapons")
     conditionsList = ['Blinded','Charmed','Deafened', 'Frightened','Grappled','Incapacitated','Invisible','Paralyzed','Petrified','Poisoned','Prone','Restrained', 'Stunned','Unconscious','Exhausted']
     dmgTypes = ['Acid', 'Bludgeoning', 'Cold', 'Fire', 'Force', 'Lightning', 'Necrotic', 'Piercing', 'Poison', 'Psychic', 'Radiant', 'Slashing', 'Thunder']
     
@@ -153,7 +264,20 @@ def takeTurn(actor, m, interactive = False):
                 anyOpenSpot = [x for x in distanceMatrix if x[0] <= actor.speed/5 and x[1] <= int(re.findall(r'\d+', myRange)[0])/5] 
                 
                 if len(anyOpenSpot) == 0:
-                    turnChoices.append([spell, 'heal', 0,(0,0)])
+                    #turnChoices.append([spell, 'heal', 0,(0,0)])
+                    turnChoices.append(
+                        myAction(
+                            name=spell,
+                            type= 'heal',
+                            mod=   0,
+                            numHit=0,
+                            currCoord=list(map.arrayCenters)[myIndex],
+                            moveCoord=list(map.arrayCenters)[myIndex], 
+                            targets= []
+
+
+                        )
+                    )
                 dice = myDice
                 #print(dice)
                 if dice == [""]:
@@ -176,7 +300,20 @@ def takeTurn(actor, m, interactive = False):
                             
                             lowestMissingHealth= [mostHeal, [i for i in map.arrayCenters if map.arrayCenters[i] == person]]
                 
-                turnChoices.append([spell, 'heal', lowestMissingHealth[0], (1,list(map.arrayCenters)[myIndex], list(map.arrayCenters)[myIndex], lowestMissingHealth[1])])
+                #turnChoices.append([spell, 'heal', lowestMissingHealth[0], (1,list(map.arrayCenters)[myIndex], list(map.arrayCenters)[myIndex], lowestMissingHealth[1])])
+                turnChoices.append(
+                    myAction(
+                        name=spell,
+                        type= 'heal',
+                        mod=   lowestMissingHealth[0],
+                        numHit=  1,
+                        currCoord=list(map.arrayCenters)[myIndex],
+                        moveCoord=list(map.arrayCenters)[myIndex], 
+                        targets= lowestMissingHealth[1]
+
+
+                    )
+                )
                 #print(turnChoices)
         if myArea != '':
             match myArea:
@@ -196,49 +333,163 @@ def takeTurn(actor, m, interactive = False):
                     diceCount = int(re.findall(r'\d+', di)[0])
                     diceDmg = int(re.findall(r'\d+', di)[1])
                     avgDmg += 0.5 + diceCount * diceDmg / 2
-                turnChoices.append([spell, 'Sdmg', avgDmg*numToHit[0], numToHit])
+                #turnChoices.append([spell, 'Sdmg', avgDmg*numToHit[0], numToHit])
+                #print(numToHit)
+                
+                if len(numToHit) == 2:
+                    turnChoices.append(
+                        myAction(
+                            name=spell,
+                            type= 'Sdmg',
+                            mod= 0,
+                            numHit=0,
+                            currCoord=list(map.arrayCenters)[myIndex],
+                            moveCoord=list(map.arrayCenters)[myIndex], # jth is this accurate?
+                            targets=[]
+
+
+                        )
+                    ) 
+                else:
+                    #print(spell)
+                    turnChoices.append(
+                        myAction(
+                            name=spell,
+                            type= 'Sdmg',
+                            mod=  numToHit[0]*avgDmg,
+                            numHit=numToHit[0],
+                            currCoord=list(map.arrayCenters)[myIndex],
+                            moveCoord=list(map.arrayCenters)[myIndex],
+                            castCoord=numToHit[2], 
+                            targets=numToHit[3]
+
+
+                        )
+                    )
             elif myEffect in conditionsList:
-                turnChoices.append([spell, 'cc', numToHit[0]*20, numToHit])
+                #turnChoices.append([spell, 'cc', numToHit[0]*20, numToHit])
+                #print(numToHit)
+                if len(numToHit) == 2:
+                    turnChoices.append(
+                        myAction(
+                            name=spell,
+                            type= 'Sdmg',
+                            mod= 0,
+                            numHit=0,
+                            currCoord=list(map.arrayCenters)[myIndex],
+                            moveCoord=list(map.arrayCenters)[myIndex], # jth is this accurate?
+                            targets=[]
+
+
+                        )
+                    ) 
+                else:
+                    turnChoices.append(
+                        myAction(
+                            name=spell,
+                            type= 'Sdmg',
+                            mod=  numToHit[0]*avgDmg,
+                            numHit=numToHit[0],
+                            currCoord=list(map.arrayCenters)[myIndex],
+                            moveCoord=numToHit[2], 
+                            targets=numToHit[2]
+
+
+                        )
+                    )
         else:
             hexLimit = (int(re.findall(r'\d+', myRange)[0])/5) +actor.speed/5
             distance = [index for index in enemyList if map.distanceCalc(myIndex, index) <= hexLimit]
             anyOpenSpot = [x for x in distanceMatrix if x[0] <= actor.speed/5 and x[1] <= int(re.findall(r'\d+', myRange)[0])/5] 
-            ##print(anyOpenSpot)
+            #print(anyOpenSpot)
             if len(anyOpenSpot) == 0:
-                turnChoices.append([spell, 'Sdmg', 0,(0,0)])
+                #turnChoices.append([spell, 'Sdmg', 0,(0,0)])
+                turnChoices.append(
+                    myAction(
+                        name=spell,
+                        type= 'Sdmg',
+                        mod= 0,
+                        numHit=0,
+                        currCoord=list(map.arrayCenters)[myIndex],
+                        moveCoord=list(map.arrayCenters)[myIndex], # jth is this accurate?
+                        targets=[]
+
+
+                    )
+                )
                 ##print('zero for', spell)
                 #sys.exit()
                 continue
             ##print(spell, len(distance))
             if len(distance) == 0:
                 ##print('no one in range for spell', spell)
-                turnChoices.append([spell, 'Sdmg', 0,(0,0)])
+                #turnChoices.append([spell, 'Sdmg', 0,(0,0)])
+                turnChoices.append(
+                    myAction(
+                        name=spell,
+                        type= 'Sdmg',
+                        mod= 0,
+                        numHit=0,
+                        currCoord=list(map.arrayCenters)[myIndex],
+                        moveCoord=list(map.arrayCenters)[myIndex], # jth is this accurate?
+                        targets=[]
+
+
+                    )
+                )
             elif myEffect in dmgTypes:
                 dice = myDice
                 for di in dice:
                     diceCount = int(re.findall(r'\d+', di)[0])
                     diceDmg = int(re.findall(r'\d+', di)[1])
                     avgDmg += 0.5 + diceCount * diceDmg / 2
-                ##print(spell, numToHit)
-                turnChoices.append([spell, 'Sdmg', avgDmg, (1,list(map.arrayCenters)[myIndex], list(map.arrayCenters)[myIndex], closestCoord)])
+                
+                turnChoices.append(
+                    myAction(
+                        name=spell,
+                        type= 'Sdmg',
+                        mod= avgDmg,
+                        numHit=1,
+                        currCoord=list(map.arrayCenters)[myIndex],
+                        moveCoord=list(map.arrayCenters)[myIndex], # jth is this accurate?
+                        targets=[closestCoord]
+
+
+                    )
+                )
+                #turnChoices.append([spell, 'Sdmg', avgDmg, (1,list(map.arrayCenters)[myIndex], list(map.arrayCenters)[myIndex], closestCoord)])
             elif myEffect in conditionsList:
-                turnChoices.append([spell, 'cc', 1, 
-                                    (1,list(map.arrayCenters)[myIndex], list(map.arrayCenters)[myIndex], closestCoord)])
+                turnChoices.append(
+                    myAction(
+                        name=spell,
+                        type= 'cc',
+                        mod= 1,
+                        numHit=1,
+                        currCoord=list(map.arrayCenters)[myIndex],
+                        moveCoord=list(map.arrayCenters)[myIndex], # jth is this accurate?
+                        targets=[closestCoord]
+
+
+                    )
+                )
+                #turnChoices.append([spell, 'cc', 1, 
+                #                    (1,list(map.arrayCenters)[myIndex], list(map.arrayCenters)[myIndex], closestCoord)])
     best = 0
     for choice in turnChoices:
-        
-        if float(choice[2]) >= float(best):
-            best = choice[2]
+        mod = choice.mod
+
+        if float(mod) >= float(best):
+            best = mod
             turnChoice = choice
 
     print(best)
     if healDownedTeammate: # if ally is down, override turnchoice to pick up
         mostHealing = 0
         for choice in turnChoices:
-            if choice[1] =='heal' and float(choice[2]) >= float(mostHealing) and float(choice[2]) != 0:
-                mostHealing = choice[2]
+            if choice.type =='heal' and float(choice.mod) >= float(mostHealing) and float(choice.mod) != 0:
+                mostHealing = choice.mod
                 turnChoice = choice
-    print(turnChoice)
+    print(turnChoice, "before interactive check")
     if not interactive:
         doAction(actor, map, turnChoice, closestGuy, best)
     else:
@@ -253,6 +504,7 @@ class myAction:
     currCoord: tuple
     moveCoord: tuple
     targets: list
+    castCoord: Optional[tuple] = None
 
 def chooseAction(actor, map, turnChoices, turnChoice, closestGuy, best):
 
@@ -277,35 +529,21 @@ def doAction(actor, map, turnChoice, closestGuy, best):
     
     # need closestGuy, closestCoord, minDIst
 
-    
+    print('in doAction')
+
     if best == 0:
         map.dashActor(actor, closestGuy)
         
         return
     else:
-        print(actor.name, 'is taking action', turnChoice[1], 'with',turnChoice[0])
-    if turnChoice[1] == 'Wdmg':
-        minDist = turnChoice[3]
-        closestCoord = turnChoice[4]
-        weaponChoice = [x for x in actor.weaponList if x.name == turnChoice[0]][0]
-        if weaponChoice.range/5 >= actor.optRange:
-            if minDist >= actor.optRange + actor.speed/5:
-                actorCoord = [x for x in map.arrayCenters.keys() if map.arrayCenters[x] == actor][0]
-                line = drawLine(actorCoord, closestCoord[0])
-                options = [x for x in line if map.distanceCalc(list(map.arrayCenters).index(actorCoord), list(map.arrayCenters).index(x)) <= actor.speed/5]
-                distance = map.distanceCalc(list(map.arrayCenters).index(actorCoord), list(map.arrayCenters).index(options[-1]))
-                if map.arrayCenters[options[-1]] != '' and map.arrayCenters[options[-1]] != actor:
-                    newCoord = map.moveToNearest(actor, map.arrayCenters[options[-1]])
-                else:
-                    map.moveActor(actor, options[-1])
-            else:
-                moveWithingReach(actor, closestGuy, actor.optRange*5, map)
-        else:
-            moveWithingReach(actor, closestGuy, weaponChoice.range, map)
+        print(actor.name, 'is taking action', turnChoice.type, 'with', turnChoice.name)
+    if turnChoice.type == 'Wdmg':
+        weaponChoice = [x for x in actor.weaponList if x.name == turnChoice.name][0]
+        map.moveActor(actor, turnChoice.moveCoord)
         weaponAttack(actor, closestGuy, weaponChoice, map)
-    elif turnChoice[1] == 'Sdmg' or turnChoice[1] == 'cc':
+    elif turnChoice.type == 'Sdmg' or turnChoice.type == 'cc':
         castSpellTurn(actor, turnChoice, map)
-    elif turnChoice[1] == 'heal':
+    elif turnChoice.type == 'heal':
         healSpellTurn(actor, turnChoice, map)
 
 def healSpellTurn(actor, turnChoice, map):
@@ -313,23 +551,23 @@ def healSpellTurn(actor, turnChoice, map):
     player = 1
     if str(type(actor)) == "<class 'monster.Monster'>":
         player = 0
-
-    if map.arrayCenters[turnChoice[3][1]] != '' and map.arrayCenters[turnChoice[3][1]] != actor:
+    moveCoord = turnChoice.moveCoord
+    if map.arrayCenters[moveCoord] != '' and map.arrayCenters[moveCoord] != actor:
         
-        newCoord = map.moveToNearest(actor, turnChoice[3][1])
+        newCoord = map.moveToNearest(actor, moveCoord)
         map.moveActor(actor, newCoord)
-    elif map.arrayCenters[turnChoice[3][1]] != actor:
+    elif map.arrayCenters[moveCoord] != actor:
         
-        map.moveActor(actor, turnChoice[3][1])
-    peopleTargeted = [map.arrayCenters[x] for x in turnChoice[3][3] if map.arrayCenters[x] != '']
+        map.moveActor(actor, moveCoord)
+    peopleTargeted = [map.arrayCenters[x] for x in turnChoice.targets if map.arrayCenters[x] != '']
 
-    spell = actor.spells[turnChoice[0]]
+    spell = actor.spells[turnChoice.name]
     if not player:
-        actor.spells[turnChoice[0]][0] -= 1
-        spell = actor.spells[turnChoice[0]][1]
+        actor.spells[turnChoice.name][0] -= 1
+        spell = actor.spells[turnChoice.name][1]
         
     else:
-        actor.spellSlots[str(actor.spells[turnChoice[0]]['lvl'])] -= 1
+        actor.spellSlots[str(actor.spells[turnChoice.name]['lvl'])] -= 1
 
     dice = spell['dice']
     dmg = 0
@@ -363,23 +601,25 @@ def castSpellTurn(actor, turnChoice, map):
     if str(type(actor)) == "<class 'monster.Monster'>":
         player = 0
     
-    if map.arrayCenters[turnChoice[3][1]] != '' and map.arrayCenters[turnChoice[3][1]] != actor:
+    moveCoord = turnChoice.moveCoord
+    if map.arrayCenters[moveCoord] != '' and map.arrayCenters[moveCoord] != actor:
         
-        newCoord = map.moveToNearest(actor, turnChoice[3][1])
+        newCoord = map.moveToNearest(actor, moveCoord)
         map.moveActor(actor, newCoord)
-    elif map.arrayCenters[turnChoice[3][1]] != actor:
+    elif map.arrayCenters[moveCoord] != actor:
         
-        map.moveActor(actor, turnChoice[3][1])
-    peopleTargeted = [map.arrayCenters[x] for x in turnChoice[3][3] if map.arrayCenters[x] != '']
-    spell = actor.spells[turnChoice[0]]
+        map.moveActor(actor, moveCoord)
+        print()
+    peopleTargeted = [map.arrayCenters[x] for x in turnChoice.targets if map.arrayCenters[x] != '']
+    spell = actor.spells[turnChoice.name]
     if not player:
-        actor.spells[turnChoice[0]][0] -= 1
-        spell = actor.spells[turnChoice[0]][1]
+        actor.spells[turnChoice.name][0] -= 1
+        spell = actor.spells[turnChoice.name][1]
         
     else:
-        actor.spellSlots[str(actor.spells[turnChoice[0]]['lvl'])] -= 1
+        actor.spellSlots[str(actor.spells[turnChoice.name]['lvl'])] -= 1
     
-    #actor.spellSlots[str(actor.spells[turnChoice[0]]['lvl'])] -= 1
+    #actor.spellSlots[str(actor.spells[turnChoice.name]['lvl'])] -= 1
     save = spell['save'].split()
     if spell['attack'] == '' and save != []: # youre a save effect
         peopleHit = [x for x in peopleTargeted if rollSave(x, save[0], actor.spellDC)]
@@ -413,7 +653,7 @@ def castSpellTurn(actor, turnChoice, map):
             #people.health -= dmg
             takeDmg(actor, people, dmg, map)
     
-    if turnChoice[1] == 'cc':
+    if turnChoice.type == 'cc':
         for people in peopleHit:
             people.cc = [spell["lvl"], save, actor.spellDC]
 
@@ -425,6 +665,8 @@ def weaponAttack(actor, target, weap, map):
         myIndex = [list(map.arrayCenters).index(i) for i in map.arrayCenters.keys() if map.arrayCenters[i] == actor][0]
         targetIndex = [list(map.arrayCenters).index(i) for i in map.arrayCenters.keys() if map.arrayCenters[i] == target][0]
         targDistance = map.distanceCalc(myIndex, targetIndex)
+
+        
         if targDistance > weap.range/5:
             print(actor.name,'out of range to hit',target.name,'with',weap.name,'...',targDistance,'..',weap.range/5)
             raise SystemExit('Crashed in weaponAttack')
@@ -599,6 +841,7 @@ def bestLine2(actor, map, length, reach):
         targetCoord = list(map.arrayCenters)[enemyList[0]]
         line = drawLine(actorCoord,targetCoord, map)
         moveTo = [coord for coord in line if map.distanceCalc(list(map.arrayCenters).index(targetCoord), list(map.arrayCenters).index(coord)) <= hexLimit and map.arrayCenters[coord] == ''][0] # closest inside reach
+        print("in best line returning ", [targetCoord])
         return(1, moveTo, moveTo, [targetCoord])
     
         
@@ -668,7 +911,7 @@ def bestLine2(actor, map, length, reach):
                 badGuys =  [ list(map.arrayCenters)[badGuy]for badGuy in enemyList if list(map.arrayCenters)[badGuy] in inBetweenCoords]
                 finalCoord = [guys, moveTo[0], moveTo[0], badGuys]
                 EndTime = time.time()
-                
+                print("in best line returning ", badGuys)
                 return finalCoord
             
         return(0,0)        

@@ -160,6 +160,7 @@ class Monster:
             can be used to reset used spellslots
 
         '''
+        print("Called ", self.name, " defineSpellSlots")
         self.spells = self.initSpells
         self.turnFactors = self.initTF
         self.legActions = self.maxLegActions
@@ -170,6 +171,7 @@ class Monster:
         ''' double checked
         Turn decider function for legendary action
         '''
+        print("In legendary actions")
         map = m
         if self in map.enemy:
             enemyList = [ list(map.arrayCenters).index(i) for i in map.arrayCenters.keys() if map.arrayCenters[i] != '' and map.arrayCenters[i] not in map.enemy]
@@ -227,6 +229,7 @@ class Monster:
         
         takeDmg(self, target, dmg, map)
         self.legActions -= 1
+        print(self.legActions, " = num leg actions")
         ##print(self.name,'is doing a weapon attack and is doing', dmg, 'to', target.name, 'and they are now at', target.health)
 
         
