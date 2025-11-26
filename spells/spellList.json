@@ -1,0 +1,5332 @@
+{
+    "Acid Splash": {
+        "lvl": 0,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Acid",
+        "concentration": "",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            "1d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Chill 5 ft": {
+        "lvl": 0,
+        "time": "1 Action",
+        "duration": "1 Round",
+        "range": "120 ft",
+        "area": "",
+        "attack": "Ranged",
+        "save": "",
+        "effect": "Necrotic",
+        "concentration": "",
+        "classes": "Sorcerer, Warlock, Wizard",
+        "dice": [
+            "1d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Dancing Lights": {
+        "lvl": 0,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "120 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Utility",
+        "concentration": "Y",
+        "classes": "Bard, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Druidcraft": {
+        "lvl": 0,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "Druid",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Eldritch Blast": {
+        "lvl": 0,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "120 ft",
+        "area": "",
+        "attack": "Ranged",
+        "save": "",
+        "effect": "Force",
+        "concentration": "",
+        "classes": "Warlock",
+        "dice": [
+            "1d10"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Fire Bolt": {
+        "lvl": 0,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "120 ft",
+        "area": "",
+        "attack": "Ranged",
+        "save": "",
+        "effect": "Fire",
+        "concentration": "",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            "1d10"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Friends": {
+        "lvl": 0,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "Y",
+        "classes": "Bard, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Guidance": {
+        "lvl": 0,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "Y",
+        "classes": "Cleric, Druid",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Gust": {
+        "lvl": 0,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "Strength Save",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "Druid, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Light": {
+        "lvl": 0,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "5 ft",
+        "area": "sphere 20 ft",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Creation",
+        "concentration": "",
+        "classes": "Bard, Cleric, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Mage Hand": {
+        "lvl": 0,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Utility",
+        "concentration": "",
+        "classes": "Bard, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Mending": {
+        "lvl": 0,
+        "time": "1 Minute",
+        "duration": "Instantaneous",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Utility",
+        "concentration": "",
+        "classes": "Bard, Cleric, Druid, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Message": {
+        "lvl": 0,
+        "time": "1 Action",
+        "duration": "1 Round",
+        "range": "120 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Communication",
+        "concentration": "",
+        "classes": "Bard, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Minor Illusion": {
+        "lvl": 0,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "30 ft",
+        "area": "square 5 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "Bard, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Poison Spray": {
+        "lvl": 0,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "10 ft",
+        "area": "",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Poison",
+        "concentration": "",
+        "classes": "Druid, Sorcerer, Warlock, Wizard",
+        "dice": [
+            "1d12"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Prestidigitation": {
+        "lvl": 0,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "10 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Utility",
+        "concentration": "",
+        "classes": "Bard, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Produce Flame": {
+        "lvl": 0,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "0",
+        "area": "",
+        "attack": "Ranged",
+        "save": "",
+        "effect": "Fire",
+        "concentration": "",
+        "classes": "Druid",
+        "dice": [
+            "1d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Ray of Frost": {
+        "lvl": 0,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "60 ft",
+        "area": "",
+        "attack": "Ranged",
+        "save": "",
+        "effect": "Cold",
+        "concentration": "",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            "1d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Resistance": {
+        "lvl": 0,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "Y",
+        "classes": "Cleric, Druid",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Sacred Flame": {
+        "lvl": 0,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Radiant",
+        "concentration": "",
+        "classes": "Cleric",
+        "dice": [
+            "1d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Shillelagh": {
+        "lvl": 0,
+        "time": "1 Bonus Action",
+        "duration": "1 Minute",
+        "range": "5 ft",
+        "area": "",
+        "attack": "Melee",
+        "save": "",
+        "effect": "Bludgeoning",
+        "concentration": "",
+        "classes": "Druid",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Spare the Dying": {
+        "lvl": 0,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Healing",
+        "concentration": "",
+        "classes": "Cleric",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Thaumaturgy": {
+        "lvl": 0,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "Cleric",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Thunderclap": {
+        "lvl": 0,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Thunder",
+        "concentration": "",
+        "classes": "Bard, Druid, Sorcerer, Warlock, Wizard, Artificer",
+        "dice": [
+            "1d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "True Strike": {
+        "lvl": 0,
+        "time": "1 Action",
+        "duration": "1 Round",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Foreknowledge",
+        "concentration": "Y",
+        "classes": "Bard, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Alarm": {
+        "lvl": 1,
+        "time": "1 Minute",
+        "duration": "8 Hours",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Detection",
+        "concentration": "",
+        "classes": "Ranger, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Animal Friendship": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "24 Hours",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Charmed",
+        "concentration": "",
+        "classes": "Bard, Druid, Ranger",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Bane": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "Charisma Save",
+        "effect": "Debuff",
+        "concentration": "Y",
+        "classes": "Bard, Cleric",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Bless": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "Y",
+        "classes": "Cleric, Paladin",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Burning Hands": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "0",
+        "area": "cone 15 ft",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Fire",
+        "concentration": "",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            "3d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Charm Person": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Charmed",
+        "concentration": "",
+        "classes": "Bard, Druid, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Color Spray": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "1 Round",
+        "range": "0",
+        "area": "cone 15 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Blinded",
+        "concentration": "",
+        "classes": "Bard, Sorcerer, Wizard",
+        "dice": [
+            "2d10"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Command": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "1 Round",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Prone",
+        "concentration": "",
+        "classes": "Bard, Cleric, Paladin",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Comprehend Languages": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Social",
+        "concentration": "",
+        "classes": "Bard, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Create or Destroy Water": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "30 ft",
+        "area": "square 30 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Creation",
+        "concentration": "",
+        "classes": "Cleric, Druid",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Cure Wounds": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Healing",
+        "concentration": "",
+        "classes": "Bard, Cleric, Druid, Paladin, Ranger",
+        "dice": [
+            "1d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Detect Evil and Good": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "0",
+        "area": "sphere 30 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Detection",
+        "concentration": "Y",
+        "classes": "Cleric, Paladin",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Detect Magic": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "0",
+        "area": "sphere 30 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Detection",
+        "concentration": "Y",
+        "classes": "Bard, Cleric, Druid, Paladin, Ranger, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Detect Poison and Disease": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "0",
+        "area": "sphere 30 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Detection",
+        "concentration": "Y",
+        "classes": "Cleric, Druid, Paladin, Ranger",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Disguise 0": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Shapechanging",
+        "concentration": "",
+        "classes": "Bard, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Divine Favor": {
+        "lvl": 1,
+        "time": "1 Bonus Action",
+        "duration": "1 Minute",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Radiant",
+        "concentration": "Y",
+        "classes": "Paladin",
+        "dice": [
+            "1d4"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Entangle": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "90 ft",
+        "area": "square 20 ft",
+        "attack": "",
+        "save": "Strength Save",
+        "effect": "Restrained",
+        "concentration": "Y",
+        "classes": "Druid, Ranger",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Expeditious Retreat": {
+        "lvl": 1,
+        "time": "1 Bonus Action",
+        "duration": "10 Minutes",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Movement",
+        "concentration": "Y",
+        "classes": "Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Faerie Fire": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "60 ft",
+        "area": "square 20 ft",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Debuff",
+        "concentration": "Y",
+        "classes": "Bard, Druid",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "False Life": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Healing",
+        "concentration": "",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            "1d4"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Feather Fall": {
+        "lvl": 1,
+        "time": "1 Reaction *",
+        "duration": "1 Minute",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Exploration",
+        "concentration": "",
+        "classes": "Bard, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Find Familiar": {
+        "lvl": 1,
+        "time": "1 Hour",
+        "duration": "Instantaneous",
+        "range": "10 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Summoning",
+        "concentration": "",
+        "classes": "Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Floating Disk": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Movement",
+        "concentration": "",
+        "classes": "",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Fog Cloud": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "120 ft",
+        "area": "sphere 20 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "Y",
+        "classes": "Druid, Ranger, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Goodberry": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Healing",
+        "concentration": "",
+        "classes": "Druid, Ranger",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Grease": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "60 ft",
+        "area": "square 10 ft",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Prone",
+        "concentration": "",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Guiding Bolt": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "1 Round",
+        "range": "120 ft",
+        "area": "",
+        "attack": "Ranged",
+        "save": "",
+        "effect": "Radiant",
+        "concentration": "",
+        "classes": "Cleric",
+        "dice": [
+            "4d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Healing Word": {
+        "lvl": 1,
+        "time": "1 Bonus Action",
+        "duration": "Instantaneous",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Healing",
+        "concentration": "",
+        "classes": "Bard, Cleric, Druid",
+        "dice": [
+            "1d4"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Hellish Rebuke": {
+        "lvl": 1,
+        "time": "1 Reaction *",
+        "duration": "Instantaneous",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Fire",
+        "concentration": "",
+        "classes": "Warlock",
+        "dice": [
+            "2d10"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Heroism": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "Y",
+        "classes": "Bard, Paladin",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Hideous Laughter": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Prone",
+        "concentration": "Y",
+        "classes": "",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Identify": {
+        "lvl": 1,
+        "time": "1 Minute",
+        "duration": "Instantaneous",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Detection",
+        "concentration": "",
+        "classes": "Bard, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Illusory Script": {
+        "lvl": 1,
+        "time": "1 Minute",
+        "duration": "10 Days",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Communication",
+        "concentration": "",
+        "classes": "Bard, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Inflict Wounds": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "5 ft",
+        "area": "",
+        "attack": "Melee",
+        "save": "",
+        "effect": "Necrotic",
+        "concentration": "",
+        "classes": "Cleric",
+        "dice": [
+            "3d10"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Jump": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Movement",
+        "concentration": "",
+        "classes": "Druid, Ranger, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Longstrider": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "",
+        "classes": "Bard, Druid, Ranger, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Mage Armor": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "8 Hours",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Magic Missile": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "120 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Force",
+        "concentration": "",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            "1d4",
+            "1d4",
+            "1d4"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Protection from Evil and Good": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "Y",
+        "classes": "Cleric, Druid, Paladin, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Purify Food and Drink": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "10 ft",
+        "area": "sphere 5 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Utility",
+        "concentration": "",
+        "classes": "Cleric, Druid, Paladin",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Sanctuary": {
+        "lvl": 1,
+        "time": "1 Bonus Action",
+        "duration": "1 Minute",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Buff",
+        "concentration": "",
+        "classes": "Cleric",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Shield": {
+        "lvl": 1,
+        "time": "1 Reaction *",
+        "duration": "1 Round",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Warding",
+        "concentration": "",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Shield of Faith": {
+        "lvl": 1,
+        "time": "1 Bonus Action",
+        "duration": "10 Minutes",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "Y",
+        "classes": "Cleric, Paladin",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Silent Image": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "60 ft",
+        "area": "square 15 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "Y",
+        "classes": "Bard, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Sleep": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "90 ft",
+        "area": "sphere 20 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Unconscious",
+        "concentration": "",
+        "classes": "Bard, Sorcerer, Wizard",
+        "dice": [
+            "2d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Speak with Animals": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Communication",
+        "concentration": "",
+        "classes": "Bard, Druid, Ranger",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Thunderwave": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "0",
+        "area": "square 15 ft",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Thunder",
+        "concentration": "",
+        "classes": "Bard, Druid, Sorcerer, Wizard",
+        "dice": [
+            "2d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Unseen Servant": {
+        "lvl": 1,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "Bard, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Acid Arrow": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "90 ft",
+        "area": "",
+        "attack": "Ranged",
+        "save": "",
+        "effect": "Acid",
+        "concentration": "",
+        "classes": "Wizard",
+        "dice": [
+            "4d4",
+            "2d4"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Aid": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "8 Hours",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Healing",
+        "concentration": "",
+        "classes": "Bard, Cleric, Paladin, Ranger",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Alter 0": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Shapechanging",
+        "concentration": "Y",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            "1d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Animal Messenger": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "24 Hours",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Communication",
+        "concentration": "",
+        "classes": "Bard, Druid, Ranger",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Arcane Lock": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "Until Dispelled",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Utility",
+        "concentration": "",
+        "classes": "Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Augury": {
+        "lvl": 2,
+        "time": "1 Minute",
+        "duration": "Instantaneous",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Foreknowledge",
+        "concentration": "",
+        "classes": "Cleric, Druid, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Barkskin": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "Y",
+        "classes": "Druid, Ranger",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Blindness/Deafness": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Blinded",
+        "concentration": "",
+        "classes": "Bard, Cleric, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Blur": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Deception",
+        "concentration": "Y",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Branding Smite": {
+        "lvl": 2,
+        "time": "1 Bonus Action",
+        "duration": "1 Minute",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Radiant",
+        "concentration": "Y",
+        "classes": "Paladin",
+        "dice": [
+            "2d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Calm Emotions": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "60 ft",
+        "area": "sphere 20 ft",
+        "attack": "",
+        "save": "Charisma Save",
+        "effect": "Charmed",
+        "concentration": "Y",
+        "classes": "Bard, Cleric",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Continual Flame": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "Until Dispelled",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Creation",
+        "concentration": "",
+        "classes": "Cleric, Druid, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Darkness": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "60 ft",
+        "area": "sphere 15 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "Y",
+        "classes": "Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Darkvision": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "8 Hours",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "",
+        "classes": "Druid, Ranger, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Detect Thoughts": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Detection",
+        "concentration": "Y",
+        "classes": "Bard, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Enhance Ability": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "Y",
+        "classes": "Bard, Cleric, Druid, Ranger, Sorcerer, Wizard",
+        "dice": [
+            "2d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Enlarge/Reduce": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Buff",
+        "concentration": "Y",
+        "classes": "Bard, Druid, Sorcerer, Wizard",
+        "dice": [
+            "1d4"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Enthrall": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "Bard, Warlock",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Find Steed": {
+        "lvl": 2,
+        "time": "10 Minutes",
+        "duration": "Instantaneous",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Summoning",
+        "concentration": "",
+        "classes": "Paladin",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Find Traps": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "120 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Detection",
+        "concentration": "",
+        "classes": "Cleric, Druid, Ranger",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Flame Blade": {
+        "lvl": 2,
+        "time": "1 Bonus Action",
+        "duration": "10 Minutes",
+        "range": "0",
+        "area": "",
+        "attack": "Melee",
+        "save": "",
+        "effect": "Fire",
+        "concentration": "Y",
+        "classes": "Druid, Sorcerer",
+        "dice": [
+            "3d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Flaming Sphere": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "60 ft",
+        "area": "sphere 5 ft",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Fire",
+        "concentration": "Y",
+        "classes": "Druid, Sorcerer, Wizard",
+        "dice": [
+            "2d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Gentle Repose": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "10 Days",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Warding",
+        "concentration": "",
+        "classes": "Cleric, Paladin, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Gust of Wind": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "Strength Save",
+        "effect": "Control",
+        "concentration": "Y",
+        "classes": "Druid, Ranger, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Heat Metal": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Fire",
+        "concentration": "Y",
+        "classes": "Bard, Druid",
+        "dice": [
+            "2d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Hold Person": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Paralyzed",
+        "concentration": "Y",
+        "classes": "Bard,Cleric, Druid,Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Invisibility": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Invisible",
+        "concentration": "Y",
+        "classes": "Bard, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Knock": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Utility",
+        "concentration": "",
+        "classes": "Bard, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Lesser Restoration": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Healing",
+        "concentration": "",
+        "classes": "Bard, Cleric, Druid, Paladin, Ranger",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Levitate": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Movement",
+        "concentration": "Y",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Locate Animals or Plants": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Detection",
+        "concentration": "",
+        "classes": "Bard, Druid, Ranger",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Locate Object": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Detection",
+        "concentration": "Y",
+        "classes": "Bard, Cleric, Druid, Paladin, Ranger, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Magic Mouth": {
+        "lvl": 2,
+        "time": "1 Minute",
+        "duration": "Until Dispelled",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Communication",
+        "concentration": "",
+        "classes": "Bard, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Magic Weapon": {
+        "lvl": 2,
+        "time": "1 Bonus Action",
+        "duration": "1 Hour",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Bludgeoning",
+        "concentration": "Y",
+        "classes": "Paladin, Ranger, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Mirror Image": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Deception",
+        "concentration": "",
+        "classes": "Bard, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Misty Step": {
+        "lvl": 2,
+        "time": "1 Bonus Action",
+        "duration": "Instantaneous",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Teleportation",
+        "concentration": "",
+        "classes": "Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Moonbeam": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "120 ft",
+        "area": "sphere 5 ft",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Radiant",
+        "concentration": "Y",
+        "classes": "Druid",
+        "dice": [
+            "2d10"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Prayer of Healing": {
+        "lvl": 2,
+        "time": "10 Minutes",
+        "duration": "Instantaneous",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Healing",
+        "concentration": "",
+        "classes": "Cleric, Paladin",
+        "dice": [
+            "2d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Protection from Poison": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "",
+        "classes": "Cleric, Druid, Paladin, Ranger",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Ray of Enfeeblement": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Debuff",
+        "concentration": "Y",
+        "classes": "Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Rope Trick": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Utility",
+        "concentration": "",
+        "classes": "Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Scorching Ray": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "120 ft",
+        "area": "",
+        "attack": "Ranged",
+        "save": "",
+        "effect": "Fire",
+        "concentration": "",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            "2d6",
+            "2d6",
+            "2d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Shatter": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "60 ft",
+        "area": "sphere 10 ft",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Thunder",
+        "concentration": "",
+        "classes": "Bard, Sorcerer, Warlock, Wizard",
+        "dice": [
+            "3d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Silence": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "120 ft",
+        "area": "sphere 20 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "Y",
+        "classes": "Bard, Cleric, Ranger",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Spider Climb": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "Y",
+        "classes": "Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Spike Growth": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "150 ft",
+        "area": "sphere 20 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "Y",
+        "classes": "Druid, Ranger",
+        "dice": [
+            "2d4"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Spiritual Weapon": {
+        "lvl": 2,
+        "time": "1 Bonus Action",
+        "duration": "1 Minute",
+        "range": "60 ft",
+        "area": "",
+        "attack": "Melee",
+        "save": "",
+        "effect": "Force",
+        "concentration": "",
+        "classes": "Cleric",
+        "dice": [
+            "1d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Suggestion": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "8 Hours",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Control",
+        "concentration": "Y",
+        "classes": "Bard, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Warding Bond": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "",
+        "classes": "Cleric, Paladin",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Web": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "60 ft",
+        "area": "square 20 ft",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Restrained",
+        "concentration": "Y",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            "2d4"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Zone of Truth": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "60 ft",
+        "area": "sphere 15 ft",
+        "attack": "",
+        "save": "Charisma Save",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "Bard, Cleric, Paladin",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Animate Dead": {
+        "lvl": 3,
+        "time": "1 Minute",
+        "duration": "Instantaneous",
+        "range": "10 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Creation",
+        "concentration": "",
+        "classes": "Cleric, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Beacon of Hope": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "Y",
+        "classes": "Cleric",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Bestow Curse": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Debuff",
+        "concentration": "Y",
+        "classes": "Bard, Cleric, Wizard",
+        "dice": [
+            "1d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Blink": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Utility",
+        "concentration": "",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Call Lightning": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "120 ft",
+        "area": "sphere 60 ft",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Lightning",
+        "concentration": "Y",
+        "classes": "Druid",
+        "dice": [
+            "3d10"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Clairvoyance": {
+        "lvl": 3,
+        "time": "10 Minutes",
+        "duration": "10 Minutes",
+        "range": "1 mile",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Detection",
+        "concentration": "Y",
+        "classes": "Bard, Cleric, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Conjure Animals": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Summoning",
+        "concentration": "Y",
+        "classes": "Druid, Ranger",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Counterspell": {
+        "lvl": 3,
+        "time": "1 Reaction *",
+        "duration": "Instantaneous",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Negation",
+        "concentration": "",
+        "classes": "Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Create Food and Water": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Creation",
+        "concentration": "",
+        "classes": "Cleric, Paladin",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Daylight": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "60 ft",
+        "area": "sphere 60 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "Cleric, Druid, Paladin, Ranger, Sorcerer",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Dispel Magic": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "120 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "Bard, Cleric, Druid, Paladin, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Fear": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "0",
+        "area": "cone 30 ft",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Frightened",
+        "concentration": "Y",
+        "classes": "Bard, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Fireball": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "150 ft",
+        "area": "sphere 20 ft",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Fire",
+        "concentration": "",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            "8d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Fly": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Movement",
+        "concentration": "Y",
+        "classes": "Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Gaseous Form": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "Y",
+        "classes": "Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Glyph of Warding": {
+        "lvl": 3,
+        "time": "1 Hour",
+        "duration": "Until Dispelled or Triggered",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Acid",
+        "concentration": "",
+        "classes": "Bard, Cleric, Wizard",
+        "dice": [
+            "5d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Haste": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "Y",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Hypnotic Pattern": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "120 ft",
+        "area": "square 30 ft",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Charmed",
+        "concentration": "Y",
+        "classes": "Bard, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Tiny Hut": {
+        "lvl": 3,
+        "time": "1 Minute",
+        "duration": "8 Hours",
+        "range": "0",
+        "area": "sphere 10 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Utility",
+        "concentration": "",
+        "classes": "Bard, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Lightning Bolt": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "0",
+        "area": "line 100 ft",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Lightning",
+        "concentration": "",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            "8d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Major Image": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "120 ft",
+        "area": "square 20 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "Y",
+        "classes": "Bard, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Mass Healing Word": {
+        "lvl": 3,
+        "time": "1 Bonus Action",
+        "duration": "Instantaneous",
+        "range": "0",
+        "area": "sphere 60 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Healing",
+        "concentration": "",
+        "classes": "Bard, Cleric",
+        "dice": [
+            "1d4"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Meld into Stone": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "8 Hours",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Movement",
+        "concentration": "",
+        "classes": "Cleric, Druid, Ranger",
+        "dice": [
+            "6d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Nondetection": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "8 Hours",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Deception",
+        "concentration": "",
+        "classes": "Bard, Ranger, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Phantom Steed": {
+        "lvl": 3,
+        "time": "1 Minute",
+        "duration": "1 Hour",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Movement",
+        "concentration": "",
+        "classes": "Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Plant Growth": {
+        "lvl": 3,
+        "time": "Special",
+        "duration": "Instantaneous",
+        "range": "150 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "Bard, Druid, Ranger",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Protection from Energy": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "Y",
+        "classes": "Cleric, Druid, Ranger, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Remove Curse": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "",
+        "classes": "Cleric, Paladin, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Revivify": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Healing",
+        "concentration": "",
+        "classes": "Cleric, Druid, Paladin, Ranger",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Sending": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "1 Round",
+        "range": "Unlimited",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Communication",
+        "concentration": "",
+        "classes": "Bard, Cleric, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Sleet Storm": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "150 ft",
+        "area": "sphere 40 ft",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Prone",
+        "concentration": "Y",
+        "classes": "Druid, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Slow": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "120 ft",
+        "area": "square 40 ft",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Control",
+        "concentration": "Y",
+        "classes": "Bard, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Speak with Dead": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "10 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Communication",
+        "concentration": "",
+        "classes": "Bard, Cleric, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Speak with Plants": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Communication",
+        "concentration": "",
+        "classes": "Bard, Druid, Ranger",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Spirit Guardians": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Radiant",
+        "concentration": "Y",
+        "classes": "Cleric",
+        "dice": [
+            "3d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Stinking Cloud": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "90 ft",
+        "area": "sphere 20 ft",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Control",
+        "concentration": "Y",
+        "classes": "Bard, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Tongues": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Communication",
+        "concentration": "",
+        "classes": "Bard, Cleric, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Vampiric 5 ft": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "0",
+        "area": "",
+        "attack": "Melee",
+        "save": "",
+        "effect": "Necrotic",
+        "concentration": "Y",
+        "classes": "Sorcerer, Warlock, Wizard",
+        "dice": [
+            "3d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Water Breathing": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "24 Hours",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "",
+        "classes": "Druid, Ranger, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Water Walk": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Movement",
+        "concentration": "",
+        "classes": "Cleric, Druid, Ranger, Sorcerer",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Wind Wall": {
+        "lvl": 3,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "120 ft",
+        "area": "",
+        "attack": "",
+        "save": "Strength Save",
+        "effect": "Bludgeoning",
+        "concentration": "Y",
+        "classes": "Druid, Ranger",
+        "dice": [
+            "3d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Arcane Eye": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Detection",
+        "concentration": "Y",
+        "classes": "Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Banishment": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "Charisma Save",
+        "effect": "Banishment",
+        "concentration": "Y",
+        "classes": "Cleric, Paladin, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Black Tentacles": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "90 ft",
+        "area": "square 20 ft",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Bludgeoning",
+        "concentration": "Y",
+        "classes": "Wizard",
+        "dice": [
+            "3d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Blight": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Necrotic",
+        "concentration": "",
+        "classes": "Druid, Sorcerer, Warlock, Wizard",
+        "dice": [
+            "8d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Compulsion": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Control",
+        "concentration": "Y",
+        "classes": "Bard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Confusion": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "90 ft",
+        "area": "sphere 10 ft",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Control",
+        "concentration": "Y",
+        "classes": "Bard, Druid, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Conjure Minor Elementals": {
+        "lvl": 4,
+        "time": "1 Minute",
+        "duration": "1 Hour",
+        "range": "90 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Summoning",
+        "concentration": "Y",
+        "classes": "Druid, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Conjure Woodland Beings": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Summoning",
+        "concentration": "Y",
+        "classes": "Druid, Ranger",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Control Water": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "300 ft",
+        "area": "",
+        "attack": "",
+        "save": "Strength Save",
+        "effect": "Bludgeoning",
+        "concentration": "Y",
+        "classes": "Cleric, Druid, Wizard",
+        "dice": [
+            "2d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Death Ward": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "8 Hours",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "",
+        "classes": "Cleric, Paladin",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Dimension Door": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "500 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Teleportation",
+        "concentration": "",
+        "classes": "Bard, Sorcerer, Warlock, Wizard",
+        "dice": [
+            "4d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Divination": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Foreknowledge",
+        "concentration": "",
+        "classes": "Cleric, Druid, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Dominate Beast": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Charmed",
+        "concentration": "Y",
+        "classes": "Druid, Ranger, Sorcerer",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Fabricate": {
+        "lvl": 4,
+        "time": "10 Minutes",
+        "duration": "Instantaneous",
+        "range": "120 ft",
+        "area": "square 10 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Creation",
+        "concentration": "",
+        "classes": "Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Faithful Hound": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "8 Hours",
+        "range": "30 ft",
+        "area": "",
+        "attack": "Melee",
+        "save": "",
+        "effect": "Piercing",
+        "concentration": "",
+        "classes": "Wizard",
+        "dice": [
+            "4d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Fire Shield": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Fire",
+        "concentration": "",
+        "classes": "Druid, Sorcerer, Wizard",
+        "dice": [
+            "2d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Freedom of Movement": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "",
+        "classes": "Bard, Cleric, Druid, Ranger",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Giant Insect": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Summoning",
+        "concentration": "Y",
+        "classes": "Druid",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Greater Invisibility": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Invisible",
+        "concentration": "Y",
+        "classes": "Bard, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Guardian of Faith": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "8 Hours",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Radiant",
+        "concentration": "",
+        "classes": "Cleric",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Hallucinatory Terrain": {
+        "lvl": 4,
+        "time": "10 Minutes",
+        "duration": "24 Hours",
+        "range": "300 ft",
+        "area": "square 150 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "Bard, Druid, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Ice Storm": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "300 ft",
+        "area": "sphere 20 ft",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Bludgeoning",
+        "concentration": "",
+        "classes": "Druid, Sorcerer, Wizard",
+        "dice": [
+            "2d8",
+            "4d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Locate Creature": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Detection",
+        "concentration": "Y",
+        "classes": "Bard, Cleric, Druid, Paladin, Ranger, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Phantasmal Killer": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "120 ft",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Psychic",
+        "concentration": "Y",
+        "classes": "Bard, Wizard",
+        "dice": [
+            "4d10"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Polymorph": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Control",
+        "concentration": "Y",
+        "classes": "Bard, Druid, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Private Sanctum": {
+        "lvl": 4,
+        "time": "10 Minutes",
+        "duration": "24 Hours",
+        "range": "120 ft",
+        "area": "square 100 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Resilient Sphere": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "30 ft",
+        "area": "sphere 10 ft",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Control",
+        "concentration": "Y",
+        "classes": "Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Secret Chest": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Utility",
+        "concentration": "",
+        "classes": "Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Stone Shape": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "Cleric, Druid, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Stoneskin": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "Y",
+        "classes": "Druid, Ranger, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Wall of Fire": {
+        "lvl": 4,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "120 ft",
+        "area": "",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Fire",
+        "concentration": "Y",
+        "classes": "Druid, Sorcerer, Wizard",
+        "dice": [
+            "5d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Animate Objects": {
+        "lvl": 5,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "120 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Creation",
+        "concentration": "Y",
+        "classes": "Bard, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Antilife Shell": {
+        "lvl": 5,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "0",
+        "area": "sphere 10 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "Y",
+        "classes": "Druid",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Arcane Hand": {
+        "lvl": 5,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "120 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Force",
+        "concentration": "Y",
+        "classes": "",
+        "dice": [
+            "2d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Awaken": {
+        "lvl": 5,
+        "time": "8 Hours",
+        "duration": "Instantaneous",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Charmed",
+        "concentration": "",
+        "classes": "Bard, Druid",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Cloudkill": {
+        "lvl": 5,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "120 ft",
+        "area": "sphere 20 ft",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Poison",
+        "concentration": "Y",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            "5d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Commune": {
+        "lvl": 5,
+        "time": "1 Minute",
+        "duration": "1 Minute",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Foreknowledge",
+        "concentration": "",
+        "classes": "Cleric",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Commune with Nature": {
+        "lvl": 5,
+        "time": "1 Minute",
+        "duration": "Instantaneous",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Environment",
+        "concentration": "",
+        "classes": "Druid, Ranger",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Cone of Cold": {
+        "lvl": 5,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "0",
+        "area": "cone 60 ft",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Cold",
+        "concentration": "",
+        "classes": "Druid, Sorcerer, Wizard",
+        "dice": [
+            "8d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Conjure Elemental": {
+        "lvl": 5,
+        "time": "1 Minute",
+        "duration": "1 Hour",
+        "range": "90 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Summoning",
+        "concentration": "Y",
+        "classes": "Druid, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Contact Other Plane": {
+        "lvl": 5,
+        "time": "1 Minute",
+        "duration": "1 Minute",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Communication",
+        "concentration": "",
+        "classes": "Warlock, Wizard",
+        "dice": [
+            "6d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Contagion": {
+        "lvl": 5,
+        "time": "1 Action",
+        "duration": "7 Days",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Blinded",
+        "concentration": "",
+        "classes": "Cleric, Druid",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Creation": {
+        "lvl": 5,
+        "time": "1 Minute",
+        "duration": "Special",
+        "range": "30 ft",
+        "area": "square 5 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Creation",
+        "concentration": "",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Dispel Evil and Good": {
+        "lvl": 5,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "Charisma Save",
+        "effect": "Charmed",
+        "concentration": "Y",
+        "classes": "Cleric, Paladin",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Dominate Person": {
+        "lvl": 5,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Charmed",
+        "concentration": "Y",
+        "classes": "Bard, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Dream": {
+        "lvl": 5,
+        "time": "1 Minute",
+        "duration": "8 Hours",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Communication",
+        "concentration": "",
+        "classes": "Bard, Warlock, Wizard",
+        "dice": [
+            "3d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Flame Strike": {
+        "lvl": 5,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "60 ft",
+        "area": "sphere 10 ft",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Fire",
+        "concentration": "",
+        "classes": "Cleric",
+        "dice": [
+            "4d6",
+            "4d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Geas": {
+        "lvl": 5,
+        "time": "1 Minute",
+        "duration": "30 Days",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Charmed",
+        "concentration": "",
+        "classes": "Bard, Cleric, Druid, Paladin, Wizard",
+        "dice": [
+            "5d10"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Hallow": {
+        "lvl": 5,
+        "time": "24 Hours",
+        "duration": "Until Dispelled",
+        "range": "5 ft",
+        "area": "sphere 60 ft",
+        "attack": "",
+        "save": "Charisma Save",
+        "effect": "Buff",
+        "concentration": "",
+        "classes": "Cleric",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Hold Monster": {
+        "lvl": 5,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "90 ft",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Paralyzed",
+        "concentration": "Y",
+        "classes": "Bard, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Insect Plague": {
+        "lvl": 5,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "300 ft",
+        "area": "sphere 20 ft",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Piercing",
+        "concentration": "Y",
+        "classes": "Cleric, Druid, Sorcerer",
+        "dice": [
+            "4d10"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Legend Lore": {
+        "lvl": 5,
+        "time": "10 Minutes",
+        "duration": "Instantaneous",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Utility",
+        "concentration": "",
+        "classes": "Bard, Cleric, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Mass Cure Wounds": {
+        "lvl": 5,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "60 ft",
+        "area": "sphere 30 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Healing",
+        "concentration": "",
+        "classes": "Bard, Cleric, Druid",
+        "dice": [
+            "3d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Mislead": {
+        "lvl": 5,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Deception",
+        "concentration": "Y",
+        "classes": "Bard, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Modify Memory": {
+        "lvl": 5,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Charmed",
+        "concentration": "Y",
+        "classes": "Bard, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Passwall": {
+        "lvl": 5,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Planar Binding": {
+        "lvl": 5,
+        "time": "1 Hour",
+        "duration": "24 Hours",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "Charisma Save",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "Bard, Cleric, Druid, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Raise Dead": {
+        "lvl": 5,
+        "time": "1 Hour",
+        "duration": "Instantaneous",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Healing",
+        "concentration": "",
+        "classes": "Bard, Cleric, Paladin",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Reincarnate": {
+        "lvl": 5,
+        "time": "1 Hour",
+        "duration": "Instantaneous",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Healing",
+        "concentration": "",
+        "classes": "Druid",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Scrying": {
+        "lvl": 5,
+        "time": "10 Minutes",
+        "duration": "10 Minutes",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Detection",
+        "concentration": "Y",
+        "classes": "Bard, Cleric, Druid, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Seeming": {
+        "lvl": 5,
+        "time": "1 Action",
+        "duration": "8 Hours",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "Charisma Save",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "Bard, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Telekinesis": {
+        "lvl": 5,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "Y",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Telepathic Bond": {
+        "lvl": 5,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Communication",
+        "concentration": "",
+        "classes": "",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Teleportation Circle": {
+        "lvl": 5,
+        "time": "1 Minute",
+        "duration": "1 Round",
+        "range": "10 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Teleportation",
+        "concentration": "",
+        "classes": "Bard, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Tree Stride": {
+        "lvl": 5,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Movement",
+        "concentration": "Y",
+        "classes": "Druid, Ranger",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Wall of Force": {
+        "lvl": 5,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "120 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "Y",
+        "classes": "Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Wall of Stone": {
+        "lvl": 5,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "120 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "Y",
+        "classes": "Druid, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Blade Barrier": {
+        "lvl": 6,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "90 ft",
+        "area": "",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Slashing",
+        "concentration": "Y",
+        "classes": "Cleric",
+        "dice": [
+            "6d10"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Chain Lightning": {
+        "lvl": 6,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "150 ft",
+        "area": "",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Lightning",
+        "concentration": "",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            "10d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Circle of Death": {
+        "lvl": 6,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "150 ft",
+        "area": "sphere 60 ft",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Necrotic",
+        "concentration": "",
+        "classes": "Sorcerer, Warlock, Wizard",
+        "dice": [
+            "8d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Conjure Fey": {
+        "lvl": 6,
+        "time": "1 Minute",
+        "duration": "1 Hour",
+        "range": "90 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Summoning",
+        "concentration": "Y",
+        "classes": "Druid, Warlock",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Contingency": {
+        "lvl": 6,
+        "time": "10 Minutes",
+        "duration": "10 Days",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Utility",
+        "concentration": "",
+        "classes": "Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Create Undead": {
+        "lvl": 6,
+        "time": "1 Minute",
+        "duration": "Instantaneous",
+        "range": "10 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "Cleric, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Disintegrate": {
+        "lvl": 6,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Force",
+        "concentration": "",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            "10d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Eyebite": {
+        "lvl": 6,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Unconscious",
+        "concentration": "Y",
+        "classes": "Bard, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Find the Path": {
+        "lvl": 6,
+        "time": "1 Minute",
+        "duration": "1 Day",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Detection",
+        "concentration": "Y",
+        "classes": "Bard, Cleric, Druid",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Flesh to Stone": {
+        "lvl": 6,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Petrified",
+        "concentration": "Y",
+        "classes": "Druid, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Forbiddance": {
+        "lvl": 6,
+        "time": "10 Minutes",
+        "duration": "1 Day",
+        "range": "5 ft",
+        "area": "40,000 ft2",
+        "attack": "",
+        "save": "",
+        "effect": "Radiant",
+        "concentration": "",
+        "classes": "Cleric",
+        "dice": [
+            "5d10"
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Freezing Sphere": {
+        "lvl": 6,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "300 ft",
+        "area": "sphere 60 ft",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Cold",
+        "concentration": "",
+        "classes": "",
+        "dice": [
+            "10d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Globe of Invulnerability": {
+        "lvl": 6,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "0",
+        "area": "sphere 10 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Negation",
+        "concentration": "Y",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Guards and Wards": {
+        "lvl": 6,
+        "time": "10 Minutes",
+        "duration": "24 Hours",
+        "range": "5 ft",
+        "area": "2,500 ft2",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "Bard, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Harm": {
+        "lvl": 6,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Necrotic",
+        "concentration": "",
+        "classes": "Cleric",
+        "dice": [
+            "14d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Heal": {
+        "lvl": 6,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Healing",
+        "concentration": "",
+        "classes": "Cleric, Druid",
+        "dice": [
+            "70"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Instant Summons": {
+        "lvl": 6,
+        "time": "1 Minute",
+        "duration": "Until Dispelled",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Detection",
+        "concentration": "",
+        "classes": "",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Magic Jar": {
+        "lvl": 6,
+        "time": "1 Minute",
+        "duration": "Until Dispelled",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "Charisma Save",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Mass Suggestion": {
+        "lvl": 6,
+        "time": "1 Action",
+        "duration": "24 Hours",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "Bard, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Move Earth": {
+        "lvl": 6,
+        "time": "1 Action",
+        "duration": "2 Hours",
+        "range": "120 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "Y",
+        "classes": "Druid, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Planar Ally": {
+        "lvl": 6,
+        "time": "10 Minutes",
+        "duration": "Instantaneous",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Summoning",
+        "concentration": "",
+        "classes": "Cleric",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Programmed Illusion": {
+        "lvl": 6,
+        "time": "1 Action",
+        "duration": "Until Dispelled",
+        "range": "120 ft",
+        "area": "square 30 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "Bard, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Sunbeam": {
+        "lvl": 6,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "0 (60 ft )",
+        "area": "line 60 ft",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Radiant",
+        "concentration": "Y",
+        "classes": "Cleric, Druid, Sorcerer, Wizard",
+        "dice": [
+            "6d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Transport via Plants": {
+        "lvl": 6,
+        "time": "1 Action",
+        "duration": "1 Round",
+        "range": "10 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Teleportation",
+        "concentration": "",
+        "classes": "Druid",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "True Seeing": {
+        "lvl": 6,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Detection",
+        "concentration": "",
+        "classes": "Bard, Cleric, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Wall of Ice": {
+        "lvl": 6,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "120 ft",
+        "area": "",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Cold",
+        "concentration": "Y",
+        "classes": "Wizard",
+        "dice": [
+            "5d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Wall of Thorns": {
+        "lvl": 6,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "120 ft",
+        "area": "",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Piercing",
+        "concentration": "Y",
+        "classes": "Druid",
+        "dice": [
+            "1d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Wind Walk": {
+        "lvl": 6,
+        "time": "1 Minute",
+        "duration": "8 Hours",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "",
+        "classes": "Druid",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Word of Recall": {
+        "lvl": 6,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Teleportation",
+        "concentration": "",
+        "classes": "Cleric",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Conjure Celestial": {
+        "lvl": 7,
+        "time": "1 Minute",
+        "duration": "1 Hour",
+        "range": "90 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Summoning",
+        "concentration": "Y",
+        "classes": "Cleric",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Delayed Blast Fireball": {
+        "lvl": 7,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "150 ft",
+        "area": "sphere 20 ft",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Fire",
+        "concentration": "Y",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            "12d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Divine Word": {
+        "lvl": 7,
+        "time": "1 Bonus Action",
+        "duration": "Instantaneous",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "Charisma Save",
+        "effect": "Deafened",
+        "concentration": "",
+        "classes": "Cleric",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Etherealness": {
+        "lvl": 7,
+        "time": "1 Action",
+        "duration": "8 Hours",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "",
+        "classes": "Bard, Cleric, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Finger of Death": {
+        "lvl": 7,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Necrotic",
+        "concentration": "",
+        "classes": "Sorcerer, Warlock, Wizard",
+        "dice": [
+            "7d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Fire Storm": {
+        "lvl": 7,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "150 ft",
+        "area": "",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Fire",
+        "concentration": "",
+        "classes": "Cleric, Druid, Sorcerer",
+        "dice": [
+            "7d10"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Forcecage": {
+        "lvl": 7,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "100 ft",
+        "area": "square 20 ft",
+        "attack": "",
+        "save": "Charisma Save",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "Bard, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Magnificent Mansion": {
+        "lvl": 7,
+        "time": "1 Minute",
+        "duration": "24 Hours",
+        "range": "300 ft",
+        "area": "square 10 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Exploration",
+        "concentration": "",
+        "classes": "",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Mirage Arcane": {
+        "lvl": 7,
+        "time": "10 Minutes",
+        "duration": "10 Days",
+        "range": "15840 ft",
+        "area": "square 1 mile",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "Bard, Druid, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Plane Shift": {
+        "lvl": 7,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "Charisma Save",
+        "effect": "Banishment",
+        "concentration": "",
+        "classes": "Cleric, Druid, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Prismatic Spray": {
+        "lvl": 7,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "0",
+        "area": "cone 60 ft",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Fire",
+        "concentration": "",
+        "classes": "Bard, Sorcerer, Wizard",
+        "dice": [
+            "10d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Project Image": {
+        "lvl": 7,
+        "time": "1 Action",
+        "duration": "1 Day",
+        "range": "500 miles",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "Y",
+        "classes": "Bard, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Regenerate": {
+        "lvl": 7,
+        "time": "1 Minute",
+        "duration": "1 Hour",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Healing",
+        "concentration": "",
+        "classes": "Bard, Cleric, Druid",
+        "dice": [
+            "4d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Resurrection": {
+        "lvl": 7,
+        "time": "1 Hour",
+        "duration": "Instantaneous",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Healing",
+        "concentration": "",
+        "classes": "Bard, Cleric",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Reverse Gravity": {
+        "lvl": 7,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "100 ft",
+        "area": "sphere 50 ft",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Control",
+        "concentration": "Y",
+        "classes": "Druid, Sorcerer, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Sequester": {
+        "lvl": 7,
+        "time": "1 Action",
+        "duration": "Until Dispelled",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Deception",
+        "concentration": "",
+        "classes": "Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Simulacrum": {
+        "lvl": 7,
+        "time": "12 Hours",
+        "duration": "Until Dispelled",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Deception",
+        "concentration": "",
+        "classes": "Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Symbol": {
+        "lvl": 7,
+        "time": "1 Minute",
+        "duration": "Until Dispelled or Triggered",
+        "range": "5 ft (60 ft )",
+        "area": "sphere 60 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Necrotic",
+        "concentration": "",
+        "classes": "Bard, Cleric, Druid, Wizard",
+        "dice": [
+            "10d10"
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Teleport": {
+        "lvl": 7,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "10 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Teleportation",
+        "concentration": "",
+        "classes": "Bard, Sorcerer, Wizard",
+        "dice": [
+            "3d10"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Whirlwind": {
+        "lvl": 7,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "300 ft",
+        "area": "sphere 10 ft",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Bludgeoning",
+        "concentration": "Y",
+        "classes": "Druid, Wizard",
+        "dice": [
+            "3d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Animal Shapes": {
+        "lvl": 8,
+        "time": "1 Action",
+        "duration": "24 Hours",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Shapechanging",
+        "concentration": "Y",
+        "classes": "Druid",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Antimagic Field": {
+        "lvl": 8,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "0",
+        "area": "sphere 10 ft",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "Y",
+        "classes": "Cleric, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Antipathy/Sympathy": {
+        "lvl": 8,
+        "time": "1 Hour",
+        "duration": "10 Days",
+        "range": "60 ft",
+        "area": "square 200 ft",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Frightened",
+        "concentration": "",
+        "classes": "Bard, Druid, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Clone": {
+        "lvl": 8,
+        "time": "1 Hour",
+        "duration": "Instantaneous",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Utility",
+        "concentration": "",
+        "classes": "Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Control Weather": {
+        "lvl": 8,
+        "time": "10 Minutes",
+        "duration": "8 Hours",
+        "range": "0",
+        "area": "sphere 5 miles",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "Y",
+        "classes": "Cleric, Druid, Wizard",
+        "dice": [
+            "1d4"
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Demiplane": {
+        "lvl": 8,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Utility",
+        "concentration": "",
+        "classes": "Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Dominate Monster": {
+        "lvl": 8,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Charmed",
+        "concentration": "Y",
+        "classes": "Bard, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Earthquake": {
+        "lvl": 8,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "500 ft",
+        "area": "",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Bludgeoning",
+        "concentration": "Y",
+        "classes": "Cleric, Druid, Sorcerer",
+        "dice": [
+            "5d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Feeblemind": {
+        "lvl": 8,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "150 ft",
+        "area": "",
+        "attack": "",
+        "save": "Intelligence Save",
+        "effect": "Psychic",
+        "concentration": "",
+        "classes": "Bard, Druid, Warlock, Wizard",
+        "dice": [
+            "4d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Glibness": {
+        "lvl": 8,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Social",
+        "concentration": "",
+        "classes": "Bard, Warlock",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Holy Aura": {
+        "lvl": 8,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "0",
+        "area": "sphere 30 ft",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Blinded",
+        "concentration": "Y",
+        "classes": "Cleric",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Incendiary Cloud": {
+        "lvl": 8,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "150 ft",
+        "area": "sphere 20 ft",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Fire",
+        "concentration": "Y",
+        "classes": "Druid, Sorcerer, Wizard",
+        "dice": [
+            "10d8"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Maze": {
+        "lvl": 8,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Banishment",
+        "concentration": "Y",
+        "classes": "Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Mind Blank": {
+        "lvl": 8,
+        "time": "1 Action",
+        "duration": "24 Hours",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "",
+        "classes": "Bard, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Power Word Stun": {
+        "lvl": 8,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Stunned",
+        "concentration": "",
+        "classes": "",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Sunburst": {
+        "lvl": 8,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "150 ft (60 ft )",
+        "area": "sphere 60 ft",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Radiant",
+        "concentration": "",
+        "classes": "Cleric, Druid, Sorcerer, Wizard",
+        "dice": [
+            "12d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Telepathy": {
+        "lvl": 8,
+        "time": "1 Action",
+        "duration": "24 Hours",
+        "range": "Unlimited",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Communication",
+        "concentration": "",
+        "classes": "Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Foresight": {
+        "lvl": 9,
+        "time": "1 Minute",
+        "duration": "8 Hours",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "",
+        "classes": "Bard, Druid, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Gate": {
+        "lvl": 9,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "Y",
+        "classes": "Cleric, Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Imprisonment": {
+        "lvl": 9,
+        "time": "1 Minute",
+        "duration": "Until Dispelled",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Restrained",
+        "concentration": "",
+        "classes": "Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Invulnerability": {
+        "lvl": 9,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Warding",
+        "concentration": "Y",
+        "classes": "Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Mass Heal": {
+        "lvl": 9,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Blinded",
+        "concentration": "",
+        "classes": "Cleric",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Meteor Swarm": {
+        "lvl": 9,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "5280 ft",
+        "area": "sphere 40 ft",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Fire",
+        "concentration": "",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            "20d6",
+            "20d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Power Word Kill": {
+        "lvl": 9,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Prismatic Wall": {
+        "lvl": 9,
+        "time": "1 Action",
+        "duration": "10 Minutes",
+        "range": "60 ft",
+        "area": "",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Fire",
+        "concentration": "",
+        "classes": "Bard, Wizard",
+        "dice": [
+            "10d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Shapechange": {
+        "lvl": 9,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Shapechanging",
+        "concentration": "Y",
+        "classes": "Druid, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Storm of Vengeance": {
+        "lvl": 9,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "15840 ft",
+        "area": "sphere 360 ft",
+        "attack": "",
+        "save": "Constitution Save",
+        "effect": "Thunder",
+        "concentration": "Y",
+        "classes": "Druid",
+        "dice": [
+            "1d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Time Stop": {
+        "lvl": 9,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Control",
+        "concentration": "",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            "1d4"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "True Polymorph": {
+        "lvl": 9,
+        "time": "1 Action",
+        "duration": "1 Hour",
+        "range": "30 ft",
+        "area": "",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Buff",
+        "concentration": "Y",
+        "classes": "Bard, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "True Resurrection": {
+        "lvl": 9,
+        "time": "1 Hour",
+        "duration": "Instantaneous",
+        "range": "5 ft",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Healing",
+        "concentration": "",
+        "classes": "Cleric, Druid",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    },
+    "Weird": {
+        "lvl": 9,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "120 ft",
+        "area": "sphere 30 ft",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Psychic",
+        "concentration": "Y",
+        "classes": "Warlock, Wizard",
+        "dice": [
+            "4d10"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
+    },
+    "Wish": {
+        "lvl": 9,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "0",
+        "area": "",
+        "attack": "",
+        "save": "",
+        "effect": "Buff",
+        "concentration": "",
+        "classes": "Sorcerer, Wizard",
+        "dice": [
+            "1d10",
+            "2d4"
+        ],
+        "uniqueDice": "n",
+        "combat": "n"
+    }
+}

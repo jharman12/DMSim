@@ -1,0 +1,35 @@
+{
+    "": {
+        "Image": "",
+        "Level": "",
+        "Class": "",
+        "Size": "",
+        "AC": "",
+        "HP": "",
+        "Speed": "",
+        "AbilityModifiers": {
+            "Strength": "",
+            "Dexterity": "",
+            "Constitution": "",
+            "Intelligence": "",
+            "Wisdom": "",
+            "Charisma": ""
+        },
+        "TurnFactors": {
+            "Melee": "",
+            "Ranged": "",
+            "Ranged Spell": "",
+            "Spell CC": ""
+        },
+        "Weapons": [
+            [
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+            ]
+        ]
+    }
+}

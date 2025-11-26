@@ -1,0 +1,7 @@
+ID: "Testing Encounter" {
+    MapImage: "C:\\Users\\jackh\\Code\\Python\\DmSim2\\App\\Maps\\maze Engine.webp"
+    MapHexes: 20
+    Begin Player_List
+        "Arabella"  'C:\\Users\\jackh\\Code\\Python\\DmSim2\\App\\Characters\\Ephraim.jpg'
+    End 
+}

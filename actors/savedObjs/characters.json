@@ -1,0 +1,172 @@
+{
+    "": {
+        "Image": "",
+        "Level": "",
+        "Class": "",
+        "Size": "",
+        "AC": "",
+        "HP": "",
+        "Speed": "",
+        "AbilityModifiers": {
+            "Strength": "",
+            "Dexterity": "",
+            "Constitution": "",
+            "Intelligence": "",
+            "Wisdom": "",
+            "Charisma": ""
+        },
+        "TurnFactors": {
+            "Melee": "",
+            "Ranged": "",
+            "Ranged Spell": "",
+            "Spell CC": ""
+        },
+        "Weapons": [
+            [
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+            ]
+        ]
+    },
+    "Ephraim": {
+        "Image": "C:\\Users\\jackh\\Code\\Python\\DmSim2\\App\\Characters\\Ephraim.jpg",
+        "Level": "15",
+        "Class": "Ranger",
+        "Size": "Medium",
+        "AC": "22",
+        "HP": "218",
+        "Speed": "30",
+        "AbilityModifiers": {
+            "Strength": "8",
+            "Dexterity": "20",
+            "Constitution": "14",
+            "Intelligence": "9",
+            "Wisdom": "16",
+            "Charisma": "12"
+        },
+        "TurnFactors": {
+            "Melee": "0.9",
+            "Ranged": "0.0",
+            "Ranged Spell": "0.0",
+            "Spell CC": "0.1"
+        },
+        "Weapons": [
+            [
+                "Shortsword+2",
+                "Melee",
+                "5",
+                "7",
+                "d6",
+                "1",
+                "7"
+            ]
+        ]
+    },
+    
+    "Arabella": {
+        "Image": "C:\\Users\\jackh\\Code\\Python\\DmSim2\\App\\Characters\\arrabela.jpg",
+        "Level": "15",
+        "Class": "Paladin",
+        "Size": "Medium",
+        "AC": "22",
+        "HP": "233",
+        "Speed": "30",
+        "AbilityModifiers": {
+            "Strength": "19",
+            "Dexterity": "10",
+            "Constitution": "16",
+            "Intelligence": "10",
+            "Wisdom": "10",
+            "Charisma": "16"
+        },
+        "TurnFactors": {
+            "Melee": "1.0",
+            "Ranged": "0.0",
+            "Ranged Spell": "0.0",
+            "Spell CC": "0.0"
+        },
+        "Weapons": [
+            [
+                "Sun Blade",
+                "Melee",
+                "5",
+                "7",
+                "d8",
+                "1",
+                "5"
+            ]
+        ]
+    },
+    "Darian": {
+        "Image": "Darian_image.png",
+        "Level": "15",
+        "Class": "Cleric",
+        "Size": "Medium",
+        "AC": "16",
+        "HP": "203",
+        "Speed": "30",
+        "AbilityModifiers": {
+            "Strength": "12",
+            "Dexterity": "14",
+            "Constitution": "17",
+            "Intelligence": "19",
+            "Wisdom": "20",
+            "Charisma": "10"
+        },
+        "TurnFactors": {
+            "Melee": "0.1",
+            "Ranged": "0.0",
+            "Ranged Spell": "0.7",
+            "Spell CC": "0.2"
+        },
+        "Weapons": [
+            [
+                "Dragon Maul",
+                "Melee",
+                "5",
+                "3",
+                "d6",
+                "1",
+                "1"
+            ]
+        ]
+    },
+    "Root": {
+        "Image": "Root_image.png",
+        "Level": "15",
+        "Class": "Druid",
+        "Size": "Medium",
+        "AC": "19",
+        "HP": "143",
+        "Speed": "30",
+        "AbilityModifiers": {
+            "Strength": "10",
+            "Dexterity": "16",
+            "Constitution": "12",
+            "Intelligence": "10",
+            "Wisdom": "20",
+            "Charisma": "10"
+        },
+        "TurnFactors": {
+            "Melee": "0.0",
+            "Ranged": "0.1",
+            "Ranged Spell": "0.5",
+            "Spell CC": "0.4"
+        },
+        "Weapons": [
+            [
+                "Heartcleaver",
+                "Melee",
+                "20",
+                "8",
+                "d10",
+                "1",
+                "8"
+            ]
+        ]
+    }
+}
