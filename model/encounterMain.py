@@ -13,13 +13,13 @@ from player import createPartyList, Player
 import random as r 
 from map import Map
 sys.path.insert(1, dmSimPath)
-from modelMethods import takeTurn, removeDeadActors
+from modelMethods import takeTurn, removeDeadActors, myAction
 
 
 if __name__ == "__main__":
 
     
-    r.seed(1)
+    #r.seed(1)
     path = dmSimPath + '\\actors\\savedObjs\\'
     party = createPartyList(['Ephraim', 'Darian', 'Root','Arabella'], path = path)
     enemy = createPartyList(['Darian'], path = path)
@@ -29,8 +29,8 @@ if __name__ == "__main__":
     #for spell in party[1].spells:
     #    print(spell)
     #takeTurn(party[0], map, interactive=False)
-    states = Encounter(party, [], enemyList=enemy, n =10)
-
+    states = Encounter(party, [], enemyList=enemy, n =1)
+    takeTurn(party[2], map, True)
     '''enemy = createMonsterList(["Quenth"] + ["Drow" for i in range(10)], path = path)
     enemy = createMonsterList(["Quenth"] , path = path)
     map = Map(15, party, enemy)

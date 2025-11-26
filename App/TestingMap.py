@@ -2,6 +2,13 @@
 Things to work on:
 
     
+    heal selection is definetly broke (chooses heal when party is downed even if that party member is not in range)
+    choosingAction not working well when moving coord and new target
+    reaction seem to be happening when you move into their space as well. not only leaving
+        moveActor called even when its to stand still 
+        you then "move" to nearest node and stay within 5ft
+            (neither should be happening and takereaction should be being called)
+
     create a class for turn choices so that everything has to be uniform
     
     Create encounter play back that goes one turn at a time
@@ -17,6 +24,7 @@ Things to work on:
     
     add right click to see popup of character stats
     
+    create functions similar to bestSphere but with inputted sphere (spells originating from self will be hard)
     create gui for character actions 
         list possible actions
         select target (hex of area or creature if single)

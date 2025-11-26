@@ -87,12 +87,12 @@ def takeTurn(actor, m, interactive = False):
     distanceMatrix = [(map.distanceCalc(myIndex, index), map.distanceCalc(closestIndex, index)) for index in range(len(list(map.arrayCenters))) if map.arrayCenters[list(map.arrayCenters)[index]] == '']
     
     turnChoices = []
-    print(actor.name, " finding my array")
+    #print(actor.name, " finding my array")
     myCoord = list(map.arrayCenters)[myIndex]
     
     
     for weap in actor.weaponList:
-        print("in weaps")
+        #print("in weaps")
         avgDmg = 0
         if int(minDist) > int((int(weap.range) + int(actor.speed))/5): # if you cant get within range, dmg = 0
             
@@ -129,7 +129,7 @@ def takeTurn(actor, m, interactive = False):
                 )
             )
             continue
-        print("Escaped avg Dmg = 0")
+        #print("Escaped avg Dmg = 0")
         # decide what square to move to
         line = drawLine(myCoord, closestCoord, map)
         if weap.range/5 >= actor.optRange: # if i am not in optimal weapon range
@@ -149,17 +149,19 @@ def takeTurn(actor, m, interactive = False):
                 reach = weap.range
                 hexLimit = reach/5
                 dist = map.distanceCalc(list(map.arrayCenters).index(closestCoord), list(map.arrayCenters).index(myCoord))
-                print(dist)
-                if dist <= hexLimit:
-                    newCoord = myCoord
-                
-                ##print(line)
-                hexLimit = reach/5
-                moveTo = [coord for coord in line if map.distanceCalc(list(map.arrayCenters).index(closestCoord), list(map.arrayCenters).index(coord)) <= hexLimit][0] # closest inside reach
-                if map.arrayCenters[moveTo] != '':
-                    newCoord =  map.nearestFreeHex(myIndex, closestIndex)
+                #print(dist)
+                if dist <= hexLimit: # move closer while shoooting please!!! need to add
+                    newCoord = [coord for coord in line if map.distanceCalc(list(map.arrayCenters).index(myCoord), list(map.arrayCenters).index(coord)) <= actor.speed/5][-1]
+                    print('Moving closer', newCoord)
                 else:
-                    newCoord = moveTo
+                    ##print(line)
+                    moveTo = [coord for coord in line if map.distanceCalc(list(map.arrayCenters).index(closestCoord), list(map.arrayCenters).index(coord)) <= hexLimit][0] # closest inside reach
+                    print(moveTo)
+                    if map.arrayCenters[moveTo] != '':
+                        moveToIndex = list(map.arrayCenters).index(moveTo)
+                        newCoord =  map.nearestFreeHex(myIndex, moveToIndex)
+                    else:
+                        newCoord = moveTo
         else:
             reach = weap.range
             hexLimit = reach/5
@@ -179,7 +181,7 @@ def takeTurn(actor, m, interactive = False):
         
         
         if not player: # if monster
-            print("I AM A MONSTER")
+            #print("I AM A MONSTER")
             if weap.name in actor.multiAttack.keys():
                 attackTimes = actor.multiAttack[weap.name]
             else:
@@ -205,7 +207,7 @@ def takeTurn(actor, m, interactive = False):
                 )
             )
         else: # your a player
-            print("I AM A PLAYER")
+            #print("I AM A PLAYER")
             attackTimes = 1 + actor.twoAttacks
             dice = int(re.findall(r'\d+',weap.diceType)[0])
             diceCount = weap.diceCount
@@ -227,7 +229,7 @@ def takeTurn(actor, m, interactive = False):
                 )
         #####
     
-    print("Escaped weapons")
+    #print("Escaped weapons")
     conditionsList = ['Blinded','Charmed','Deafened', 'Frightened','Grappled','Incapacitated','Invisible','Paralyzed','Petrified','Poisoned','Prone','Restrained', 'Stunned','Unconscious','Exhausted']
     dmgTypes = ['Acid', 'Bludgeoning', 'Cold', 'Fire', 'Force', 'Lightning', 'Necrotic', 'Piercing', 'Poison', 'Psychic', 'Radiant', 'Slashing', 'Thunder']
     
@@ -325,6 +327,7 @@ def takeTurn(actor, m, interactive = False):
 
                 case str(x) if 'line' in x:
                     numToHit = bestLine2(actor, map, int(re.findall(r'\d+', myArea)[0]), int(re.findall(r'\d+', myRange)[0]))
+                    print(numToHit)
                 case str(x) if 'square' in x:
                     numToHit = bestSquare(actor, map, int(re.findall(r'\d+', myArea)[0]), int(re.findall(r'\d+', myRange)[0]))
             if myEffect in dmgTypes:
@@ -335,7 +338,7 @@ def takeTurn(actor, m, interactive = False):
                     avgDmg += 0.5 + diceCount * diceDmg / 2
                 #turnChoices.append([spell, 'Sdmg', avgDmg*numToHit[0], numToHit])
                 #print(numToHit)
-                
+                #print(spell, myArea)
                 if len(numToHit) == 2:
                     turnChoices.append(
                         myAction(
@@ -352,11 +355,11 @@ def takeTurn(actor, m, interactive = False):
                     ) 
                 else:
                     #print(spell)
-                    print(spell, actor.spells[spell])
+                    #print(spell, actor.spells[spell])
                     reachLimit = (int(re.findall(r'\d+', myRange)[0])/5) 
                     # move within spell range
                     moveToCoord = coordWithinReach(myCoord, numToHit[2], reachLimit, map)
-                    print(moveToCoord)
+                    #print(moveToCoord)
                     turnChoices.append(
                         myAction(
                             name=spell,
@@ -458,6 +461,8 @@ def takeTurn(actor, m, interactive = False):
                 if reachLimit >= actor.optRange:
                     
                     moveToCoord = coordWithinReach(myCoord, closestCoord, actor.optRange, map)
+                    if map.distanceCalc(list(map.arrayCenters).index(moveToCoord), list(map.arrayCenters).index(myCoord)) > actor.speed/5:
+                        moveToCoord = coordWithinReach(myCoord, closestCoord, reachLimit, map)    
                 else:
                     moveToCoord = coordWithinReach(myCoord, closestCoord, reachLimit, map)
                 turnChoices.append(
@@ -479,6 +484,8 @@ def takeTurn(actor, m, interactive = False):
                 if reachLimit >= actor.optRange:
                     
                     moveToCoord = coordWithinReach(myCoord, closestCoord, actor.optRange, map)
+                    if map.distanceCalc(list(map.arrayCenters).index(moveToCoord), list(map.arrayCenters).index(myCoord)) > actor.speed/5:
+                        moveToCoord = coordWithinReach(myCoord, closestCoord, reachLimit, map)    
                 else:
                     moveToCoord = coordWithinReach(myCoord, closestCoord, reachLimit, map)
                 turnChoices.append(
@@ -497,6 +504,9 @@ def takeTurn(actor, m, interactive = False):
                 #turnChoices.append([spell, 'cc', 1, 
                 #                    (1,list(map.arrayCenters)[myIndex], list(map.arrayCenters)[myIndex], closestCoord)])
     best = 0
+    turnChoices.append(myAction(
+            name='dash', type = 'dash', mod=0, numHit=0, currCoord=myCoord, moveCoord=closestCoord, targets=closestCoord
+        ))
     for choice in turnChoices:
         mod = choice.mod
 
@@ -504,7 +514,10 @@ def takeTurn(actor, m, interactive = False):
             best = mod
             turnChoice = choice
 
-    print(best)
+    if best == 0:
+        turnChoice = myAction(
+            name='dash', type = 'dash', mod=0, numHit=0, currCoord=myCoord, moveCoord=closestCoord, targets=closestCoord
+        )
     if healDownedTeammate: # if ally is down, override turnchoice to pick up
         mostHealing = 0
         for choice in turnChoices:
@@ -513,9 +526,9 @@ def takeTurn(actor, m, interactive = False):
                 turnChoice = choice
     print(turnChoice, "before interactive check")
     if not interactive:
-        doAction(actor, map, turnChoice, closestGuy, best)
+        doAction(actor, map, turnChoice)
     else:
-        chooseAction(actor, map, turnChoices, turnChoice, closestGuy, best)
+        chooseAction(actor, map, turnChoices, turnChoice, closestGuy)
 
 @dataclass
 class myAction:
@@ -528,33 +541,55 @@ class myAction:
     targets: list
     castCoord: Optional[tuple] = None
 
-def chooseAction(actor, map, turnChoices, turnChoice, closestGuy, best):
+def stringToTuple(string):
+    return tuple([int(x) for x in re.split(r'\(|\)|,', string) if x != ''])
+def chooseAction(actor, map, turnChoices, turnChoice, best):
 
 
     for action in turnChoices:
-        print(action[0], "will do", action[2], "hitting", action[3][0], "enemies if you move from", action[3][1], "to", action[3][2])
+        print("\t", action.name, "will do", action.mod, "hitting", action.numHit, "enemies if you move from", action.currCoord, "to", action.moveCoord)
 
-    user_action = input("Choose action")
+    
+    user_action = input("Choose action\n")
+    print(user_action)
     choice = False
-    for action in turnChoice:
-        if action[0].lower() == user_action.lower():
+    for action in turnChoices:
+        if action.name.lower() == user_action.lower():
             choice = action
+            print(choice)
+        
     if not choice: # failed to match
         print("Your choice does not match a possible action. Try again.")
-        chooseAction(actor, map, turnChoices, turnChoice, closestGuy, best)
-    override_Target = input("Would you like to override the target of action? (yes, no). Current Target = ", choice[3][3])
+        chooseAction(actor, map, turnChoices, turnChoice, best)
+        return
+    override_Target = input("Would you like to override the target of action? (yes, no). Current Target = " + str(choice.targets) + '\n')
     if override_Target == "yes":
-        newTarget = input("New coords of target?")
-    override_Move = input("Would you like to override moveCoords")
+        for coord in map.arrayCenters:
+            if map.arrayCenters[coord] != '':
+                print('\t', map.arrayCenters[coord].name, " at ", coord)
+        newTarget = stringToTuple(input("New coords of target?\n"))
+
+        choice.targets = [newTarget]
+    override_Move = input("Would you like to override moveCoords? (yes or no)\n")
+    if override_Move == 'yes':
+        newMove = stringToTuple(input("New coords to move to?"))
+        choice.moveCoord = newMove
+
+    print(choice)
+    doAction(actor, map, choice)
     
-def doAction(actor, map, turnChoice, closestGuy, best):
+    
+    
+
+    
+def doAction(actor, map, turnChoice):
     
     # need closestGuy, closestCoord, minDIst
 
     print('in doAction')
 
-    if best == 0:
-        map.dashActor(actor, closestGuy)
+    if turnChoice.type == 'dash':
+        map.dashActor(actor, turnChoice.moveCoord)
         
         return
     else:
@@ -562,7 +597,8 @@ def doAction(actor, map, turnChoice, closestGuy, best):
     if turnChoice.type == 'Wdmg':
         weaponChoice = [x for x in actor.weaponList if x.name == turnChoice.name][0]
         map.moveActor(actor, turnChoice.moveCoord)
-        weaponAttack(actor, closestGuy, weaponChoice, map)
+        target = map.arrayCenters[turnChoice.targets[0]]
+        weaponAttack(actor, target, weaponChoice, map)
     elif turnChoice.type == 'Sdmg' or turnChoice.type == 'cc':
         castSpellTurn(actor, turnChoice, map)
     elif turnChoice.type == 'heal':
@@ -666,7 +702,7 @@ def castSpellTurn(actor, turnChoice, map):
                 #people.health -= dmg
                 takeDmg(actor, people, dmg, map)
             else:
-                people.health -= col_round(dmg/2)
+                takeDmg(actor, people, round(dmg/2,0), map)
     elif dmg > 0 :
         for people in peopleHit:
             #people.health -= dmg
@@ -728,7 +764,7 @@ def weaponAttack(actor, target, weap, map):
 
 
 def bestSphere(actor, map, radius, reach, targets = 'enemy'):
-    reachLimit = reach/5
+    reachLimit = (reach + actor.speed)/5
     setRatio = 4
     hexLimit = radius/5
     #print(hexLimit)
@@ -747,9 +783,12 @@ def bestSphere(actor, map, radius, reach, targets = 'enemy'):
     desired = len(enemyList)
     goalAchieved = 0
     
+    myIndex = [list(map.arrayCenters).index(i) for i in map.arrayCenters.keys() if map.arrayCenters[i] == actor][0]
     while goalAchieved == 0:
         for i in range(len(distances['Ally'])):
-            
+            testCoordDist = map.distanceCalc(myIndex, i)
+            if testCoordDist > reachLimit:
+                continue
             sumEnemies = sum([1 for dist in distances['Enemy'][i] if dist <= hexLimit])
             if sumEnemies == 0:
                 continue
@@ -868,7 +907,7 @@ def bestLine2(actor, map, length, reach):
         print("in best line returning ", [targetCoord])
         return(1, moveTo, moveTo, [targetCoord])
     
-        
+    print('more than one enemy')
     test = []
     for enemy in enemyList:
         for e2 in enemyList:
@@ -938,7 +977,7 @@ def bestLine2(actor, map, length, reach):
                 print("in best line returning ", badGuys)
                 return finalCoord
             
-        return(0,0)        
+    return(0,0)        
     
 def drawLine( coord1, coord2, map):
 
@@ -1185,10 +1224,10 @@ def bestCone(actor, map, length, reach):
 def coordWithinReach(actorCoord, targetCoord, reach, map):
     hexLimit = reach
     
-    print('in coordwithinreach')
-    print(actorCoord, targetCoord)
+    #print('in coordwithinreach')
+    #print(actorCoord, targetCoord)
     dist = map.distanceCalc(list(map.arrayCenters).index(targetCoord), list(map.arrayCenters).index(actorCoord))
-    print(dist, reach)
+    #print(dist, reach)
     if dist <= hexLimit:
         return actorCoord
     line = drawLine(actorCoord,targetCoord, map)
@@ -1196,19 +1235,20 @@ def coordWithinReach(actorCoord, targetCoord, reach, map):
     
     #for coord in line:
     #    lineDist = map.distanceCalc(list(map.arrayCenters).index(targetCoord), list(map.arrayCenters).index(coord))
-    #    print(coord, targetCoord, lineDist, '<=', hexLimit)
+    #    selfDist = map.distanceCalc(list(map.arrayCenters).index(actorCoord), list(map.arrayCenters).index(coord))
+    #    print(coord, targetCoord, lineDist, '<=', hexLimit, 'ActorDist', selfDist)
                                     
     moveTo = [coord for coord in line if map.distanceCalc(list(map.arrayCenters).index(targetCoord), list(map.arrayCenters).index(coord)) <= hexLimit] # closest inside reach
-    print(moveTo)
+    #print(moveTo)
     moveTo = moveTo[0]
     moverIndex = list(map.arrayCenters).index(moveTo)
     actorIndex = list(map.arrayCenters).index(actorCoord)
 
-    print(moveTo)
+    #print(moveTo)
     if map.arrayCenters[moveTo] != '':
-        print("Actor ",map.arrayCenters[moveTo].name, 'is currently in ', moveTo)
+        #print("Actor ",map.arrayCenters[moveTo].name, 'is currently in ', moveTo)
         newCoord = map.nearestFreeHex(actorIndex, moverIndex)
-        print(newCoord)
+        #print(newCoord)
     else:
         newCoord = moveTo
     return newCoord

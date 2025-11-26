@@ -58,10 +58,10 @@ class Map:
                         print('youre partyList', actor.name,'and you should be able to react')
                         takeReaction(actor, self, mover)
     
-    def dashActor(self, mover, target):
-        print(mover.name, ' is taking the dash action to ', target.name)
+    def dashActor(self, mover, targetCoord):
+        print(mover.name, ' is taking the dash action to ', targetCoord)
         movement = 2*(mover.speed/5)
-        targetCoord = [i for i in self.arrayCenters if self.arrayCenters[i] ==target][0]
+        #targetCoord = [i for i in self.arrayCenters if self.arrayCenters[i] ==target][0]
         moverCoord = [i for i in self.arrayCenters if self.arrayCenters[i] ==mover][0]
 
         line = drawLine(moverCoord, targetCoord, self)
@@ -76,7 +76,7 @@ class Map:
         else:
             #print('going option[-1]', options[-1])
             self.moveActor(mover, options[-1])
-        #sys.exit()
+        
 
     def moveToNearest(self, mover, target):
         #print(mover.name, ' is going to ', target.name)
@@ -229,7 +229,7 @@ class Map:
             minIndex = startIndex
             self.printCurrMap()
             #print(self.arrayCenters[list(self.arrayCenters)[startIndex]], 'going to', self.arrayCenters[list(self.arrayCenters)[endIndex]])
-        print("nearestFreehex", list(self.arrayCenters)[minIndex])
+        #print("nearestFreehex", list(self.arrayCenters)[minIndex])
         return list(self.arrayCenters)[minIndex]
         #return minIndex
     

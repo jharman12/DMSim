@@ -25,7 +25,7 @@ class Encounter:
         sims = n
         
         for i in range(sims):
-            r.seed(i+1000)
+            #r.seed(i+240)
             #try:
             self.preCombat(partyList,npcList,enemyList)
             #except Exception as e:
@@ -62,7 +62,7 @@ class Encounter:
 
     def combat2(self, enemyList, partyList):
         global map
-        map = Map(10, partyList, enemyList)
+        map = Map(20, partyList, enemyList)
         totalList = enemyList + partyList
         initList = {x:(r.randint(1,20) + x.initMod) for x in totalList}
         sortedInitList = dict(sorted(initList.items(), key = lambda x:x[1], reverse=True))
@@ -106,7 +106,7 @@ class Encounter:
                 else: # if not on enemy list your enemy is enemyList
                     if len(map.enemy) == 0: # if enemies already down... skip turn
                         continue
-                    takeTurn(actor, map, interactive=False)
+                    takeTurn(actor, map, interactive=True)
                     removeDeadActors(map, sortedInitList)
 
                     for enemy in map.enemy:

@@ -49,6 +49,7 @@ class Player:
         self.legActions = 0
         self.maxLegActions = 0
         self.legActionWeapon = ''
+        
         # find character proficiency
         if self.lvl >= 1:
             self.proficiency = 2
@@ -81,7 +82,16 @@ class Player:
         for spell in spellList:
             if spellList[spell]['lvl'] <= self.highestSpell and self.DnDclass in spellList[spell]['classes']:
                 self.spells[spell] = spellList[spell]
-
+        self.possibleActions = {}
+        dmgTypes = ['Acid', 'Bludgeoning', 'Cold', 'Fire', 'Force', 'Lightning', 'Necrotic', 'Piercing', 'Poison', 'Psychic', 'Radiant', 'Slashing', 'Thunder']
+        conditionsList = ['Blinded','Charmed','Deafened', 'Frightened','Grappled','Incapacitated','Invisible','Paralyzed','Petrified','Poisoned','Prone','Restrained', 'Stunned','Unconscious','Exhausted']
+        for spell in self.spells:
+            if self.spells[spell]['effect'] in dmgTypes:
+                self.possibleActions[spell] = 'Sdmg'
+            elif self.spells[spell]['effect'] in conditionsList:
+                self.possibleActions[spell] = 'cc'
+        for weap in self.weaponList:
+            self.possibleActions[weap.name] = 'Wdmg'
         self.AvgdmgCalc()
     
     def AvgdmgCalc(self):
