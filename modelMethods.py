@@ -352,6 +352,11 @@ def takeTurn(actor, m, interactive = False):
                     ) 
                 else:
                     #print(spell)
+                    print(spell, actor.spells[spell])
+                    reachLimit = (int(re.findall(r'\d+', myRange)[0])/5) 
+                    # move within spell range
+                    moveToCoord = coordWithinReach(myCoord, numToHit[2], reachLimit, map)
+                    print(moveToCoord)
                     turnChoices.append(
                         myAction(
                             name=spell,
@@ -359,7 +364,7 @@ def takeTurn(actor, m, interactive = False):
                             mod=  numToHit[0]*avgDmg,
                             numHit=numToHit[0],
                             currCoord=list(map.arrayCenters)[myIndex],
-                            moveCoord=list(map.arrayCenters)[myIndex],
+                            moveCoord=moveToCoord,
                             castCoord=numToHit[2], 
                             targets=numToHit[3]
 
@@ -373,7 +378,7 @@ def takeTurn(actor, m, interactive = False):
                     turnChoices.append(
                         myAction(
                             name=spell,
-                            type= 'Sdmg',
+                            type= 'cc',
                             mod= 0,
                             numHit=0,
                             currCoord=list(map.arrayCenters)[myIndex],
@@ -384,15 +389,20 @@ def takeTurn(actor, m, interactive = False):
                         )
                     ) 
                 else:
+                    
+                    reachLimit = (int(re.findall(r'\d+', myRange)[0])/5) 
+                    # move within spell range
+                    moveToCoord = coordWithinReach(myCoord, numToHit[2], reachLimit, map)
                     turnChoices.append(
                         myAction(
                             name=spell,
-                            type= 'Sdmg',
-                            mod=  numToHit[0]*avgDmg,
+                            type= 'cc',
+                            mod=  numToHit[0]*avgDmg*20,
                             numHit=numToHit[0],
                             currCoord=list(map.arrayCenters)[myIndex],
-                            moveCoord=numToHit[2], 
-                            targets=numToHit[2]
+                            moveCoord=moveToCoord, 
+                            castCoord=numToHit[2],
+                            targets=numToHit[3]
 
 
                         )
@@ -444,6 +454,12 @@ def takeTurn(actor, m, interactive = False):
                     diceDmg = int(re.findall(r'\d+', di)[1])
                     avgDmg += 0.5 + diceCount * diceDmg / 2
                 
+                reachLimit = (int(re.findall(r'\d+', myRange)[0])/5) 
+                if reachLimit >= actor.optRange:
+                    
+                    moveToCoord = coordWithinReach(myCoord, closestCoord, actor.optRange, map)
+                else:
+                    moveToCoord = coordWithinReach(myCoord, closestCoord, reachLimit, map)
                 turnChoices.append(
                     myAction(
                         name=spell,
@@ -451,7 +467,7 @@ def takeTurn(actor, m, interactive = False):
                         mod= avgDmg,
                         numHit=1,
                         currCoord=list(map.arrayCenters)[myIndex],
-                        moveCoord=list(map.arrayCenters)[myIndex], # jth is this accurate?
+                        moveCoord=moveToCoord, # jth is this accurate?
                         targets=[closestCoord]
 
 
@@ -459,6 +475,12 @@ def takeTurn(actor, m, interactive = False):
                 )
                 #turnChoices.append([spell, 'Sdmg', avgDmg, (1,list(map.arrayCenters)[myIndex], list(map.arrayCenters)[myIndex], closestCoord)])
             elif myEffect in conditionsList:
+                reachLimit = (int(re.findall(r'\d+', myRange)[0])/5) 
+                if reachLimit >= actor.optRange:
+                    
+                    moveToCoord = coordWithinReach(myCoord, closestCoord, actor.optRange, map)
+                else:
+                    moveToCoord = coordWithinReach(myCoord, closestCoord, reachLimit, map)
                 turnChoices.append(
                     myAction(
                         name=spell,
@@ -466,7 +488,7 @@ def takeTurn(actor, m, interactive = False):
                         mod= 1,
                         numHit=1,
                         currCoord=list(map.arrayCenters)[myIndex],
-                        moveCoord=list(map.arrayCenters)[myIndex], # jth is this accurate?
+                        moveCoord=moveToCoord,
                         targets=[closestCoord]
 
 
@@ -602,6 +624,7 @@ def castSpellTurn(actor, turnChoice, map):
         player = 0
     
     moveCoord = turnChoice.moveCoord
+    print(moveCoord)
     if map.arrayCenters[moveCoord] != '' and map.arrayCenters[moveCoord] != actor:
         
         newCoord = map.moveToNearest(actor, moveCoord)
@@ -624,11 +647,7 @@ def castSpellTurn(actor, turnChoice, map):
     if spell['attack'] == '' and save != []: # youre a save effect
         peopleHit = [x for x in peopleTargeted if rollSave(x, save[0], actor.spellDC)]
     else: # spell attack
-        reachLimit = (int(re.findall(r'\d+', spell['range'])[0])) 
-        if reachLimit >= actor.optRange:
-            moveWithingReach(actor, peopleTargeted[0], actor.optRange, map)
-        else:
-            moveWithingReach(actor, peopleTargeted[0], reachLimit, map)
+        
         hitRoll = rollDice(1,20)[0] + int(actor.spellAttackMod)
         peopleHit = [x for x in peopleTargeted if hitRoll >= x.ac]
     
@@ -705,6 +724,8 @@ def weaponAttack(actor, target, weap, map):
             dmg += actor.classMeleeDmg(hits, dmg)
         #target.health -= dmg
         takeDmg(actor, target, dmg, map)
+
+
 
 def bestSphere(actor, map, radius, reach, targets = 'enemy'):
     reachLimit = reach/5
@@ -840,7 +861,10 @@ def bestLine2(actor, map, length, reach):
             return(0,0)
         targetCoord = list(map.arrayCenters)[enemyList[0]]
         line = drawLine(actorCoord,targetCoord, map)
-        moveTo = [coord for coord in line if map.distanceCalc(list(map.arrayCenters).index(targetCoord), list(map.arrayCenters).index(coord)) <= hexLimit and map.arrayCenters[coord] == ''][0] # closest inside reach
+        for coord in line:
+            lineDist =  map.distanceCalc(list(map.arrayCenters).index(targetCoord), list(map.arrayCenters).index(coord))
+            print(coord, targetCoord, lineDist, '<=', moveLimit + hexLimit)
+        moveTo = [coord for coord in line if map.distanceCalc(list(map.arrayCenters).index(targetCoord), list(map.arrayCenters).index(coord)) <= moveLimit + hexLimit and (map.arrayCenters[coord] == '' or map.arrayCenters[coord] == actor)][0] # closest inside reach
         print("in best line returning ", [targetCoord])
         return(1, moveTo, moveTo, [targetCoord])
     
@@ -1158,15 +1182,46 @@ def bestCone(actor, map, length, reach):
         if desired == 0:
             return (0,0)
 
+def coordWithinReach(actorCoord, targetCoord, reach, map):
+    hexLimit = reach
+    
+    print('in coordwithinreach')
+    print(actorCoord, targetCoord)
+    dist = map.distanceCalc(list(map.arrayCenters).index(targetCoord), list(map.arrayCenters).index(actorCoord))
+    print(dist, reach)
+    if dist <= hexLimit:
+        return actorCoord
+    line = drawLine(actorCoord,targetCoord, map)
+    #print(line)
+    
+    #for coord in line:
+    #    lineDist = map.distanceCalc(list(map.arrayCenters).index(targetCoord), list(map.arrayCenters).index(coord))
+    #    print(coord, targetCoord, lineDist, '<=', hexLimit)
+                                    
+    moveTo = [coord for coord in line if map.distanceCalc(list(map.arrayCenters).index(targetCoord), list(map.arrayCenters).index(coord)) <= hexLimit] # closest inside reach
+    print(moveTo)
+    moveTo = moveTo[0]
+    moverIndex = list(map.arrayCenters).index(moveTo)
+    actorIndex = list(map.arrayCenters).index(actorCoord)
+
+    print(moveTo)
+    if map.arrayCenters[moveTo] != '':
+        print("Actor ",map.arrayCenters[moveTo].name, 'is currently in ', moveTo)
+        newCoord = map.nearestFreeHex(actorIndex, moverIndex)
+        print(newCoord)
+    else:
+        newCoord = moveTo
+    return newCoord
 
 def moveWithingReach(actor, target, reach, map):
     actorCoord = [x for x in map.arrayCenters.keys() if map.arrayCenters[x] == actor][0]
     targetCoord = [x for x in map.arrayCenters.keys() if map.arrayCenters[x] == target][0]
-    ##print(actorCoord, targetCoord)
-    ##print('player moveWithinReach')
+    print('player moveWithinReach')
+    print(actorCoord, targetCoord)
+    
     hexLimit = reach/5
     dist = map.distanceCalc(list(map.arrayCenters).index(targetCoord), list(map.arrayCenters).index(actorCoord))
-    ##print(dist)
+    print(dist)
     if dist <= hexLimit:
         return
     line = drawLine(actorCoord,targetCoord, map)
