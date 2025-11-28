@@ -27,6 +27,8 @@ class Map:
  
     def moveActor(self, mover, coord):
         moverCoord = [x for x in list(self.arrayCenters) if self.arrayCenters[x] == mover][0]
+        moverIndex = list(self.arrayCenters).index(moverCoord)
+        coordIndex = list(self.arrayCenters).index(coord)
         neighbors = self.neighbors(moverCoord)
         print(neighbors)
         
@@ -46,15 +48,17 @@ class Map:
             if mover in self.party:
                 for neig in neighbors:
                     actor = self.arrayCenters[list(self.arrayCenters)[neig]]
+                    reactDis = self.distanceCalc(neig, coordIndex)
                     #print(actor)
-                    if actor in self.enemy and actor.reaction:
+                    if actor in self.enemy and actor.reaction and reactDis >= 2: 
                         print('youre enemyList', actor.name,'and you should be able to react')
                         takeReaction(actor, self, mover)
             if mover in self.enemy:
                 for neig in neighbors:
                     actor = self.arrayCenters[list(self.arrayCenters)[neig]]
+                    reactDis = self.distanceCalc(neig, coordIndex)
                     #print(actor)
-                    if actor in self.party and actor.reaction:
+                    if actor in self.party and actor.reaction and reactDis >= 2:
                         print('youre partyList', actor.name,'and you should be able to react')
                         takeReaction(actor, self, mover)
     

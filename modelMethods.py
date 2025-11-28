@@ -35,7 +35,7 @@ def takeTurn(actor, m, interactive = False):
     global map
     map = m
     player = 1
-    healDownedTeammate = 0
+    healDownedTeammate = []
     print(actor.name, "called taketurns")
     if str(type(actor)) == "<class 'monster.Monster'>":
         player = 0
@@ -53,7 +53,8 @@ def takeTurn(actor, m, interactive = False):
         if actor in map.party:
             for mate in map.party:
                 if mate.alive and 'deathSaves' in mate.status:
-                    healDownedTeammate = 1
+                    print('Teammate', mate.name, 'is down at',[x for x in list(map.arrayCenters) if map.arrayCenters[x] == mate][0])
+                    healDownedTeammate.append([x for x in list(map.arrayCenters) if map.arrayCenters[x] == mate][0])
         
         
     
@@ -280,6 +281,7 @@ def takeTurn(actor, m, interactive = False):
 
                         )
                     )
+                    continue
                 dice = myDice
                 #print(dice)
                 if dice == [""]:
@@ -293,7 +295,7 @@ def takeTurn(actor, m, interactive = False):
                     diceCount = int(re.findall(r'\d+', di)[0])
                     diceDmg = int(re.findall(r'\d+', di)[1])
                     avgDmg += 0.5 + diceCount * diceDmg / 2
-                lowestMissingHealth = [0, 0]
+                lowestMissingHealth = [0, [myCoord]]
                 for index in partyList:
                     if map.distanceCalc(myIndex, index) <= hexLimit:
                         person = map.arrayCenters[list(map.arrayCenters)[index]]
@@ -303,6 +305,12 @@ def takeTurn(actor, m, interactive = False):
                             lowestMissingHealth= [mostHeal, [i for i in map.arrayCenters if map.arrayCenters[i] == person]]
                 
                 #turnChoices.append([spell, 'heal', lowestMissingHealth[0], (1,list(map.arrayCenters)[myIndex], list(map.arrayCenters)[myIndex], lowestMissingHealth[1])])
+                reachLimit = (int(re.findall(r'\d+', myRange)[0])/5)
+                if lowestMissingHealth[1][0] != myCoord:
+                    moveToCoord = coordWithinReach(myCoord, lowestMissingHealth[1][0], reachLimit, map)
+                else:
+                    moveToCoord = myCoord
+                
                 turnChoices.append(
                     myAction(
                         name=spell,
@@ -310,7 +318,7 @@ def takeTurn(actor, m, interactive = False):
                         mod=   lowestMissingHealth[0],
                         numHit=  1,
                         currCoord=list(map.arrayCenters)[myIndex],
-                        moveCoord=list(map.arrayCenters)[myIndex], 
+                        moveCoord=moveToCoord, 
                         targets= lowestMissingHealth[1]
 
 
@@ -518,10 +526,13 @@ def takeTurn(actor, m, interactive = False):
         turnChoice = myAction(
             name='dash', type = 'dash', mod=0, numHit=0, currCoord=myCoord, moveCoord=closestCoord, targets=closestCoord
         )
-    if healDownedTeammate: # if ally is down, override turnchoice to pick up
+    if len(healDownedTeammate) != 0: # if ally is down, override turnchoice to pick up
         mostHealing = 0
+
         for choice in turnChoices:
-            if choice.type =='heal' and float(choice.mod) >= float(mostHealing) and float(choice.mod) != 0:
+            
+            if choice.type =='heal' and float(choice.mod) >= float(mostHealing) and float(choice.mod) != 0 and any(x in healDownedTeammate for x in choice.targets):
+                print('Prioritizing healing downed teammate!')
                 mostHealing = choice.mod
                 turnChoice = choice
     print(turnChoice, "before interactive check")
@@ -547,7 +558,7 @@ def chooseAction(actor, map, turnChoices, turnChoice, best):
 
 
     for action in turnChoices:
-        print("\t", action.name, "will do", action.mod, "hitting", action.numHit, "enemies if you move from", action.currCoord, "to", action.moveCoord)
+        print("\t", action.mod, ":", action.name, "will do", "hitting", action.numHit, "enemies if you move from", action.currCoord, "to", action.moveCoord)
 
     
     user_action = input("Choose action\n")
@@ -596,7 +607,14 @@ def doAction(actor, map, turnChoice):
         print(actor.name, 'is taking action', turnChoice.type, 'with', turnChoice.name)
     if turnChoice.type == 'Wdmg':
         weaponChoice = [x for x in actor.weaponList if x.name == turnChoice.name][0]
-        map.moveActor(actor, turnChoice.moveCoord)
+        if map.arrayCenters[ turnChoice.moveCoord] != '' and map.arrayCenters[ turnChoice.moveCoord] != actor:
+        
+            newCoord = map.moveToNearest(actor,  turnChoice.moveCoord)
+            #map.moveActor(actor, newCoord)
+        elif map.arrayCenters[ turnChoice.moveCoord] != actor:
+            
+            map.moveActor(actor,  turnChoice.moveCoord)
+        
         target = map.arrayCenters[turnChoice.targets[0]]
         weaponAttack(actor, target, weaponChoice, map)
     elif turnChoice.type == 'Sdmg' or turnChoice.type == 'cc':
@@ -610,10 +628,11 @@ def healSpellTurn(actor, turnChoice, map):
     if str(type(actor)) == "<class 'monster.Monster'>":
         player = 0
     moveCoord = turnChoice.moveCoord
+    print(moveCoord)
     if map.arrayCenters[moveCoord] != '' and map.arrayCenters[moveCoord] != actor:
         
-        newCoord = map.moveToNearest(actor, moveCoord)
-        map.moveActor(actor, newCoord)
+        map.moveToNearest(actor, moveCoord)
+        
     elif map.arrayCenters[moveCoord] != actor:
         
         map.moveActor(actor, moveCoord)
@@ -660,15 +679,15 @@ def castSpellTurn(actor, turnChoice, map):
         player = 0
     
     moveCoord = turnChoice.moveCoord
-    print(moveCoord)
+    
     if map.arrayCenters[moveCoord] != '' and map.arrayCenters[moveCoord] != actor:
         
         newCoord = map.moveToNearest(actor, moveCoord)
-        map.moveActor(actor, newCoord)
+        #map.moveActor(actor, newCoord)
     elif map.arrayCenters[moveCoord] != actor:
         
         map.moveActor(actor, moveCoord)
-        print()
+        
     peopleTargeted = [map.arrayCenters[x] for x in turnChoice.targets if map.arrayCenters[x] != '']
     spell = actor.spells[turnChoice.name]
     if not player:
