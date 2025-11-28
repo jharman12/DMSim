@@ -60,8 +60,9 @@ from scipy import spatial
 import numpy as np
 import sys
 import pathlib
-
-sys.path.insert(1, 'DmSim2\\model')
+dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-4]
+print(dmSimPath)
+sys.path.insert(1, dmSimPath + '\\model')
 from interactiveMap import interactiveMap
 from player import createPartyList, Player
 
@@ -157,13 +158,23 @@ class CustomGraphicsView(QGraphicsView):
                     character_size = self.selected_item.boundingRect().size()
                     snap_x = snap_coord[0] - character_size.width() / 2
                     snap_y = snap_coord[1] - character_size.height() / 2
-                    #testMap.grabMapLoc(currentArrayIndex)
+                    #testMap.convertToMyCoords(currentArrayIndex)
                     self.selected_item.setPos(snap_x, snap_y)  # snap to this coord
                 else:
                     self.selected_item.setPos(self.selected_item.pos() + delta)
                
             self.last_mouse_pos = event.pos()
 
+    def moveActor(self, startingIndex, newIndex):
+        print(startingIndex, newIndex)
+        # this might be kinda hard... 
+        # i think I'll have to find delta_x, delta_y
+        # find hex polygon from self.arrayCenters
+        # find hexes current coords using delta
+        # find character based on its current position vs closest hex from starting index
+        # snap character to newIndexes current position
+
+        
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.selected_item = None
@@ -308,8 +319,12 @@ class MapWidget(QWidget):
         num_vertical_grids = int(map.hexes)
         map_rect = self.graphics_view.map_item.boundingRect()
         self.graphics_view.drawHexGrid(num_vertical_grids, map_rect)
-        testMap = interactiveMap(num_vertical_grids, [], [])
-        testMap.defineArrayGrid(num_vertical_grids, self.graphics_view)
+        # below will be an encounter object that is passed into this widget later 
+        # for now lets just do it here for testings purposes
+
+        # create new encounter class and define it here 
+        testMap = interactiveMap(num_vertical_grids, [], [], self.graphics_view)
+        testMap.defineArrayGrid(num_vertical_grids)
         testMap.printCurrMap()
         #testMap.convertToGCoord(self.graphics_view, [0,1])
         
