@@ -7,6 +7,8 @@ Things to work on:
     
     need to find optimal movement for heal and some spells as well
 
+    add blank image if nothing image = none or cant find path
+
     create a class for turn choices so that everything has to be uniform
     
     Create encounter play back that goes one turn at a time
@@ -62,6 +64,7 @@ dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-4]
 print(dmSimPath)
 sys.path.insert(1, dmSimPath + '\\model')
 from interactiveMap import interactiveMap
+from interactiveEncounter import interactiveEncounter
 from player import createPartyList, Player
 
 
@@ -91,6 +94,7 @@ class CustomGraphicsView(QGraphicsView):
 
         self.map_item = None
         self.character_items = []
+        self.character_objs = []
         self.hex_items = []  # Added hex_items attribute
         self.selected_item = None
         self.last_mouse_pos = QPointF()
@@ -105,8 +109,10 @@ class CustomGraphicsView(QGraphicsView):
         self.map_item = self.scene.addPixmap(pixmap)
         self.map_item.setZValue(0)
 
-    def addCharacterPixmap(self, pixmap):
+    def addCharacterPixmap(self, pixmap, character):
+        # add player object to character items to more easily move characters and retrieve character info
         character_item = self.scene.addPixmap(pixmap)
+        self.character_objs.append(character)
         self.character_items.append(character_item)
         character_item.setZValue(2)
         if len(self.hex_items) > 0:
@@ -163,8 +169,25 @@ class CustomGraphicsView(QGraphicsView):
                
             self.last_mouse_pos = event.pos()
 
-    def moveActor(self, startingIndex, newIndex):
-        print(startingIndex, newIndex)
+    def moveActor(self, actor, newIndex):
+        print(actor.name, newIndex)
+        index = self.character_objs.index(actor)
+        pixmap = self.character_items[index]
+
+        item = self.map_item
+        delta_x, delta_y = item.pos().x(), item.pos().y()
+
+        hexCenters = [[x.x(), x.y()] for x in self.arrayCenters] # grab initial hex x,y
+
+        hexArrays = np.array(hexCenters) + np.array([delta_x, delta_y]) # self.arrayCenters is original coord. add delta
+        snap_coord = hexArrays[newIndex] # find that coord
+
+        character_size = pixmap.boundingRect().size()
+        snap_x = snap_coord[0] - character_size.width() / 2
+        snap_y = snap_coord[1] - character_size.height() / 2
+        print(snap_x, snap_y)
+        pixmap.setPos(snap_x, snap_y)  # snap to this coord
+
         # this might be kinda hard... 
         # i think I'll have to find delta_x, delta_y
         # find hex polygon from self.arrayCenters
@@ -295,7 +318,7 @@ class CustomGraphicsView(QGraphicsView):
                 self.scene.removeItem(item)
 
 class MapWidget(QWidget):
-    def __init__(self, map):
+    def __init__(self, myEncounter):
         super().__init__()
         global testMap
         layout = QVBoxLayout()
@@ -304,31 +327,55 @@ class MapWidget(QWidget):
         layout.addWidget(self.graphics_view)
 
         # set map max background
-        pixmap = QPixmap(map.image)
+        pixmap = QPixmap(myEncounter.mapImage)
         self.graphics_view.setMapPixmap(pixmap)
 
         # Add every player to the map
-        for player in map.myPlayers:
+        for player in myEncounter.totalList:
             print(player.Image, 'Trying to create character pixmap')
-            pixmap = QPixmap(player.Image)
-            self.graphics_view.addCharacterPixmap(pixmap)
+            pixmap = QPixmap(dmSimPath + player.Image)
+            self.graphics_view.addCharacterPixmap(pixmap, player)
 
         # Add hexes
-        num_vertical_grids = int(map.hexes)
+        num_vertical_grids = int(myEncounter.numHexes)
         map_rect = self.graphics_view.map_item.boundingRect()
         self.graphics_view.drawHexGrid(num_vertical_grids, map_rect)
+
+        self.myEncounter = myEncounter
+
+        self.run_button = QPushButton("start encounters")
+        self.run_button.clicked.connect(self.run_command)
+        layout.addWidget(self.run_button)
+        
         # below will be an encounter object that is passed into this widget later 
         # for now lets just do it here for testings purposes
 
         # create new encounter class and define it here 
-        testMap = interactiveMap(num_vertical_grids, [], [], self.graphics_view)
-        testMap.defineArrayGrid(num_vertical_grids)
-        testMap.printCurrMap()
+        #testMap = interactiveMap(num_vertical_grids, [], [], self.graphics_view)
+        #testMap.defineArrayGrid(num_vertical_grids)
+        #testMap.printCurrMap()
         #testMap.convertToGCoord(self.graphics_view, [0,1])
         
         
         
         self.setLayout(layout)
+        # might have to split up encounter into functions
+        self.testingTheory()
+    
+    def run_command(self):
+        # this crashes with input... in order to get this working, will need to create atleast a dialog box
+        # for the inputs... everything else can still print out...
+        # this means that I am going to have to change the interactive encounter and taketurn func
+        #   probably not to hard... most of it at least
+        #       remove chooseAction function entirely and create dialog box for each of those questions
+        #       split combat out of while loop with a "next" type function
+        #           This will go next when doAction called 
+        #   
+        self.myEncounter.combat()
+
+    def testingTheory(self):
+        
+        self.myEncounter.preCombat(self.graphics_view)
             
 
     
@@ -338,13 +385,15 @@ print(dmSimPath)
 
 path = dmSimPath + '\\actors\\savedObjs\\'
 myPlayers = createPartyList(['Ephraim', 'Arabella'], path = path)
-print("In player creation", myPlayers[0].Image, myPlayers[0].name)
-myMap = Map('mazeEngine',"C:\\Users\\jackh\\Code\\Python\\DmSim2\\App\\Maps\\maze Engine.webp", 10, myPlayers)
+badGuys = createPartyList(['Root', 'Darian'], path = path)
+myEncounter = interactiveEncounter(myPlayers, [], badGuys, 20, dmSimPath + "\\App\\Maps\\maze Engine.webp")
+#myMap = Map('mazeEngine',dmSimPath + "\\App\\Maps\\maze Engine.webp", 10, myPlayers)
 
 app = QApplication([])
 
-window = MapWidget(myMap)
+window = MapWidget(myEncounter)
 window.show()
 
 app.exec()
+
 

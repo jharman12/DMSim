@@ -33,7 +33,7 @@
         ]
     },
     "Ephraim": {
-        "Image": "C:\\Users\\jackh\\Code\\Python\\DmSim2\\App\\Characters\\Ephraim.jpg",
+        "Image": "\\App\\Characters\\Ephraim.jpg",
         "Level": "15",
         "Class": "Ranger",
         "Size": "Medium",
@@ -68,7 +68,7 @@
     },
     
     "Arabella": {
-        "Image": "C:\\Users\\jackh\\Code\\Python\\DmSim2\\App\\Characters\\arrabela.jpg",
+        "Image": "\\App\\Characters\\arrabela.jpg",
         "Level": "15",
         "Class": "Paladin",
         "Size": "Medium",
@@ -102,7 +102,7 @@
         ]
     },
     "Darian": {
-        "Image": "Darian_image.png",
+        "Image":  "\\App\\Characters\\Darian2.jpg",
         "Level": "15",
         "Class": "Cleric",
         "Size": "Medium",
@@ -136,7 +136,7 @@
         ]
     },
     "Root": {
-        "Image": "Root_image.png",
+        "Image": "\\App\\Characters\\Root.jpg",
         "Level": "15",
         "Class": "Druid",
         "Size": "Medium",

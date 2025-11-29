@@ -26,8 +26,65 @@ class interactiveMap:
         if frac <= 0.5: return math.floor(x)
         return math.ceil(x)
     
+    def neighbors(self, testCoord):
+
+        coordList = list(self.arrayCenters)
+        testIndex = coordList.index(testCoord)
+        distanceList =[self.distanceCalc(testIndex, coordList.index(i)) for i in coordList]
+        ##print(len(distanceList))
+        yourNeighbors = [i for i, x in enumerate(distanceList) if x == 1 ]
+        ##print('Your neighors Cood', [list(self.arrayCenters)[x] for x in yourNeighbors])
+        return(yourNeighbors)
+    
+    def populateMap(self, party, enemy):
+        # should i add move graphicsViewer.moveActor here too? yes
+        totalArea = len(list(self.arrayCenters)) * 25
+        totalParty = sum([x.size for x in party])
+        totalEnemy = sum([x.size for x in enemy])
+        partyEnemyRatio = totalParty/totalEnemy
+        maxX = max([x[0] for x in list(self.arrayCenters)])
+        maxY = max([x[1] for x in list(self.arrayCenters)])
+        ##print(maxY)
+        partyX = self.col_round(partyEnemyRatio*maxX/2)
+        if partyEnemyRatio > 1:
+            newX = 1 - 1/partyEnemyRatio
+            partyX = self.col_round(newX*maxX)
+
+
+        ##print(partyX)
+        partySide = []
+        enemySide = []
+        for key in self.arrayCenters.keys():
+            if key[0] <= partyX:
+                partySide.append(key)
+            else:
+                enemySide.append(key)
+        ##print(enemySide)
+        totalList = [party, enemy]
+        for side in totalList:
+            for member in side:
+                saved = 0
+                while saved == 0:
+                    if member in party:
+                        coord = r.sample(partySide, 1)[0]
+                        #print(member.name, coord)
+                    else:
+                        coord = r.sample(enemySide, 1)[0]
+                        #print(member.name, coord)
+                    if self.arrayCenters[coord] == '':
+                        self.arrayCenters[coord] = member
+                        gViewerCoord = self.convertToViewerCoords(coord)
+                        self.graphicsViewer.moveActor(member, gViewerCoord) # move on display as well
+                        saved = 1
+                    else:
+                        continue
+        ##print(self.arrayCenters)
+        self.printCurrMap()
+    
     def moveActor(self, mover, coord):
         moverCoord = [x for x in list(self.arrayCenters) if self.arrayCenters[x] == mover][0]
+        moverIndex = list(self.arrayCenters).index(moverCoord)
+        coordIndex = list(self.arrayCenters).index(coord)
         neighbors = self.neighbors(moverCoord)
         print(neighbors)
         
@@ -43,29 +100,29 @@ class interactiveMap:
         self.arrayCenters[moverCoord] = ''
         self.arrayCenters[coord] = mover
         self.printCurrMap()
-        # now should I take a reaction and actually move in graphics Viewer
         if moverCoord != coord:
             if mover in self.party:
                 for neig in neighbors:
                     actor = self.arrayCenters[list(self.arrayCenters)[neig]]
+                    reactDis = self.distanceCalc(neig, coordIndex)
                     #print(actor)
-                    if actor in self.enemy and actor.reaction:
+                    if actor in self.enemy and actor.reaction and reactDis >= 2: 
                         print('youre enemyList', actor.name,'and you should be able to react')
                         takeReaction(actor, self, mover)
             if mover in self.enemy:
                 for neig in neighbors:
                     actor = self.arrayCenters[list(self.arrayCenters)[neig]]
+                    reactDis = self.distanceCalc(neig, coordIndex)
                     #print(actor)
-                    if actor in self.party and actor.reaction:
+                    if actor in self.party and actor.reaction and reactDis >= 2:
                         print('youre partyList', actor.name,'and you should be able to react')
                         takeReaction(actor, self, mover)
-            # now move in graphics veiwer is map moves
             if self.graphicsViewer != None: # i might want to use a self.graphicsViewer here instead as to not change medol methods
                 
                 # find starting index and ending index
-                oldIndex = self.convertToViewerCoords(moverCoord)
+                
                 newIndex = self.convertToViewerCoords(coord)
-                self.graphicsViewer.moveActor(newIndex)
+                self.graphicsViewer.moveActor(newIndex, mover)
                 
     def dashActor(self, mover, targetCoord):
         print(mover.name, ' is taking the dash action to ', targetCoord)
