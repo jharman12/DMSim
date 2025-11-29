@@ -3,6 +3,12 @@ Things to work on:
 
     
     
+    removeDeadActor also needs to remove from GUI
+        move method to do action
+    
+    move leg actions to doAction?
+        it does not belong in calcTurn as thats just returning best action
+
     heal is not moving anyone
     
     need to find optimal movement for heal and some spells as well
@@ -12,12 +18,9 @@ Things to work on:
     create a class for turn choices so that everything has to be uniform
     
     Create encounter play back that goes one turn at a time
-        link encounter to map so that everything is calling the same map 
-        populate the map in the encounter and place those icons in those hexes
+        
         create method for choosing a possible action during your turn
-            optional move to hex (1,2)
-            input action some way take turn does
-                break actual turn actions 
+            need to create GUI inputs for this as command line input() breaks
 
     
     create display character move range function
@@ -48,6 +51,13 @@ Things to work on:
     
 '''
 
+import sys
+from PyQt5.QtWidgets import (
+    QApplication, QWidget, QVBoxLayout, QHBoxLayout,
+    QLabel, QPushButton, QLineEdit, QScrollArea, QFrame, QProgressBar, QComboBox
+)
+from PyQt5.QtGui import QPixmap, QIcon
+from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtWidgets import QApplication, QPushButton, QMainWindow, QWidget, QVBoxLayout
 from PyQt5.QtCore import QSize, Qt
 #from custom_graphics_view import CustomGraphicsView
@@ -63,9 +73,9 @@ import pathlib
 dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-4]
 print(dmSimPath)
 sys.path.insert(1, dmSimPath + '\\model')
-from interactiveMap import interactiveMap
+#from interactiveMap import interactiveMap
 from interactiveEncounter import interactiveEncounter
-from player import createPartyList, Player
+from player import createPartyList
 
 
 
@@ -84,6 +94,17 @@ class Map:
         self.image = image
         self.hexes = hexes
         self.myPlayers = myPlayers
+
+        self.hex_centers_base = []
+        self.hex_tree = None
+
+        self.setRenderHints(
+            QPainter.Antialiasing
+            | QPainter.SmoothPixmapTransform
+        )
+        self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+        self.setResizeAnchor(QGraphicsView.AnchorViewCenter)
+
 
 class CustomGraphicsView(QGraphicsView):
     def __init__(self):
@@ -119,19 +140,35 @@ class CustomGraphicsView(QGraphicsView):
             for hex in self.hex_items:
                 hex.setZValue(1)
         
-
     def wheelEvent(self, event):
-        if event.modifiers() == Qt.ControlModifier:
-            zoom_factor = 1.2 if event.angleDelta().y() > 0 else 1 / 1.2
-            self.scale(zoom_factor, zoom_factor)
-            event.accept() # consume event
+        # Zoom factor
+        zoom_in_factor = 1.15
+        zoom_out_factor = 1 / zoom_in_factor
+
+        # Determine zoom direction
+        if event.angleDelta().y() > 0:
+            zoom_factor = zoom_in_factor
         else:
-            super().wheelEvent(event)
+            zoom_factor = zoom_out_factor
+
+        # Apply zoom to the view (not individual items!)
+        self.scale(zoom_factor, zoom_factor)
+        event.accept()
+
+    #def wheelEvent(self, event):
+    #    if event.modifiers() == Qt.ControlModifier:
+    #        zoom_factor = 1.2 if event.angleDelta().y() > 0 else 1 / 1.2
+    #        self.scale(zoom_factor, zoom_factor)
+    #        event.accept() # consume event
+    #    else:
+    #        super().wheelEvent(event)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.last_mouse_pos = event.pos()
             item = self.itemAt(event.pos())
+            self.selected_item = None # gpt added
+
             if item == self.map_item:
                 self.selected_item = item
             elif item in self.character_items:
@@ -139,36 +176,94 @@ class CustomGraphicsView(QGraphicsView):
             elif item in self.hex_items:  # Check if clicked item is a hexagon
                 self.selected_item = item
 
+        super().mousePressEvent(event)
+
+    #def mouseMoveEvent(self, event):
+    #    if event.buttons() == Qt.LeftButton and self.selected_item:
+    #        delta = event.pos() - self.last_mouse_pos
+    #        if self.selected_item == self.map_item or self.selected_item in self.hex_items:
+    #            self.map_item.setPos(self.map_item.pos() + delta)
+    #            for item in self.character_items:
+    #                item.setPos(item.pos() + delta)
+    #            for hex_item in self.hex_items:
+    #                hex_item.setPos(hex_item.pos() + delta)
+    #        elif self.selected_item in self.character_items :
+    #            if len(self.hex_items) >0: # grids exist... snap else dont
+    #                item = self.map_item
+    #                delta_x, delta_y = item.pos().x(), item.pos().y() # this was originally 0,0 so any off is delta
+    #                sceneThing = self.mapToScene(event.pos())
+    #                hexCenters = [[x.x(), x.y()] for x in self.arrayCenters] # grab initial hex x,y
+    #
+    #                hexArrays = np.array(hexCenters) + np.array([delta_x, delta_y]) # self.arrayCenters is original coord. add delta
+    #                currentArrayIndex = spatial.KDTree(hexArrays).query((sceneThing.x(), sceneThing.y()))[1] # find index of closest hex
+    #                snap_coord = hexArrays[currentArrayIndex] # find that coord
+    #
+    #                character_size = self.selected_item.boundingRect().size()
+    #                snap_x = snap_coord[0] - character_size.width() / 2
+    #                snap_y = snap_coord[1] - character_size.height() / 2
+    #                #testMap.convertToMyCoords(currentArrayIndex)
+    #                self.selected_item.setPos(snap_x, snap_y)  # snap to this coord
+    #            else:
+    #                self.selected_item.setPos(self.selected_item.pos() + delta)
+    #           
+    #        self.last_mouse_pos = event.pos()
+        
+
     def mouseMoveEvent(self, event):
+        
         if event.buttons() == Qt.LeftButton and self.selected_item:
-            delta = event.pos() - self.last_mouse_pos
+            # Convert view-space delta into scene-space delta
+            old_pos_scene = self.mapToScene(self.last_mouse_pos)
+            new_pos_scene = self.mapToScene(event.pos())
+            delta_scene = new_pos_scene - old_pos_scene
+
             if self.selected_item == self.map_item or self.selected_item in self.hex_items:
-                self.map_item.setPos(self.map_item.pos() + delta)
+                self.map_item.setPos(self.map_item.pos() + delta_scene)
                 for item in self.character_items:
-                    item.setPos(item.pos() + delta)
+                    item.setPos(item.pos() + delta_scene)
                 for hex_item in self.hex_items:
-                    hex_item.setPos(hex_item.pos() + delta)
-            elif self.selected_item in self.character_items :
-                if len(self.hex_items) >0: # grids exist... snap else dont
-                    item = self.map_item
-                    delta_x, delta_y = item.pos().x(), item.pos().y() # this was originally 0,0 so any off is delta
-                    sceneThing = self.mapToScene(event.pos())
-                    hexCenters = [[x.x(), x.y()] for x in self.arrayCenters] # grab initial hex x,y
+                    hex_item.setPos(hex_item.pos() + delta_scene)
 
-                    hexArrays = np.array(hexCenters) + np.array([delta_x, delta_y]) # self.arrayCenters is original coord. add delta
-                    currentArrayIndex = spatial.KDTree(hexArrays).query((sceneThing.x(), sceneThing.y()))[1] # find index of closest hex
-                    snap_coord = hexArrays[currentArrayIndex] # find that coord
+            elif self.selected_item in self.character_items:
+                # snapping branch unchanged except for using scene pos
+                
+                if self.hex_tree is not None:
+                    scene_pos = self.mapToScene(event.pos())
+                    # transform back into "map local" coords
+                    map_offset = self.map_item.pos()
+                    local_x = scene_pos.x() - map_offset.x()
+                    local_y = scene_pos.y() - map_offset.y()
 
+                    dist, idx = self.hex_tree.query((local_x, local_y))
+                    snap_center_local = self.hex_centers_base[idx]
+                    snap_center_scene = (
+                        snap_center_local[0] + map_offset.x(),
+                        snap_center_local[1] + map_offset.y()
+                    )
                     character_size = self.selected_item.boundingRect().size()
-                    snap_x = snap_coord[0] - character_size.width() / 2
-                    snap_y = snap_coord[1] - character_size.height() / 2
-                    #testMap.convertToMyCoords(currentArrayIndex)
-                    self.selected_item.setPos(snap_x, snap_y)  # snap to this coord
-                else:
-                    self.selected_item.setPos(self.selected_item.pos() + delta)
-               
-            self.last_mouse_pos = event.pos()
+                    snap_x = snap_center_scene[0] - character_size.width() / 2
+                    snap_y = snap_center_scene[1] - character_size.height() / 2
+                    self.selected_item.setPos(snap_x, snap_y)
+                #if len(self.hex_items) > 0:
+                    #item = self.map_item
+                    #delta_x, delta_y = item.pos().x(), item.pos().y()
 
+                    
+                    #scene_pos = self.mapToScene(event.pos())
+                    #hex_centers = [[x.x(), x.y()] for x in self.arrayCenters]
+
+                    #hex_arrays = np.array(hex_centers) + np.array([delta_x, delta_y])
+                    #current_index = spatial.KDTree(hex_arrays).query((scene_pos.x(), scene_pos.y()))[1]
+                    #snap_coord = hex_arrays[current_index]
+
+                    #character_size = self.selected_item.boundingRect().size()
+                    #snap_x = snap_coord[0] - character_size.width() / 2
+                    #snap_y = snap_coord[1] - character_size.height() / 2
+                    #self.selected_item.setPos(snap_x, snap_y)
+                else:
+                    self.selected_item.setPos(self.selected_item.pos() + delta_scene)
+
+        self.last_mouse_pos = event.pos()
     def moveActor(self, actor, newIndex):
         print(actor.name, newIndex)
         index = self.character_objs.index(actor)
@@ -206,12 +301,13 @@ class CustomGraphicsView(QGraphicsView):
             self.arrayCenters.clear()
             self.clearGrid()
             return
+        
         height = map_rect.height()
         width = map_rect.width()
         map_item_pos = self.map_item.pos()
         top_left_x = map_item_pos.x()
         top_left_y = map_item_pos.y()
-        print("in DrawHexGrid", [top_left_x, top_left_y])
+        
         startingPoint = [top_left_x, top_left_y]
         r = height / (2 * (1 + (heightNumber - 1) * 2 * math.cos(math.pi * 60 / 180)))
         self.radius = r
@@ -221,7 +317,7 @@ class CustomGraphicsView(QGraphicsView):
         y += r * math.sin(a)
         self.arrayCenters.clear()
         self.clearGrid()
-        self.hex_items.clear()
+        
 
         while y + r * math.sin(a) <= height + 2 * startingPoint[1] :
             previousY = y
@@ -280,11 +376,16 @@ class CustomGraphicsView(QGraphicsView):
 
                 # Set the combined pixmap as the pixmap for the character item
                 character_item.setPixmap(combined_pixmap)
+        
+        
+        self.hex_centers_base = [(c.x(), c.y()) for c in self.arrayCenters]
+        self.hex_tree = spatial.KDTree(self.hex_centers_base)
+
         # Testing changing colors
         fill_color = QColor(0, 0, 255, 50) 
         hexLength = len(self.hex_items)
         allHexIndexes =  [ int(x) for x in np.linspace(0, hexLength-1, hexLength)]
-        print(hexLength, allHexIndexes)
+        
         self.setHexColors(fill_color, allHexIndexes)
     
     def setHexColors(self, fill_color, indexes):
@@ -312,71 +413,271 @@ class CustomGraphicsView(QGraphicsView):
    
 
     def clearGrid(self):
-        # Clear all grid items from the scene
-        for item in self.scene.items():
-            if isinstance(item, QGraphicsPolygonItem):
-                self.scene.removeItem(item)
+        # Remove only hex grid items
+        for item in self.hex_items:
+            self.scene.removeItem(item)
+        self.hex_items.clear()
+
+    def addRedOutline(self, pixmap, thickness=3):
+        """
+        Returns a new QPixmap with a red outline drawn around it.
+        :param pixmap: QPixmap to outline
+        :param thickness: outline width in pixels
+        """
+        # Create a new pixmap big enough for outline
+        outlined = QPixmap(pixmap.width() + thickness*2, pixmap.height() + thickness*2)
+        outlined.fill(Qt.transparent)
+
+        painter = QPainter(outlined)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        # Draw original pixmap
+        painter.drawPixmap(thickness, thickness, pixmap)
+
+        # Red outline
+        pen = QPen(Qt.red)
+        pen.setWidth(thickness)
+        painter.setPen(pen)
+        painter.setBrush(Qt.NoBrush)
+
+        # Outline rectangle
+        painter.drawRect(
+            thickness // 2,
+            thickness // 2,
+            pixmap.width() + thickness,
+            pixmap.height() + thickness
+        )
+
+        painter.end()
+
+        return outlined
+
+    def remove_red_outline(self, pixmap):
+        """
+        Removes a 1-pixel red outline previously drawn around the pixmap.
+        Assumes the outline was drawn as a rectangle around the border.
+        """
+        if pixmap.isNull():
+            return pixmap
+
+        # the outline thickness you used earlier
+        outline = 1
+
+        # Crop the pixmap to remove the border
+        cropped = pixmap.copy(
+            outline,
+            outline,
+            pixmap.width() - outline * 2,
+            pixmap.height() - outline * 2
+        )
+
+        return cropped
+class TurnOrderWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        layout = QHBoxLayout()
+        layout.setSpacing(10)
+
+        # Placeholder icons
+        placeholder_pix = QPixmap(50, 50)
+        placeholder_pix.fill(Qt.darkGray)
+
+        # Current turn icon
+        self.current_icon = QLabel()
+        self.current_icon.setPixmap(placeholder_pix)
+        self.current_icon.setFixedSize(50, 50)
+
+        layout.addWidget(self.current_icon)
+
+        # Next 5 turn icons
+        self.next_icons = []
+        for _ in range(5):
+            lbl = QLabel()
+            lbl.setPixmap(placeholder_pix)
+            lbl.setFixedSize(40, 40)
+            layout.addWidget(lbl)
+            self.next_icons.append(lbl)
+
+        layout.addStretch()
+        self.setLayout(layout)
+
+class TurnActionPanel(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        main_layout = QVBoxLayout()
+        main_layout.setSpacing(10)
+
+        # -------------------------------
+        # TURN INDICATOR
+        # -------------------------------
+        self.turn_label = QLabel("Current Turn: Placeholder")
+        self.turn_label.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(self.turn_label)
+
+        # -------------------------------
+        # HEALTH BAR
+        # -------------------------------
+        health_layout = QHBoxLayout()
+        self.health_bar = QProgressBar()
+        self.health_bar.setValue(100)  # placeholder value
+        self.health_bar.setTextVisible(False)
+        health_layout.addWidget(self.health_bar)
+
+        self.health_label = QLabel("100 / 100")  # placeholder health text
+        health_layout.addWidget(self.health_label)
+
+        main_layout.addLayout(health_layout)
+
+        # -------------------------------
+        # ACTION DROP-DOWN
+        # -------------------------------
+        self.action_dropdown = QComboBox()
+        self.action_dropdown.addItems(["Attack", "Cast Spell", "Dash", "Use Item"])  # placeholder actions
+        main_layout.addWidget(self.action_dropdown)
+
+        # -------------------------------
+        # Targets input
+        # -------------------------------
+        self.targets_input = QLineEdit()
+        self.targets_input.setPlaceholderText("Targets")
+        main_layout.addWidget(self.targets_input)
+
+        # -------------------------------
+        # Move coords input
+        # -------------------------------
+        self.move_input = QLineEdit()
+        self.move_input.setPlaceholderText("Move Coords")
+        main_layout.addWidget(self.move_input)
+
+        # -------------------------------
+        # Take Turn button
+        # -------------------------------
+        self.take_turn_button = QPushButton("Take Turn")
+        #self.take_turn_button.clicked.connect(self.take_turn)
+        main_layout.addWidget(self.take_turn_button)
+
+        main_layout.addStretch()
+        self.setLayout(main_layout)
+
+    def update_turn_panel(self, actor, turnChoices, turnChoice):
+        """
+        Update the entire turn panel with new values.
+
+        :param turn_name: str, text for whose turn it is
+        :param current_health: int, current health value
+        :param max_health: int, maximum health value
+        :param actions: list of str, available actions for dropdown
+        :param selected_action: str, currently selected action
+        :param targets: str, text for targets input
+        :param move_coords: str, text for move coords input
+        """
+        # Update turn label
+        
+        self.turn_label.setText(f"Current Turn: {actor.name}")
+
+        # Update health bar and health text
+        
+        self.health_bar.setMaximum(actor.maxHealth)
+        self.health_bar.setValue(actor.health)
+        self.health_label.setText(f"{actor.health} / {actor.maxHealth}")
+
+        # Update action dropdown
+        actions = [x.name for x in turnChoices]
+        self.action_dropdown.clear() 
+        self.action_dropdown.addItems(actions)
+
+        # Set selected action if provided
+        selected_action = turnChoice.name
+        index = self.action_dropdown.findText(selected_action)
+        self.action_dropdown.setCurrentIndex(index)
+
+        # Update targets input
+        targets = str(turnChoice.targets)
+        self.targets_input.setText(targets)
+
+        # Update move coords input
+        move_coords = str(turnChoice.moveCoord)
+        self.move_input.setText(move_coords)
 
 class MapWidget(QWidget):
     def __init__(self, myEncounter):
         super().__init__()
-        global testMap
-        layout = QVBoxLayout()
 
-        self.graphics_view = CustomGraphicsView()
-        layout.addWidget(self.graphics_view)
+        main_layout = QVBoxLayout()
+        main_layout.setSpacing(15)
+
+         # ---- Top: Turn Order Indicator ----
+        self.turn_order_widget = TurnOrderWidget()
+        main_layout.addWidget(self.turn_order_widget)
+
+        # ---- Middle: Map + Right Panel ----
+        mid_layout = QHBoxLayout()
+
+        # Map widget
+        self.map_view = CustomGraphicsView()
+        self.map_view.setFrameShape(QFrame.Box)
+        self.map_view.setMinimumSize(900, 700)
+        mid_layout.addWidget(self.map_view, 3)
 
         # set map max background
         pixmap = QPixmap(myEncounter.mapImage)
-        self.graphics_view.setMapPixmap(pixmap)
+        self.map_view.setMapPixmap(pixmap)
 
         # Add every player to the map
         for player in myEncounter.totalList:
             print(player.Image, 'Trying to create character pixmap')
             pixmap = QPixmap(dmSimPath + player.Image)
-            self.graphics_view.addCharacterPixmap(pixmap, player)
-
+            self.map_view.addCharacterPixmap(pixmap, player)
+        
         # Add hexes
         num_vertical_grids = int(myEncounter.numHexes)
-        map_rect = self.graphics_view.map_item.boundingRect()
-        self.graphics_view.drawHexGrid(num_vertical_grids, map_rect)
+        map_rect = self.map_view.map_item.boundingRect()
+        self.map_view.drawHexGrid(num_vertical_grids, map_rect)
 
         self.myEncounter = myEncounter
 
-        self.run_button = QPushButton("start encounters")
-        self.run_button.clicked.connect(self.run_command)
-        layout.addWidget(self.run_button)
-        
-        # below will be an encounter object that is passed into this widget later 
-        # for now lets just do it here for testings purposes
 
-        # create new encounter class and define it here 
-        #testMap = interactiveMap(num_vertical_grids, [], [], self.graphics_view)
-        #testMap.defineArrayGrid(num_vertical_grids)
-        #testMap.printCurrMap()
-        #testMap.convertToGCoord(self.graphics_view, [0,1])
+        # Right-side panel
+        self.turn_action_panel = TurnActionPanel()
+        self.turn_action_panel.setFixedWidth(250)
+        mid_layout.addWidget(self.turn_action_panel, 1)
+
+        main_layout.addLayout(mid_layout)
+
+        # ---- Bottom: Start Encounter Button ----
+        self.start_button = QPushButton("Start Encounter")
+        self.start_button.setFixedHeight(40)
+        self.start_button.clicked.connect(self.run_command)
+
+        main_layout.addWidget(self.start_button)
+
+        self.setLayout(main_layout)
         
-        
-        
-        self.setLayout(layout)
-        # might have to split up encounter into functions
         self.testingTheory()
     
     def run_command(self):
-        # this crashes with input... in order to get this working, will need to create atleast a dialog box
-        # for the inputs... everything else can still print out...
-        # this means that I am going to have to change the interactive encounter and taketurn func
-        #   probably not to hard... most of it at least
-        #       remove chooseAction function entirely and create dialog box for each of those questions
-        #       split combat out of while loop with a "next" type function
-        #           This will go next when doAction called 
-        #   
-        self.myEncounter.combat()
+        
+        turns = self.myEncounter.calcTurn()
+        actor = turns[0]
+        turnChoices = turns[2]
+        turnChoice = turns[3]
+        self.turn_action_panel.update_turn_panel(actor, turnChoices, turnChoice)
 
     def testingTheory(self):
-        
-        self.myEncounter.preCombat(self.graphics_view)
-            
+        # should populate turn_order_widget
+        # create the initial movement grids highlight 
+
+        self.myEncounter.preCombat(self.map_view)
+        curActor = list(self.myEncounter.sortedInitList)[self.myEncounter.curTurn]
+        index = self.map_view.character_objs.index(curActor)
+        item = self.map_view.character_items[index] 
+        pixMap = item.pixmap()
+        outlined = self.map_view.addRedOutline(pixmap=pixMap)
+        item.setPixmap(outlined)
+        #removeOutline = self.map_view.remove_red_outline(pixMap)
+        #item.setPixmap(removeOutline)
 
     
         

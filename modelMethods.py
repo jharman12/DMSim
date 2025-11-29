@@ -539,7 +539,7 @@ def takeTurn(actor, m, interactive = False):
     if not interactive:
         doAction(actor, map, turnChoice)
     else:
-        chooseAction(actor, map, turnChoices, turnChoice, closestGuy)
+        return [actor, map, turnChoices, turnChoice]
 
 @dataclass
 class myAction:
@@ -554,7 +554,7 @@ class myAction:
 
 def stringToTuple(string):
     return tuple([int(x) for x in re.split(r'\(|\)|,', string) if x != ''])
-def chooseAction(actor, map, turnChoices, turnChoice, best):
+def chooseAction(actor, map, turnChoices, turnChoice):
 
 
     for action in turnChoices:
@@ -571,7 +571,7 @@ def chooseAction(actor, map, turnChoices, turnChoice, best):
         
     if not choice: # failed to match
         print("Your choice does not match a possible action. Try again.")
-        chooseAction(actor, map, turnChoices, turnChoice, best)
+        chooseAction(actor, map, turnChoices, turnChoice)
         return
     override_Target = input("Would you like to override the target of action? (yes, no). Current Target = " + str(choice.targets) + '\n')
     if override_Target == "yes":
