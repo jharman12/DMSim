@@ -30,7 +30,9 @@ def removeDeadActors(map, sortedInitList):
 def takeTurn(actor, m, interactive = False):
     '''
     Turn decidider function... take enemyList and decide what to do for the turn
-        based on actor.turnFactors
+        based on action with most dmg/healing
+    
+    loops through every weapon and spell and decides best movement/castcoord to do the most damage
     '''
     global map
     map = m
@@ -86,6 +88,7 @@ def takeTurn(actor, m, interactive = False):
     closestCoord = [coord for coord in list(map.arrayCenters) if map.arrayCenters[coord] == closestGuy][0]
     closestIndex = list(map.arrayCenters).index(closestCoord)
     distanceMatrix = [(map.distanceCalc(myIndex, index), map.distanceCalc(closestIndex, index)) for index in range(len(list(map.arrayCenters))) if map.arrayCenters[list(map.arrayCenters)[index]] == '']
+    moveMatrix = [i for i in range(len(distanceMatrix)) if distanceMatrix[i][0] <= actor.speed/5]
     
     turnChoices = []
     #print(actor.name, " finding my array")
@@ -539,6 +542,9 @@ def takeTurn(actor, m, interactive = False):
     if not interactive:
         doAction(actor, map, turnChoice)
     else:
+        # moveMatrix
+        # here we want to call a graphicsViewer method to highlight moveMatrix indexes 
+        map.graphicsViewer.setCurMoveCoords(moveMatrix)
         return [actor, map, turnChoices, turnChoice]
 
 @dataclass

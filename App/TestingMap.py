@@ -15,15 +15,24 @@ Things to work on:
     Make custom player spells (currently just assumes you have access to all spells)
         this will also make the turnchoice faster 
 
+    Eventually, check that model sim actually works and calls all of the same methods as interactive
+        finding a lot of errors in the model while playing out (best choice is always the best choice)
     GUI CHANGES *****************************************************************************
 
+    
     create display character move range function
         should look at what action is selected 
             if dash selected, double char move 
         only snap to move range
+            move range is broke right now... possibly an error in hexes index between the two maps
+        
 
     link map char movement to doAction call 
     
+    Build model log
+        must also make print statements into a file
+        display contents of file to either popup window or somwhere on the main window
+
     might want to move add/remove red line to before move as its not centering icons
 
     Add/remove is hard coded thickness? (overtime it is making the icon turn into a square)
@@ -103,6 +112,9 @@ class CustomGraphicsView(QGraphicsView):
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
 
+        self.curActor = None
+        self.curMoveCoords = None
+
         self.info_popup = None
         self.map_item = None
         self.character_items = []
@@ -122,8 +134,17 @@ class CustomGraphicsView(QGraphicsView):
             QPainter.Antialiasing
             | QPainter.SmoothPixmapTransform
         )
-        
+        self.defaultFill = QColor(0, 0, 255, 50) 
+        self.moveFill =  QColor(0, 255, 0, 50) 
         self.setResizeAnchor(QGraphicsView.AnchorViewCenter)
+
+    def setCurTurn(self, actor):
+        self.curActor = actor
+
+    def setCurMoveCoords(self, indexes):
+        self.curMoveCoords = indexes
+        self.setHexColors(self.defaultFill, [i for i in range(len(self.hex_items))]) # reset defaults
+        self.setHexColors(self.moveFill, indexes) # set new movements
 
     def show_character_popup(self, character_obj, scene_pos):
         """
@@ -250,6 +271,10 @@ class CustomGraphicsView(QGraphicsView):
             old_pos_scene = self.mapToScene(self.last_mouse_pos)
             new_pos_scene = self.mapToScene(event.pos())
             delta_scene = new_pos_scene - old_pos_scene
+            if self.curActor != None:
+                turnCharacterItem = self.character_items[self.character_objs.index(self.curActor)]
+            else:
+                turnCharacterItem = None
 
             if self.selected_item == self.map_item or self.selected_item in self.hex_items:
                 self.map_item.setPos(self.map_item.pos() + delta_scene)
@@ -258,7 +283,9 @@ class CustomGraphicsView(QGraphicsView):
                 for hex_item in self.hex_items:
                     hex_item.setPos(hex_item.pos() + delta_scene)
 
-            elif self.selected_item in self.character_items:
+            # now instead of any character, only if youre the selected actor
+            elif self.selected_item == turnCharacterItem:
+
                 # snapping branch unchanged except for using scene pos
                 
                 if self.hex_tree is not None:

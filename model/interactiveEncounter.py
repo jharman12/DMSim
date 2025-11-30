@@ -63,6 +63,7 @@ class interactiveEncounter(QThread):
         
         # now that turn has changed, updated who has a red line
         curActor = list(self.sortedInitList)[self.curTurn]
+        self.graphicsViewer.setCurTurn(curActor)
         curIndex = self.graphicsViewer.character_objs.index(curActor)
         item = self.graphicsViewer.character_items[curIndex]
         pixMap = item.pixmap()
