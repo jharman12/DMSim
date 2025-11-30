@@ -88,7 +88,9 @@ def takeTurn(actor, m, interactive = False):
     closestCoord = [coord for coord in list(map.arrayCenters) if map.arrayCenters[coord] == closestGuy][0]
     closestIndex = list(map.arrayCenters).index(closestCoord)
     distanceMatrix = [(map.distanceCalc(myIndex, index), map.distanceCalc(closestIndex, index)) for index in range(len(list(map.arrayCenters))) if map.arrayCenters[list(map.arrayCenters)[index]] == '']
-    moveMatrix = [i for i in range(len(distanceMatrix)) if distanceMatrix[i][0] <= actor.speed/5]
+    # this might need to move to inside graphicsViewer or widget as we want to check if curAction == 'dash' to double speed
+    moveMatrix = [index for index in range(len(list(map.arrayCenters))) if map.distanceCalc(index, myIndex) <= actor.speed/5 and 
+                  map.arrayCenters[list(map.arrayCenters)[index]] == ''] 
     
     turnChoices = []
     #print(actor.name, " finding my array")

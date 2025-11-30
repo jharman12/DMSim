@@ -24,10 +24,11 @@ Things to work on:
         should look at what action is selected 
             if dash selected, double char move 
         only snap to move range
-            move range is broke right now... possibly an error in hexes index between the two maps
+            
         
 
     link map char movement to doAction call 
+        not sure if I have a method for grabbing cur location on graphicsviewer and converting to map hexes
     
     Build model log
         must also make print statements into a file
@@ -143,8 +144,51 @@ class CustomGraphicsView(QGraphicsView):
 
     def setCurMoveCoords(self, indexes):
         self.curMoveCoords = indexes
-        self.setHexColors(self.defaultFill, [i for i in range(len(self.hex_items))]) # reset defaults
-        self.setHexColors(self.moveFill, indexes) # set new movements
+
+        # Reset all hex colors to default
+        self.setHexColors(self.defaultFill, [i for i in range(len(self.hex_items))])
+
+        # Highlight the newly allowed movement hexes
+        self.setHexColors(self.moveFill, indexes)
+
+        # Rebuild the snap tree here
+        self.build_snap_tree(indexes)
+
+    def build_snap_tree(self, indexes):
+        """
+        Build a KD-Tree for snapping characters, using only the hexes
+        passed in `indexes`. This allows snapping only to allowed hexes.
+        """
+
+        # Build list of (x, y) coordinates for *allowed* hexes
+        snap_centers = [self.hex_centers_base[i] for i in indexes]
+
+        if not snap_centers:
+            self.snap_centers = []
+            self.snap_tree = None
+            return
+
+        # Store filtered centers
+        self.snap_centers = snap_centers
+
+        # Build KD-Tree from filtered centers
+        self.snap_tree = spatial.KDTree(self.snap_centers)
+
+        print("Snap KD-Tree built with", len(self.snap_centers), "hexes")
+
+    def getSnapHexIndex(self, scene_pos):
+        if not self.snap_tree:
+            return None
+
+        map_offset = self.map_item.pos()
+        local_x = scene_pos.x() - map_offset.x()
+        local_y = scene_pos.y() - map_offset.y()
+
+        dist, snap_idx = self.snap_tree.query((local_x, local_y))
+
+        # Convert snap_idx → real index in hex grid
+        real_hex_index = self.curMoveCoords[snap_idx]
+        return real_hex_index
 
     def show_character_popup(self, character_obj, scene_pos):
         """
@@ -288,23 +332,24 @@ class CustomGraphicsView(QGraphicsView):
 
                 # snapping branch unchanged except for using scene pos
                 
-                if self.hex_tree is not None:
+                if self.snap_tree is not None:
                     scene_pos = self.mapToScene(event.pos())
-                    # transform back into "map local" coords
-                    map_offset = self.map_item.pos()
-                    local_x = scene_pos.x() - map_offset.x()
-                    local_y = scene_pos.y() - map_offset.y()
+                    real_hex_index = self.getSnapHexIndex(scene_pos)
 
-                    dist, idx = self.hex_tree.query((local_x, local_y))
-                    snap_center_local = self.hex_centers_base[idx]
-                    snap_center_scene = (
-                        snap_center_local[0] + map_offset.x(),
-                        snap_center_local[1] + map_offset.y()
-                    )
-                    character_size = self.selected_item.boundingRect().size()
-                    snap_x = snap_center_scene[0] - character_size.width() / 2
-                    snap_y = snap_center_scene[1] - character_size.height() / 2
-                    self.selected_item.setPos(snap_x, snap_y)
+                    if real_hex_index is not None:
+                        snap_center_local = self.hex_centers_base[real_hex_index]
+                        map_offset = self.map_item.pos()
+
+                        snap_center_scene = (
+                            snap_center_local[0] + map_offset.x(),
+                            snap_center_local[1] + map_offset.y()
+                        )
+
+                        character_size = self.selected_item.boundingRect().size()
+                        snap_x = snap_center_scene[0] - character_size.width() / 2
+                        snap_y = snap_center_scene[1] - character_size.height() / 2
+                        self.selected_item.setPos(snap_x, snap_y)
+
                 #if len(self.hex_items) > 0:
                     #item = self.map_item
                     #delta_x, delta_y = item.pos().x(), item.pos().y()
@@ -325,6 +370,7 @@ class CustomGraphicsView(QGraphicsView):
                     self.selected_item.setPos(self.selected_item.pos() + delta_scene)
 
         self.last_mouse_pos = event.pos()
+    
     def moveActor(self, actor, newIndex):
         print(actor.name, newIndex)
         index = self.character_objs.index(actor)
@@ -350,6 +396,37 @@ class CustomGraphicsView(QGraphicsView):
         # find hexes current coords using delta
         # find character based on its current position vs closest hex from starting index
         # snap character to newIndexes current position
+
+    def getCurActorHexIndex(self):
+        """
+        Returns the hex index (in self.arrayCenters) of the hex where
+        the current active actor is standing.
+
+        Uses the actor's scene position and the hex KD-tree.
+        """
+
+        # Must have an active actor selected
+        if self.curActor is None:
+            return None
+
+        # Character's scene position (center point)
+        charIndex = self.character_objs.index(self.curActor)
+        char_item = self.character_items[charIndex]
+        char_rect = char_item.boundingRect()
+        char_center = char_item.mapToScene(char_rect.center())
+
+        # Convert scene position → map-local position
+        map_offset = self.map_item.pos()
+        local_x = char_center.x() - map_offset.x()
+        local_y = char_center.y() - map_offset.y()
+
+        # Query the full hex grid KD-tree
+        if self.hex_tree is None:
+            return None
+
+        dist, hex_index = self.hex_tree.query((local_x, local_y))
+
+        return hex_index
 
         
     def mouseReleaseEvent(self, event):
@@ -737,7 +814,13 @@ class MapWidget(QWidget):
         # now load inputs and and call doAction function
         #myAction(name =, type=, mod=, numHit=, currCoord=, moveCoord=, targets=, castCoord=)
         # grab name of spell
+        hexIndex = self.map_view.getCurActorHexIndex()
+        
+        #print('Current Actors current location on the map', currLocation)
         if self.turnChoice != None and self.actor != None: # for now just do the best action. will work on actually choosing action
+            if hexIndex != None:
+                currLocation = list(self.myEncounter.map.arrayCenters)[hexIndex]
+                self.turnChoice.moveCoord = currLocation
             doAction(self.actor, self.myEncounter.map, self.turnChoice)
             self.myEncounter.nextTurn()
             turns = self.myEncounter.calcTurn()
