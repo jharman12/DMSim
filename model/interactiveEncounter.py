@@ -45,10 +45,51 @@ class interactiveEncounter(QThread):
 
     def nextTurn(self):
         
+        self.removeDeadActors()
+        # Add remove red outline, add red line to new turn
+        # should probably just make below a function
+        curActor = list(self.sortedInitList)[self.curTurn]
+        #print("trying to remove red outline from ", curActor.name)
+        curIndex = self.graphicsViewer.character_objs.index(curActor)
+        item = self.graphicsViewer.character_items[curIndex]
+        pixMap = item.pixmap()
+        removeOutline = self.graphicsViewer.remove_red_outline(pixMap)
+        item.setPixmap(removeOutline)
+
         self.curTurn += 1 
-        print(self.curTurn, len(self.sortedInitList))
+        
         if self.curTurn >= len(self.sortedInitList):
             self.curTurn = 0
+        
+        # now that turn has changed, updated who has a red line
+        curActor = list(self.sortedInitList)[self.curTurn]
+        curIndex = self.graphicsViewer.character_objs.index(curActor)
+        item = self.graphicsViewer.character_items[curIndex]
+        pixMap = item.pixmap()
+        removeOutline = self.graphicsViewer.addRedOutline(pixMap)
+        item.setPixmap(removeOutline)
+
+
+    def removeDeadActors(self):
+        map = self.map
+        totalList = map.party + map.enemy
+        deadActors = [actor for actor in totalList if not actor.alive]
+        if len(deadActors) >= 1:
+            for deadActor in deadActors:
+                print(deadActor.name, 'is dead')
+                if deadActor in map.party:
+                    map.party.remove(deadActor)
+                else:
+                    map.enemy.remove(deadActor)
+                actorCoord = [coord for coord in list(map.arrayCenters) if map.arrayCenters[coord] == deadActor][0]
+                map.arrayCenters[actorCoord] = ''
+                del self.sortedInitList[deadActor]
+                charIndex = self.graphicsViewer.character_objs.index(deadActor)
+                self.graphicsViewer.scene.removeItem(self.graphicsViewer.character_items[charIndex])
+                del self.graphicsViewer.character_items[charIndex]
+                del self.graphicsViewer.character_objs[charIndex]
+                
+        return deadActors
 
     def calcTurn(self):
         # new combat... 
@@ -84,7 +125,6 @@ class interactiveEncounter(QThread):
                 return
             takeTurn(actor, self.map, interactive=False)
             self.nextTurn()
-            removeDeadActors(self.map, self.sortedInitList)
             testing = self.calcTurn()
             print("return ", testing)
             return testing
@@ -93,7 +133,13 @@ class interactiveEncounter(QThread):
         else: # if not on enemy list your enemy is enemyList
             if len(self.map.enemy) == 0: # if enemies already down... skip turn
                 return
-            return takeTurn(actor, self.map, interactive=True)
+            
+            turn =  takeTurn(actor, self.map, interactive=True)
+            if turn == None:
+                self.nextTurn()
+                return self.calcTurn()
+            else:
+                return turn
             
                 
     

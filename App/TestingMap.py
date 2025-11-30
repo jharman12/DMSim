@@ -1,13 +1,9 @@
 '''
 Things to work on:
 
-    
-    encounter playback now works (only chooses best action for right now)
-        model crashes when a character dies??
-        interactiveEncounter.calcTurn returns none
-    
-    removeDeadActor also needs to remove from GUI
-        move method to do action
+
+    MODEL CHANGES ***************************************************************************
+    melee still calling nearestHex when inside melee range
     
     move leg actions to doAction?
         it does not belong in calcTurn as thats just returning best action
@@ -16,10 +12,21 @@ Things to work on:
     
     need to find optimal movement for heal and some spells as well
 
-    
+    Make custom player spells (currently just assumes you have access to all spells)
+        this will also make the turnchoice faster 
+
+    GUI CHANGES *****************************************************************************
+
     create display character move range function
+        should look at what action is selected 
+            if dash selected, double char move 
+        only snap to move range
+
+    link map char movement to doAction call 
     
-    add right click to see popup of character stats
+    might want to move add/remove red line to before move as its not centering icons
+
+    Add/remove is hard coded thickness? (overtime it is making the icon turn into a square)
     
     create functions similar to bestSphere but with inputted sphere (spells originating from self will be hard)
 
@@ -31,9 +38,9 @@ Things to work on:
         display best turn action?
         turn done
 
-    create gui for encounter 
-        list turn with icon order at top of the screen 
-        Possibly back button to undo a turn
+    
+    list turn with icon order at top of the screen 
+    
 
     Create warning for oportunity attacks
 
@@ -41,8 +48,7 @@ Things to work on:
 
     add display shape when choosing a hex to cast a spell
     
-    Make custom player spells (currently just assumes you have access to all spells)
-        this will also make the turnchoice faster 
+    
     
 '''
 import os
@@ -83,22 +89,11 @@ from modelMethods import myAction, doAction
 
 
 
-class Map:
-    def __init__(self, name, image, hexes, myPlayers):
-        self.name = name
-        self.image = image
-        self.hexes = hexes
-        self.myPlayers = myPlayers
 
-        self.hex_centers_base = []
-        self.hex_tree = None
 
-        self.setRenderHints(
-            QPainter.Antialiasing
-            | QPainter.SmoothPixmapTransform
-        )
-        self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
-        self.setResizeAnchor(QGraphicsView.AnchorViewCenter)
+        
+
+        
 
 
 class CustomGraphicsView(QGraphicsView):
@@ -108,6 +103,7 @@ class CustomGraphicsView(QGraphicsView):
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
 
+        self.info_popup = None
         self.map_item = None
         self.character_items = []
         self.character_objs = []
@@ -116,8 +112,73 @@ class CustomGraphicsView(QGraphicsView):
         self.last_mouse_pos = QPointF()
         self.arrayCenters = []
 
+        self.hex_centers_base = []
+        self.hex_tree = None
+
         self.setSceneRect(0, 0, self.width(), self.height())
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+
+        self.setRenderHints(
+            QPainter.Antialiasing
+            | QPainter.SmoothPixmapTransform
+        )
+        
+        self.setResizeAnchor(QGraphicsView.AnchorViewCenter)
+
+    def show_character_popup(self, character_obj, scene_pos):
+        """
+        Displays an info popup inside the graphics view near the scene position.
+        """
+        # Remove existing popup
+        if self.info_popup:
+            self.info_popup.deleteLater()
+            self.info_popup = None
+
+        # Create popup container
+        popup = QFrame(self)
+        popup.setStyleSheet("""
+            QFrame {
+                background-color: #2c2c2c;
+                border: 2px solid red;
+                border-radius: 6px;
+            }
+            QLabel {
+                color: white;
+            }
+        """)
+        popup.setFrameShape(QFrame.Box)
+
+        layout = QVBoxLayout(popup)
+        layout.setContentsMargins(8, 8, 8, 8)
+
+        # Build text from the character object
+        # (You can replace this with whatever attributes exist)
+        info_text = (
+            f"<b>{character_obj.name}</b><br>"
+            f"HP: {character_obj.health}/{character_obj.maxHealth}<br>"
+            f"AC: {character_obj.ac}<br>"
+            f"Speed: {character_obj.speed}<br>"
+        )
+
+        label = QLabel(info_text)
+        label.setWordWrap(True)
+        layout.addWidget(label)
+
+        popup.adjustSize()
+
+        # Convert scene → view coords
+        view_pos = self.mapFromScene(scene_pos)
+
+        # Position popup slightly offset
+        popup.move(view_pos.x() + 10, view_pos.y() + 10)
+        popup.show()
+
+        self.info_popup = popup
+
+    def hide_character_popup(self):
+        if self.info_popup:
+            self.info_popup.deleteLater()
+            self.info_popup = None
 
     def setMapPixmap(self, pixmap):
         if self.map_item is not None:
@@ -150,15 +211,24 @@ class CustomGraphicsView(QGraphicsView):
         self.scale(zoom_factor, zoom_factor)
         event.accept()
 
-    #def wheelEvent(self, event):
-    #    if event.modifiers() == Qt.ControlModifier:
-    #        zoom_factor = 1.2 if event.angleDelta().y() > 0 else 1 / 1.2
-    #        self.scale(zoom_factor, zoom_factor)
-    #        event.accept() # consume event
-    #    else:
-    #        super().wheelEvent(event)
-
     def mousePressEvent(self, event):
+        if event.button() == Qt.RightButton:
+            scene_pos = self.mapToScene(event.pos())
+
+            # Check if clicked a character icon
+            clicked_item = self.itemAt(event.pos())
+
+            if clicked_item in self.character_items:
+                index = self.character_items.index(clicked_item)
+                character_obj = self.character_objs[index]
+
+                # Show popup
+                self.show_character_popup(character_obj, scene_pos)
+            else:
+                # Clicked elsewhere → hide popup
+                self.hide_character_popup()
+                super().mousePressEvent(event)
+                return
         if event.button() == Qt.LeftButton:
             self.last_mouse_pos = event.pos()
             item = self.itemAt(event.pos())
@@ -172,37 +242,6 @@ class CustomGraphicsView(QGraphicsView):
                 self.selected_item = item
 
         super().mousePressEvent(event)
-
-    #def mouseMoveEvent(self, event):
-    #    if event.buttons() == Qt.LeftButton and self.selected_item:
-    #        delta = event.pos() - self.last_mouse_pos
-    #        if self.selected_item == self.map_item or self.selected_item in self.hex_items:
-    #            self.map_item.setPos(self.map_item.pos() + delta)
-    #            for item in self.character_items:
-    #                item.setPos(item.pos() + delta)
-    #            for hex_item in self.hex_items:
-    #                hex_item.setPos(hex_item.pos() + delta)
-    #        elif self.selected_item in self.character_items :
-    #            if len(self.hex_items) >0: # grids exist... snap else dont
-    #                item = self.map_item
-    #                delta_x, delta_y = item.pos().x(), item.pos().y() # this was originally 0,0 so any off is delta
-    #                sceneThing = self.mapToScene(event.pos())
-    #                hexCenters = [[x.x(), x.y()] for x in self.arrayCenters] # grab initial hex x,y
-    #
-    #                hexArrays = np.array(hexCenters) + np.array([delta_x, delta_y]) # self.arrayCenters is original coord. add delta
-    #                currentArrayIndex = spatial.KDTree(hexArrays).query((sceneThing.x(), sceneThing.y()))[1] # find index of closest hex
-    #                snap_coord = hexArrays[currentArrayIndex] # find that coord
-    #
-    #                character_size = self.selected_item.boundingRect().size()
-    #                snap_x = snap_coord[0] - character_size.width() / 2
-    #                snap_y = snap_coord[1] - character_size.height() / 2
-    #                #testMap.convertToMyCoords(currentArrayIndex)
-    #                self.selected_item.setPos(snap_x, snap_y)  # snap to this coord
-    #            else:
-    #                self.selected_item.setPos(self.selected_item.pos() + delta)
-    #           
-    #        self.last_mouse_pos = event.pos()
-        
 
     def mouseMoveEvent(self, event):
         
@@ -452,11 +491,13 @@ class CustomGraphicsView(QGraphicsView):
         Removes a 1-pixel red outline previously drawn around the pixmap.
         Assumes the outline was drawn as a rectangle around the border.
         """
+        #print('trying to remove red Outline')
         if pixmap.isNull():
+            print("pixmap is NULL")
             return pixmap
 
         # the outline thickness you used earlier
-        outline = 1
+        outline = 4
 
         # Crop the pixmap to remove the border
         cropped = pixmap.copy(
@@ -467,6 +508,7 @@ class CustomGraphicsView(QGraphicsView):
         )
 
         return cropped
+
 class TurnOrderWidget(QWidget):
     def __init__(self):
         super().__init__()
