@@ -1123,132 +1123,283 @@ def bestSquare(actor, map, length, reach):
     return (maxEnemies, options[0], finalList[max_index][0], finalList[max_index][2])
     
 
+#def bestCone(actor, map, length, reach):
+#    '''
+#    step 1 make a cone at all coming from actor
+#    '''
+#    ##print('bestCone')
+#    setRatio = 4
+#    mapKeys = map.arrayCenters.keys()
+#    actorCoord = [x for x in map.arrayCenters.keys() if map.arrayCenters[x] == actor][0]
+#    moveLimit = actor.speed/5
+#    myIndex = list(map.arrayCenters).index(actorCoord)
+#    movementCoords = [ coord for coord in map.arrayCenters.keys() if map.distanceCalc(myIndex, list(map.arrayCenters).index(coord)) <= moveLimit and map.arrayCenters[coord] == '']
+#    hexLimit = int(length/5)
+#    
+#    if actor in map.enemy:
+#        enemyList = [ list(map.arrayCenters).index(i) for i in map.arrayCenters.keys() if map.arrayCenters[i] != '' and map.arrayCenters[i] not in map.enemy]
+#        partyList = [ list(map.arrayCenters).index(i) for i in map.arrayCenters.keys() if map.arrayCenters[i] != '' and map.arrayCenters[i] not in map.party]
+#    if actor in map.party:
+#        enemyList = [ list(map.arrayCenters).index(i) for i in map.arrayCenters.keys() if map.arrayCenters[i] != '' and map.arrayCenters[i] not in map.party]
+#        partyList = [ list(map.arrayCenters).index(i) for i in map.arrayCenters.keys() if map.arrayCenters[i] != '' and map.arrayCenters[i] not in map.enemy]
+#
+#    distances = {}
+#    distances['Enemy'] = [[map.distanceCalc(coord1, list(map.arrayCenters).index(coord2)) for coord1 in enemyList] for coord2 in movementCoords]
+#    distances['Ally'] = [[map.distanceCalc(coord1, list(map.arrayCenters).index(coord2)) for coord1 in partyList] for coord2 in movementCoords]
+#    desired = len(enemyList)
+#    ##print(distances)
+#
+#
+#    
+#    operations2 = [[[operator.sub, 1], [operator.add, 1], [operator.sub, 1], [operator.sub, 1]],
+#                    [[operator.sub, 1], [operator.sub, 1], [operator.add, 0], [operator.sub, 2]],
+#                    [[operator.add, 0], [operator.sub, 2], [operator.add, 1], [operator.sub, 1]],
+#                    [[operator.add, 1], [operator.sub, 1], [operator.add, 1], [operator.add, 1]],
+#                    [[operator.add, 1], [operator.add, 1], [operator.add, 0], [operator.add, 2]],
+#                    [[operator.add, 0], [operator.add, 2], [operator.sub, 1], [operator.add, 1]]]
+#    direction = ['W','NW','N','NE','E','SE','S','SW']
+#    ##print(actorCoord)
+#    ##print(hexLimit)
+#    finalCoord = []
+#    goalAchieved = 0
+#    while goalAchieved == 0:
+#        for hex in range(len(distances['Ally'])):
+#            sumEnemies = sum([1 for dist in distances['Enemy'][hex] if dist <= hexLimit]) # number of enemenys in range
+#            if sumEnemies == 0:
+#                continue
+#            sumAllies = sum([1 for dist in distances['Ally'][hex] if dist <= hexLimit])
+#            if sumAllies == 0 and sumEnemies < desired:
+#                    continue
+#            if sumEnemies == desired:
+#                for op in operations2:
+#                    ##print('starting new op')
+#                    ##print(op)
+#                    finalCoord.clear()
+#                    for cell in range(hexLimit):
+#                        
+#                        if op[0][1] == 0:
+#                            postive = (op[0][0](movementCoords[hex][0], op[0][1]), op[1][0](op[1][0](movementCoords[hex][1], cell*2), op[1][1]))
+#                        else:
+#                            postive = (op[0][0](op[0][0](movementCoords[hex][0], cell), op[0][1]), op[1][0](op[1][0](movementCoords[hex][1], cell), op[1][1]))
+#                        if op[2][1] == 0:
+#                            ##print('operation', op[3][1])
+#                            negative = (op[2][0](movementCoords[hex][0], op[2][1]), op[3][0](op[3][0](movementCoords[hex][1], cell*2), op[3][1]))
+#                        else:
+#                            negative = (op[2][0](op[2][0](movementCoords[hex][0], cell), op[2][1]), op[3][0](op[3][0](movementCoords[hex][1], cell), op[3][1]))
+#                    
+#                    
+#                    
+#                        ##print(pair)
+#
+#                        x1, y1 = abs(postive[0] - negative[0]), abs(postive[1] - negative[1])
+#                        if x1 == 0 and y1 == 2:
+#                            finalCoord.append(postive)
+#                            finalCoord.append(negative)
+#                        else:
+#                            if op[0] == op[2]: # same x value dif y values
+#                                maxY, minY = max(postive[1], negative[1]), min(postive[1], negative[1])
+#                                for i in range(minY, maxY+1):
+#                                    finalCoord.append((postive[0], i))
+#                            elif op[3][1] == 2:
+#                                maxY, minY = max(postive[1], negative[1]), min(postive[1], negative[1])
+#                                maxX, minX = max(postive[0], negative[0]), min(postive[0], negative[0])
+#                                yCoord = []
+#                                xCoord = []
+#                                for i in range(minY, maxY+1):
+#                                    ##print('y:',i)
+#                                    yCoord.append(i)
+#                                for i in range(maxX, minX-1, -1 ):
+#                                    ##print('x:',i)
+#                                    xCoord.append(i)
+#                                for i in range(len(xCoord)):
+#                                    finalCoord.append((xCoord[i], yCoord[i]))
+#                            else:
+#                                maxY, minY = max(postive[1], negative[1]), min(postive[1], negative[1])
+#                                maxX, minX = max(postive[0], negative[0]), min(postive[0], negative[0])
+#                                yCoord = []
+#                                xCoord = []
+#                                for i in range(minY, maxY+1):
+#                                    ##print('y:',i)
+#                                    yCoord.append(i)
+#                                for i in range(minX,maxX +1 ):
+#                                    ##print('x:',i)
+#                                    xCoord.append(i)
+#                                for i in range(len(xCoord)):
+#                                    finalCoord.append((xCoord[i], yCoord[i]))
+#                    enemyCoord = [list(map.arrayCenters)[ind] for ind in enemyList]
+#                    partyCoord = [list(map.arrayCenters)[ind] for ind in partyList]
+#                    
+#                    enemyHit = []
+#                    partyHit = []
+#                    enemyHit.clear()
+#                    partyHit.clear()
+#                    for coord in finalCoord:
+#                        if coord in enemyCoord:
+#                            enemyHit.append(coord)
+#                        if coord in partyCoord:
+#                            partyHit.append(coord)
+#                    if len(partyHit) == 0 and len(enemyHit) == desired:
+#                        totalHit = enemyHit+partyHit
+#                        return (desired, movementCoords[hex], movementCoords[hex], totalHit)
+#                    elif len(partyHit) != 0 and len(enemyHit)/len(partyHit) >= setRatio:
+#                        totalHit = enemyHit+partyHit
+#                        return (len(enemyHit), movementCoords[hex],movementCoords[hex], totalHit)
+#
+#
+#        desired -= 1
+#        if desired == 0:
+#            return (0,0)
+
 def bestCone(actor, map, length, reach):
-    '''
-    step 1 make a cone at all coming from actor
-    '''
-    ##print('bestCone')
-    setRatio = 4
-    mapKeys = map.arrayCenters.keys()
-    actorCoord = [x for x in map.arrayCenters.keys() if map.arrayCenters[x] == actor][0]
-    moveLimit = actor.speed/5
-    myIndex = list(map.arrayCenters).index(actorCoord)
-    movementCoords = [ coord for coord in map.arrayCenters.keys() if map.distanceCalc(myIndex, list(map.arrayCenters).index(coord)) <= moveLimit and map.arrayCenters[coord] == '']
-    hexLimit = int(length/5)
-    
+    """
+    Optimized version of your bestCone() logic.
+    Maintains identical output while reducing overhead.
+    """
+
+    # === PRECOMPUTATION ============================
+    actor_hex = None
+    arrayCenters = list(map.arrayCenters)     # ordered keys
+    valueAt = map.arrayCenters                # key → value
+    indexOf = {k: i for i, k in enumerate(arrayCenters)}  # fast lookup
+    empty_hexes = [k for k in arrayCenters if valueAt[k] == '']
+
+    # Find actor's coordinate
+    for k, v in valueAt.items():
+        if v == actor:
+            actor_hex = k
+            break
+    if actor_hex is None:
+        return (0, 0)
+
+    actor_index = indexOf[actor_hex]
+
+    # movement limit (# of hexes)
+    moveLimit = actor.speed / 5
+    hexLimit = int(length / 5)
+
+    # movement coords (only EMPTY hexes in range)
+    movementCoords = []
+    for k in empty_hexes:
+        if map.distanceCalc(actor_index, indexOf[k]) <= moveLimit:
+            movementCoords.append(k)
+
+    # Partition enemies vs allies
     if actor in map.enemy:
-        enemyList = [ list(map.arrayCenters).index(i) for i in map.arrayCenters.keys() if map.arrayCenters[i] != '' and map.arrayCenters[i] not in map.enemy]
-        partyList = [ list(map.arrayCenters).index(i) for i in map.arrayCenters.keys() if map.arrayCenters[i] != '' and map.arrayCenters[i] not in map.party]
-    if actor in map.party:
-        enemyList = [ list(map.arrayCenters).index(i) for i in map.arrayCenters.keys() if map.arrayCenters[i] != '' and map.arrayCenters[i] not in map.party]
-        partyList = [ list(map.arrayCenters).index(i) for i in map.arrayCenters.keys() if map.arrayCenters[i] != '' and map.arrayCenters[i] not in map.enemy]
+        enemies = [indexOf[k] for k, v in valueAt.items() if v != '' and v not in map.enemy]
+        allies  = [indexOf[k] for k, v in valueAt.items() if v != '' and v not in map.party]
+    else:  # actor in map.party
+        enemies = [indexOf[k] for k, v in valueAt.items() if v != '' and v not in map.party]
+        allies  = [indexOf[k] for k, v in valueAt.items() if v != '' and v not in map.enemy]
 
-    distances = {}
-    distances['Enemy'] = [[map.distanceCalc(coord1, list(map.arrayCenters).index(coord2)) for coord1 in enemyList] for coord2 in movementCoords]
-    distances['Ally'] = [[map.distanceCalc(coord1, list(map.arrayCenters).index(coord2)) for coord1 in partyList] for coord2 in movementCoords]
-    desired = len(enemyList)
-    ##print(distances)
+    desired = len(enemies)
 
+    # Precompute all enemy & ally distances from each movement position
+    enemyDist = []   # enemyDist[i][j] = dist from movementCoords[i] to enemies[j]
+    allyDist = []
 
-    
-    operations2 = [[[operator.sub, 1], [operator.add, 1], [operator.sub, 1], [operator.sub, 1]],
-                    [[operator.sub, 1], [operator.sub, 1], [operator.add, 0], [operator.sub, 2]],
-                    [[operator.add, 0], [operator.sub, 2], [operator.add, 1], [operator.sub, 1]],
-                    [[operator.add, 1], [operator.sub, 1], [operator.add, 1], [operator.add, 1]],
-                    [[operator.add, 1], [operator.add, 1], [operator.add, 0], [operator.add, 2]],
-                    [[operator.add, 0], [operator.add, 2], [operator.sub, 1], [operator.add, 1]]]
-    direction = ['W','NW','N','NE','E','SE','S','SW']
-    ##print(actorCoord)
-    ##print(hexLimit)
-    finalCoord = []
-    goalAchieved = 0
-    while goalAchieved == 0:
-        for hex in range(len(distances['Ally'])):
-            sumEnemies = sum([1 for dist in distances['Enemy'][hex] if dist <= hexLimit]) # number of enemenys in range
-            if sumEnemies == 0:
+    for mv in movementCoords:
+        mv_i = indexOf[mv]
+        enemyDist.append([map.distanceCalc(mv_i, e) for e in enemies])
+        allyDist.append([map.distanceCalc(mv_i, a) for a in allies])
+
+    # === CONE SHAPE OPERATIONS — unchanged from your logic ============
+    operations2 = [
+        [[operator.sub, 1], [operator.add, 1], [operator.sub, 1], [operator.sub, 1]],
+        [[operator.sub, 1], [operator.sub, 1], [operator.add, 0], [operator.sub, 2]],
+        [[operator.add, 0], [operator.sub, 2], [operator.add, 1], [operator.sub, 1]],
+        [[operator.add, 1], [operator.sub, 1], [operator.add, 1], [operator.add, 1]],
+        [[operator.add, 1], [operator.add, 1], [operator.add, 0], [operator.add, 2]],
+        [[operator.add, 0], [operator.add, 2], [operator.sub, 1], [operator.add, 1]]
+    ]
+
+    # Pre-resolve coords for enemies / allies
+    enemyCoords = [arrayCenters[e] for e in enemies]
+    allyCoords  = [arrayCenters[a] for a in allies]
+
+    # === MAIN SEARCH LOOP ===========================================
+    while desired > 0:
+
+        for i, mv in enumerate(movementCoords):
+            e_count = sum(1 for d in enemyDist[i] if d <= hexLimit)
+            if e_count == 0:
                 continue
-            sumAllies = sum([1 for dist in distances['Ally'][hex] if dist <= hexLimit])
-            if sumAllies == 0 and sumEnemies < desired:
-                    continue
-            if sumEnemies == desired:
-                for op in operations2:
-                    ##print('starting new op')
-                    ##print(op)
-                    finalCoord.clear()
-                    for cell in range(hexLimit):
-                        
-                        if op[0][1] == 0:
-                            postive = (op[0][0](movementCoords[hex][0], op[0][1]), op[1][0](op[1][0](movementCoords[hex][1], cell*2), op[1][1]))
-                        else:
-                            postive = (op[0][0](op[0][0](movementCoords[hex][0], cell), op[0][1]), op[1][0](op[1][0](movementCoords[hex][1], cell), op[1][1]))
-                        if op[2][1] == 0:
-                            ##print('operation', op[3][1])
-                            negative = (op[2][0](movementCoords[hex][0], op[2][1]), op[3][0](op[3][0](movementCoords[hex][1], cell*2), op[3][1]))
-                        else:
-                            negative = (op[2][0](op[2][0](movementCoords[hex][0], cell), op[2][1]), op[3][0](op[3][0](movementCoords[hex][1], cell), op[3][1]))
-                    
-                    
-                    
-                        ##print(pair)
+            a_count = sum(1 for d in allyDist[i] if d <= hexLimit)
 
-                        x1, y1 = abs(postive[0] - negative[0]), abs(postive[1] - negative[1])
-                        if x1 == 0 and y1 == 2:
-                            finalCoord.append(postive)
-                            finalCoord.append(negative)
+            # strict filtering based on your original logic
+            if a_count == 0 and e_count < desired:
+                continue
+            if e_count != desired:
+                continue
+
+            # Generate cone-shape sweeps
+            for op in operations2:
+
+                finalCoord = []
+                x0, y0 = mv
+
+                for cell in range(hexLimit):
+
+                    # positive direction coordinate
+                    if op[0][1] == 0:
+                        px = op[0][0](x0, op[0][1])
+                        py = op[1][0](op[1][0](y0, cell*2), op[1][1])
+                    else:
+                        px = op[0][0](op[0][0](x0, cell), op[0][1])
+                        py = op[1][0](op[1][0](y0, cell), op[1][1])
+
+                    # negative direction coordinate
+                    if op[2][1] == 0:
+                        nx = op[2][0](x0, op[2][1])
+                        ny = op[3][0](op[3][0](y0, cell*2), op[3][1])
+                    else:
+                        nx = op[2][0](op[2][0](x0, cell), op[2][1])
+                        ny = op[3][0](op[3][0](y0, cell), op[3][1])
+
+                    # Add cone line between positive & negative
+                    dx = abs(px - nx)
+                    dy = abs(py - ny)
+
+                    if dx == 0 and dy == 2:
+                        finalCoord.append((px, py))
+                        finalCoord.append((nx, ny))
+                    else:
+                        maxX, minX = max(px, nx), min(px, nx)
+                        maxY, minY = max(py, ny), min(py, ny)
+
+                        if op[0] == op[2]:
+                            # vertical fill (same X)
+                            for y in range(minY, maxY + 1):
+                                finalCoord.append((px, y))
                         else:
-                            if op[0] == op[2]: # same x value dif y values
-                                maxY, minY = max(postive[1], negative[1]), min(postive[1], negative[1])
-                                for i in range(minY, maxY+1):
-                                    finalCoord.append((postive[0], i))
-                            elif op[3][1] == 2:
-                                maxY, minY = max(postive[1], negative[1]), min(postive[1], negative[1])
-                                maxX, minX = max(postive[0], negative[0]), min(postive[0], negative[0])
-                                yCoord = []
-                                xCoord = []
-                                for i in range(minY, maxY+1):
-                                    ##print('y:',i)
-                                    yCoord.append(i)
-                                for i in range(maxX, minX-1, -1 ):
-                                    ##print('x:',i)
-                                    xCoord.append(i)
-                                for i in range(len(xCoord)):
-                                    finalCoord.append((xCoord[i], yCoord[i]))
+                            # diagonal fill
+                            if op[3][1] == 2:
+                                yLine = list(range(minY, maxY+1))
+                                xLine = list(range(maxX, minX-1, -1))
                             else:
-                                maxY, minY = max(postive[1], negative[1]), min(postive[1], negative[1])
-                                maxX, minX = max(postive[0], negative[0]), min(postive[0], negative[0])
-                                yCoord = []
-                                xCoord = []
-                                for i in range(minY, maxY+1):
-                                    ##print('y:',i)
-                                    yCoord.append(i)
-                                for i in range(minX,maxX +1 ):
-                                    ##print('x:',i)
-                                    xCoord.append(i)
-                                for i in range(len(xCoord)):
-                                    finalCoord.append((xCoord[i], yCoord[i]))
-                    enemyCoord = [list(map.arrayCenters)[ind] for ind in enemyList]
-                    partyCoord = [list(map.arrayCenters)[ind] for ind in partyList]
-                    
-                    enemyHit = []
-                    partyHit = []
-                    enemyHit.clear()
-                    partyHit.clear()
-                    for coord in finalCoord:
-                        if coord in enemyCoord:
-                            enemyHit.append(coord)
-                        if coord in partyCoord:
-                            partyHit.append(coord)
-                    if len(partyHit) == 0 and len(enemyHit) == desired:
-                        totalHit = enemyHit+partyHit
-                        return (desired, movementCoords[hex], movementCoords[hex], totalHit)
-                    elif len(partyHit) != 0 and len(enemyHit)/len(partyHit) >= setRatio:
-                        totalHit = enemyHit+partyHit
-                        return (len(enemyHit), movementCoords[hex],movementCoords[hex], totalHit)
+                                yLine = list(range(minY, maxY+1))
+                                xLine = list(range(minX, maxX+1))
 
+                            for k in range(len(xLine)):
+                                finalCoord.append((xLine[k], yLine[k]))
 
+                # === Check hits =======================================
+                enemyHit = [c for c in finalCoord if c in enemyCoords]
+                allyHit  = [c for c in finalCoord if c in allyCoords]
+
+                # Full enemy hit with no friendly fire
+                if len(allyHit) == 0 and len(enemyHit) == desired:
+                    totalHit = enemyHit
+                    return (desired, mv, mv, totalHit)
+
+                # Ratio condition
+                if len(allyHit) > 0 and len(enemyHit)/len(allyHit) >= 4:
+                    totalHit = enemyHit + allyHit
+                    return (len(enemyHit), mv, mv, totalHit)
+
+        # reduce target threshold
         desired -= 1
-        if desired == 0:
-            return (0,0)
+
+    return (0, 0)
 
 def coordWithinReach(actorCoord, targetCoord, reach, map):
     hexLimit = reach

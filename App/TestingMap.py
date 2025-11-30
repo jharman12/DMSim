@@ -23,12 +23,8 @@ Things to work on:
     create display character move range function
         should look at what action is selected 
             if dash selected, double char move 
-        only snap to move range
+        move character to on GV to what the best location is?
             
-        
-
-    link map char movement to doAction call 
-        not sure if I have a method for grabbing cur location on graphicsviewer and converting to map hexes
     
     Build model log
         must also make print statements into a file
@@ -137,6 +133,7 @@ class CustomGraphicsView(QGraphicsView):
         )
         self.defaultFill = QColor(0, 0, 255, 50) 
         self.moveFill =  QColor(0, 255, 0, 50) 
+        self.coneFill =  QColor(255, 0, 0, 50) 
         self.setResizeAnchor(QGraphicsView.AnchorViewCenter)
 
     def setCurTurn(self, actor):
@@ -310,6 +307,13 @@ class CustomGraphicsView(QGraphicsView):
 
     def mouseMoveEvent(self, event):
         
+        if self.curActor != None:
+            scene_pos = self.mapToScene(event.pos())
+            print('Trying to drawHex')
+            affected = self.getConeHexes(distance_hexes=6, mouse_pos=scene_pos)
+            self.setHexColors(self.coneFill, affected)
+            print('setting', affected)
+
         if event.buttons() == Qt.LeftButton and self.selected_item:
             # Convert view-space delta into scene-space delta
             old_pos_scene = self.mapToScene(self.last_mouse_pos)
@@ -432,6 +436,66 @@ class CustomGraphicsView(QGraphicsView):
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.selected_item = None
+
+    def getConeHexes(self, distance_hexes, mouse_pos):
+        """
+        Returns a list of hex indices affected by a cone originating from
+        the current actor, snapped to nearest hex direction.
+
+        No drawing or highlighting — just logic.
+        """
+
+        # Validate actor
+        actor_hex = self.getCurActorHexIndex()
+        if actor_hex is None or actor_hex < 0:
+            return []
+
+        ax, ay = self.hex_centers_base[actor_hex]
+
+        # Identify which hex mouse is pointing at
+        target_hex = self.getHexFromPoint(mouse_pos)
+        if target_hex is None:
+            return []
+
+        tx, ty = self.hex_centers_base[target_hex]
+
+        # Vector actor→mouse
+        vec = QPointF(tx - ax, ty - ay)
+        angle = math.atan2(vec.y(), vec.x())
+
+        # Snap angle to nearest hex direction
+        # 6 equal slices around the actor
+        dir_index = round((angle / (math.pi / 3))) % 6
+        snapped_angle = dir_index * (math.pi / 3)
+
+        # Cone half-width (60° cone)
+        half_angle = math.radians(30)
+
+        affected = []
+
+        for hex_index, (hx, hy) in enumerate(self.hex_centers_base):
+
+            # Skip actor hex
+            if hex_index == actor_hex:
+                continue
+
+            # Check distance in hex terms
+            if self.hex_distance(actor_hex, hex_index) > distance_hexes:
+                continue
+
+            # Vector actor→hex
+            dx = hx - ax
+            dy = hy - ay
+            h_angle = math.atan2(dy, dx)
+
+            # Angle difference (wrapped correctly)
+            diff = (h_angle - snapped_angle + math.pi) % (2 * math.pi) - math.pi
+            diff = abs(diff)
+
+            if diff <= half_angle:
+                affected.append(hex_index)
+
+        return affected
 
 
     def drawHexGrid(self, heightNumber, map_rect):
