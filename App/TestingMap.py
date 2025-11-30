@@ -103,12 +103,13 @@ from modelMethods import myAction, doAction
 
 
 class CustomGraphicsView(QGraphicsView):
-    def __init__(self):
+    def __init__(self, encounter):
         super().__init__()
 
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
 
+        self.encounter = encounter
         self.curActor = None
         self.curMoveCoords = None
 
@@ -135,6 +136,8 @@ class CustomGraphicsView(QGraphicsView):
         self.moveFill =  QColor(0, 255, 0, 50) 
         self.coneFill =  QColor(255, 0, 0, 50) 
         self.setResizeAnchor(QGraphicsView.AnchorViewCenter)
+
+        self.affected = None
 
     def setCurTurn(self, actor):
         self.curActor = actor
@@ -309,10 +312,10 @@ class CustomGraphicsView(QGraphicsView):
         
         if self.curActor != None:
             scene_pos = self.mapToScene(event.pos())
-            print('Trying to drawHex')
+            #print('Trying to drawHex')
             affected = self.getConeHexes(distance_hexes=6, mouse_pos=scene_pos)
             self.setHexColors(self.coneFill, affected)
-            print('setting', affected)
+            #print('setting', affected)
 
         if event.buttons() == Qt.LeftButton and self.selected_item:
             # Convert view-space delta into scene-space delta
@@ -437,6 +440,19 @@ class CustomGraphicsView(QGraphicsView):
         if event.button() == Qt.LeftButton:
             self.selected_item = None
 
+    def getHexFromPoint(self, scene_pos):
+        if not self.hex_tree:
+            return None
+
+        map_offset = self.map_item.pos()
+        local_x = scene_pos.x() - map_offset.x()
+        local_y = scene_pos.y() - map_offset.y()
+
+        dist, snap_idx = self.hex_tree.query((local_x, local_y))
+
+        
+        return snap_idx
+
     def getConeHexes(self, distance_hexes, mouse_pos):
         """
         Returns a list of hex indices affected by a cone originating from
@@ -444,7 +460,10 @@ class CustomGraphicsView(QGraphicsView):
 
         No drawing or highlighting — just logic.
         """
-
+        if self.affected != None:
+            self.setHexColors(self.defaultFill, self.affected)
+            self.setCurMoveCoords(self.curMoveCoords)
+            self.affected = None
         # Validate actor
         actor_hex = self.getCurActorHexIndex()
         if actor_hex is None or actor_hex < 0:
@@ -480,7 +499,9 @@ class CustomGraphicsView(QGraphicsView):
                 continue
 
             # Check distance in hex terms
-            if self.hex_distance(actor_hex, hex_index) > distance_hexes:
+            # fix this by calling map... now hot to do this
+            map = self.encounter.map
+            if map.distanceCalc(actor_hex, hex_index) > distance_hexes:
                 continue
 
             # Vector actor→hex
@@ -494,7 +515,7 @@ class CustomGraphicsView(QGraphicsView):
 
             if diff <= half_angle:
                 affected.append(hex_index)
-
+        self.affected = affected
         return affected
 
 
@@ -813,20 +834,49 @@ class MapWidget(QWidget):
         main_layout = QVBoxLayout()
         main_layout.setSpacing(15)
 
-         # ---- Top: Turn Order Indicator ----
+        # ---- Top: Turn Order Indicator ----
         self.turn_order_widget = TurnOrderWidget()
         main_layout.addWidget(self.turn_order_widget)
 
         # ---- Middle: Map + Right Panel ----
         mid_layout = QHBoxLayout()
 
-        # Map widget
-        self.map_view = CustomGraphicsView()
+        # ============================================================
+        # LEFT SIDE: MAP FRAME (buttons + graphics viewer)
+        # ============================================================
+        self.map_frame = QFrame()
+        map_frame_layout = QVBoxLayout(self.map_frame)
+        map_frame_layout.setContentsMargins(0, 0, 0, 0)
+        map_frame_layout.setSpacing(5)
+
+        # --- Buttons above the map ---
+        top_button_row = QHBoxLayout()
+        top_button_row.setSpacing(10)
+
+        self.distance_button = QPushButton("Distance Calc")
+        self.distance_button.setCheckable(True)
+        top_button_row.addWidget(self.distance_button)
+
+        self.spell_button = QPushButton("Spell Area")
+        self.spell_button.setCheckable(True)
+        top_button_row.addWidget(self.spell_button)
+
+        top_button_row.addStretch()
+
+        map_frame_layout.addLayout(top_button_row)
+
+        # --- Map widget ---
+        self.map_view = CustomGraphicsView(myEncounter)
         self.map_view.setFrameShape(QFrame.Box)
         self.map_view.setMinimumSize(900, 700)
-        mid_layout.addWidget(self.map_view, 3)
+        map_frame_layout.addWidget(self.map_view)
 
-        # set map max background
+        # Add combined map frame to main middle layout
+        mid_layout.addWidget(self.map_frame, 3)
+
+        # ============================================================
+        # SETUP MAP PIXMAP
+        # ============================================================
         pixmap = QPixmap(myEncounter.mapImage)
         self.map_view.setMapPixmap(pixmap)
 
@@ -836,14 +886,13 @@ class MapWidget(QWidget):
             if player.Image == None:
                 pixmap = QPixmap(dmSimPath + "\\App\\unknown.jpg")
             elif os.path.exists(dmSimPath + player.Image):
-                
-                #pixmap = QPixmap(dmSimPath + "\\App\\unknown.jpeg")
                 pixmap = QPixmap(dmSimPath + player.Image)
             else:
                 print("path doesnt exist, trying unknown")
                 pixmap = QPixmap(dmSimPath + "\\App\\unknown.jpg")
+
             self.map_view.addCharacterPixmap(pixmap, player)
-        
+
         # Add hexes
         num_vertical_grids = int(myEncounter.numHexes)
         map_rect = self.map_view.map_item.boundingRect()
@@ -851,23 +900,27 @@ class MapWidget(QWidget):
 
         self.myEncounter = myEncounter
 
-
-        # Right-side panel
+        # ============================================================
+        # RIGHT SIDE: TURN ACTION PANEL
+        # ============================================================
         self.turn_action_panel = TurnActionPanel()
         self.turn_action_panel.setFixedWidth(250)
         self.turn_action_panel.take_turn_button.clicked.connect(self.takeTurnButton)
+
+        
         self.turnChoices = None
         self.turnChoice = None
         self.actor = None
+
         mid_layout.addWidget(self.turn_action_panel, 1)
 
+        # Add mid layout to main
         main_layout.addLayout(mid_layout)
 
         # ---- Bottom: Start Encounter Button ----
         self.start_button = QPushButton("Start Encounter")
         self.start_button.setFixedHeight(40)
         self.start_button.clicked.connect(self.run_command)
-
         main_layout.addWidget(self.start_button)
 
         self.setLayout(main_layout)
