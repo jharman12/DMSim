@@ -622,6 +622,8 @@ def doAction(actor, map, turnChoice):
     elif turnChoice.type == 'heal':
         healSpellTurn(actor, turnChoice, map)
 
+    removeDeadActors(map)
+
 def healSpellTurn(actor, turnChoice, map):
     actorCoord = [x for x in map.arrayCenters.keys() if map.arrayCenters[x] == actor][0]
     player = 1

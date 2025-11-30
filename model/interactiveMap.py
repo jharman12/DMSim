@@ -122,7 +122,7 @@ class interactiveMap:
                 # find starting index and ending index
                 
                 newIndex = self.convertToViewerCoords(coord)
-                self.graphicsViewer.moveActor(newIndex, mover)
+                self.graphicsViewer.moveActor(mover, newIndex)
                 
     def dashActor(self, mover, targetCoord):
         print(mover.name, ' is taking the dash action to ', targetCoord)
@@ -165,6 +165,23 @@ class interactiveMap:
         #self.arrayCenters[moverLoc] = ''
         #self.arrayCenters[moverNew] = mover
         #self.printCurrMap()
+    def nearestFreeHex(self, startIndex, endIndex):
+        ##print(startIndex, endIndex)
+        nearIndexList = self.neighbors(list(self.arrayCenters)[endIndex])
+        min = 999999
+        minIndex = -99 # invalid index to catch if nothing is in reach
+        for index in nearIndexList:
+            distance = self.distanceCalc(index, startIndex)
+            if distance <= min and self.arrayCenters[list(self.arrayCenters)[index]] == '':
+                min = distance
+                minIndex = index
+        if minIndex == -99:
+            minIndex = startIndex
+            self.printCurrMap()
+            #print(self.arrayCenters[list(self.arrayCenters)[startIndex]], 'going to', self.arrayCenters[list(self.arrayCenters)[endIndex]])
+        #print("nearestFreehex", list(self.arrayCenters)[minIndex])
+        return list(self.arrayCenters)[minIndex]
+        #return minIndex
 
     def distanceCalc(self, index1, index2):
         ##print(list(self.arrayCenters)[index1])

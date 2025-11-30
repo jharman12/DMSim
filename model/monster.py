@@ -17,8 +17,9 @@ from modelMethods import down_round, weibull, cone, WeaponNew, col_round, bestSp
     rollSave, rollDeathSave
     
 class Monster:
-    def __init__(self, name, ac, health, speed, modDict, turnFactors, weaponList, size, spells, spellMod, multiAttack, legRes = 0, legAction = [0, '']):
+    def __init__(self, name, ac, health, speed, modDict, turnFactors, weaponList, size, spells, spellMod, multiAttack, legRes = 0, legAction = [0, ''], Image = None):
         self.name = name
+        self.Image = Image
         self.ac = ac
         self.health = health
         self.maxHealth = health

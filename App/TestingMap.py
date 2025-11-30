@@ -2,6 +2,9 @@
 Things to work on:
 
     
+    encounter playback now works (only chooses best action for right now)
+        model crashes when a character dies??
+        interactiveEncounter.calcTurn returns none
     
     removeDeadActor also needs to remove from GUI
         move method to do action
@@ -13,21 +16,13 @@ Things to work on:
     
     need to find optimal movement for heal and some spells as well
 
-    add blank image if nothing image = none or cant find path
-
-    create a class for turn choices so that everything has to be uniform
-    
-    Create encounter play back that goes one turn at a time
-        
-        create method for choosing a possible action during your turn
-            need to create GUI inputs for this as command line input() breaks
-
     
     create display character move range function
     
     add right click to see popup of character stats
     
     create functions similar to bestSphere but with inputted sphere (spells originating from self will be hard)
+
     create gui for character actions 
         list possible actions
         select target (hex of area or creature if single)
@@ -50,7 +45,7 @@ Things to work on:
         this will also make the turnchoice faster 
     
 '''
-
+import os
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
@@ -76,8 +71,8 @@ sys.path.insert(1, dmSimPath + '\\model')
 #from interactiveMap import interactiveMap
 from interactiveEncounter import interactiveEncounter
 from player import createPartyList
-
-
+from monster import createMonsterList, Monster
+from modelMethods import myAction, doAction
 
 
 #class Player:
@@ -579,8 +574,8 @@ class TurnActionPanel(QWidget):
 
         # Update health bar and health text
         
-        self.health_bar.setMaximum(actor.maxHealth)
-        self.health_bar.setValue(actor.health)
+        self.health_bar.setMaximum(int(actor.maxHealth))
+        self.health_bar.setValue(int(actor.health))
         self.health_label.setText(f"{actor.health} / {actor.maxHealth}")
 
         # Update action dropdown
@@ -628,7 +623,15 @@ class MapWidget(QWidget):
         # Add every player to the map
         for player in myEncounter.totalList:
             print(player.Image, 'Trying to create character pixmap')
-            pixmap = QPixmap(dmSimPath + player.Image)
+            if player.Image == None:
+                pixmap = QPixmap(dmSimPath + "\\App\\unknown.jpg")
+            elif os.path.exists(dmSimPath + player.Image):
+                
+                #pixmap = QPixmap(dmSimPath + "\\App\\unknown.jpeg")
+                pixmap = QPixmap(dmSimPath + player.Image)
+            else:
+                print("path doesnt exist, trying unknown")
+                pixmap = QPixmap(dmSimPath + "\\App\\unknown.jpg")
             self.map_view.addCharacterPixmap(pixmap, player)
         
         # Add hexes
@@ -642,6 +645,10 @@ class MapWidget(QWidget):
         # Right-side panel
         self.turn_action_panel = TurnActionPanel()
         self.turn_action_panel.setFixedWidth(250)
+        self.turn_action_panel.take_turn_button.clicked.connect(self.takeTurnButton)
+        self.turnChoices = None
+        self.turnChoice = None
+        self.actor = None
         mid_layout.addWidget(self.turn_action_panel, 1)
 
         main_layout.addLayout(mid_layout)
@@ -657,13 +664,29 @@ class MapWidget(QWidget):
         
         self.testingTheory()
     
+    def takeTurnButton(self):
+        # now load inputs and and call doAction function
+        #myAction(name =, type=, mod=, numHit=, currCoord=, moveCoord=, targets=, castCoord=)
+        # grab name of spell
+        if self.turnChoice != None and self.actor != None: # for now just do the best action. will work on actually choosing action
+            doAction(self.actor, self.myEncounter.map, self.turnChoice)
+            self.myEncounter.nextTurn()
+            turns = self.myEncounter.calcTurn()
+            if turns != None:
+                self.actor = turns[0]
+                self.turnChoices = turns[2]
+                self.turnChoice = turns[3]
+                self.turn_action_panel.update_turn_panel(self.actor, self.turnChoices, self.turnChoice)
+
+        pass
     def run_command(self):
         
         turns = self.myEncounter.calcTurn()
-        actor = turns[0]
-        turnChoices = turns[2]
-        turnChoice = turns[3]
-        self.turn_action_panel.update_turn_panel(actor, turnChoices, turnChoice)
+        if turns != None:
+            self.actor = turns[0]
+            self.turnChoices = turns[2]
+            self.turnChoice = turns[3]
+            self.turn_action_panel.update_turn_panel(self.actor, self.turnChoices, self.turnChoice)
 
     def testingTheory(self):
         # should populate turn_order_widget
@@ -685,8 +708,8 @@ dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-4]
 print(dmSimPath)
 
 path = dmSimPath + '\\actors\\savedObjs\\'
-myPlayers = createPartyList(['Ephraim', 'Arabella'], path = path)
-badGuys = createPartyList(['Root', 'Darian'], path = path)
+myPlayers = createPartyList(['Ephraim', 'Arabella', 'Root', 'Darian'], path = path)
+badGuys = createMonsterList(["Quenth"] + ["Demogorgon" for i in range(1)], path = path)
 myEncounter = interactiveEncounter(myPlayers, [], badGuys, 20, dmSimPath + "\\App\\Maps\\maze Engine.webp")
 #myMap = Map('mazeEngine',dmSimPath + "\\App\\Maps\\maze Engine.webp", 10, myPlayers)
 

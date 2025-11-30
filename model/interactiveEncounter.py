@@ -41,9 +41,14 @@ class interactiveEncounter(QThread):
         initList = {x:(r.randint(1,20) + x.initMod) for x in self.totalList}
         self.sortedInitList = dict(sorted(initList.items(), key = lambda x:x[1], reverse=True))
         self.curTurn = 0
+        self.graphicsViewer = graphicsViewer
 
     def nextTurn(self):
+        
         self.curTurn += 1 
+        print(self.curTurn, len(self.sortedInitList))
+        if self.curTurn >= len(self.sortedInitList):
+            self.curTurn = 0
 
     def calcTurn(self):
         # new combat... 
@@ -67,15 +72,22 @@ class interactiveEncounter(QThread):
             outcome = rollSave(actor, actor.cc[1][0], actor.cc[2]) 
             #print('\t Actor cced, trying to save...either way no turn taken \n')
             if outcome: # if failed save... still cced
-                return
+                self.nextTurn()
+                return self.calcTurn()
             else: # if passed save... no long cced
                 actor.cc = []
-                return    
+                self.nextTurn()
+                return self.calcTurn()
         if actor in self.map.enemy: # if on enemy list your enemy is the party
             if len(self.map.party) == 0: # if enemies already down... skip turn
                 
                 return
-            return takeTurn(actor, self.map, interactive=True)
+            takeTurn(actor, self.map, interactive=False)
+            self.nextTurn()
+            removeDeadActors(self.map, self.sortedInitList)
+            testing = self.calcTurn()
+            print("return ", testing)
+            return testing
             
             
         else: # if not on enemy list your enemy is enemyList
