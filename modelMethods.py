@@ -11,6 +11,16 @@ import operator
 from scipy import spatial
 import array
 
+def singleton(cls):
+    instances = {}
+
+    def get_instance(*args, **kwargs):
+        if cls not in instances:
+            instances[cls] = cls(*args, **kwargs)
+        return instances[cls]
+
+    return get_instance
+
 
 def removeDeadActors(map, sortedInitList):
     totalList = map.party + map.enemy
@@ -27,7 +37,7 @@ def removeDeadActors(map, sortedInitList):
             del sortedInitList[deadActor]
     return deadActors
 
-def takeTurn(actor, m, interactive = False):
+def takeTurn(actor, m, interactive = False, gViewer = None):
     '''
     Turn decidider function... take enemyList and decide what to do for the turn
         based on action with most dmg/healing
@@ -35,6 +45,7 @@ def takeTurn(actor, m, interactive = False):
     loops through every weapon and spell and decides best movement/castcoord to do the most damage
     '''
     global map
+    print(gViewer)
     map = m
     player = 1
     healDownedTeammate = []
@@ -90,7 +101,7 @@ def takeTurn(actor, m, interactive = False):
     distanceMatrix = [(map.distanceCalc(myIndex, index), map.distanceCalc(closestIndex, index)) for index in range(len(list(map.arrayCenters))) if map.arrayCenters[list(map.arrayCenters)[index]] == '']
     # this might need to move to inside graphicsViewer or widget as we want to check if curAction == 'dash' to double speed
     moveMatrix = [index for index in range(len(list(map.arrayCenters))) if map.distanceCalc(index, myIndex) <= actor.speed/5 and 
-                  map.arrayCenters[list(map.arrayCenters)[index]] == ''] 
+                  (map.arrayCenters[list(map.arrayCenters)[index]] == '') or map.arrayCenters[list(map.arrayCenters)[index]] == actor] 
     
     turnChoices = []
     #print(actor.name, " finding my array")

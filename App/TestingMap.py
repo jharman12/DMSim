@@ -19,11 +19,22 @@ Things to work on:
         finding a lot of errors in the model while playing out (best choice is always the best choice)
     GUI CHANGES *****************************************************************************
 
+    create best line (try using old method but with caching, might be something I can use in the actual model as well)
+    create best square
+    figure out targeting of non spells
+        melee is just a 1 hex sphere
     
-    create display character move range function
-        should look at what action is selected 
-            if dash selected, double char move 
-        move character to on GV to what the best location is?
+    mouse click while spell area checked unchecks spell area and freezes spell in place
+        this will return targets to myAction class
+    
+    fix start up not assigning curActor to GV
+        this is making model crash when you cant select a char to move
+
+    properly get changing action drop box reset hex colors and untoggle spell area button if checked
+
+    
+    move character to on GV to what the best location is?
+    
             
     
     Build model log
@@ -34,10 +45,9 @@ Things to work on:
 
     Add/remove is hard coded thickness? (overtime it is making the icon turn into a square)
     
-    create functions similar to bestSphere but with inputted sphere (spells originating from self will be hard)
+    
 
     create gui for character actions 
-        list possible actions
         select target (hex of area or creature if single)
             add not an appropiate target reselect feature for single target
         auto-roll or manual
@@ -67,7 +77,7 @@ from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtWidgets import QApplication, QPushButton, QMainWindow, QWidget, QVBoxLayout
 from PyQt5.QtCore import QSize, Qt
-#from custom_graphics_view import CustomGraphicsView
+
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPolygonItem
 from PyQt5.QtCore import Qt, QPointF, QRectF, QSizeF
@@ -76,6 +86,7 @@ import math
 from scipy import spatial
 import numpy as np
 import sys
+from functools import lru_cache
 import pathlib
 dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-4]
 print(dmSimPath)
@@ -109,6 +120,8 @@ class CustomGraphicsView(QGraphicsView):
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
 
+        self.spellAreaCheck = False
+        self.spellAreaType = None
         self.encounter = encounter
         self.curActor = None
         self.curMoveCoords = None
@@ -174,7 +187,7 @@ class CustomGraphicsView(QGraphicsView):
         # Build KD-Tree from filtered centers
         self.snap_tree = spatial.KDTree(self.snap_centers)
 
-        print("Snap KD-Tree built with", len(self.snap_centers), "hexes")
+        #print("Snap KD-Tree built with", len(self.snap_centers), "hexes")
 
     def getSnapHexIndex(self, scene_pos):
         if not self.snap_tree:
@@ -308,13 +321,42 @@ class CustomGraphicsView(QGraphicsView):
 
         super().mousePressEvent(event)
 
+    def handleSpellAreaCheck(self, mouse_pos):
+        # need to pass hex distance and spell range through here
+        # create self.spellrange and self.spellhexdistance?
+        # cone and line assume its coming from char
+        if self.spellAreaType == 'cone':
+            affected = self.getConeHexes(distance_hexes=6, mouse_pos=mouse_pos)
+            self.setHexColors(self.coneFill, affected)
+        
+        if self.spellAreaType == 'line':
+            affected = self.getLineHexes(distance_hexes=6, mouse_pos=mouse_pos)
+            self.setHexColors(self.coneFill, affected)
+        
+        if self.spellAreaType == 'square':
+            affected = self.getConeHexes(distance_hexes=6, mouse_pos=mouse_pos)
+            self.setHexColors(self.coneFill, affected)
+
+        # sphere is dependent on cast location
+        
+        if self.spellAreaType == 'sphere':
+            affected = self.getSphereHexes(distance_hexes=6, mouse_pos=mouse_pos, spellRange=12) # notionally set
+            self.setHexColors(self.coneFill, affected)
+        
+        
+        
+        
+        
+
     def mouseMoveEvent(self, event):
         
         if self.curActor != None:
             scene_pos = self.mapToScene(event.pos())
             #print('Trying to drawHex')
-            affected = self.getConeHexes(distance_hexes=6, mouse_pos=scene_pos)
-            self.setHexColors(self.coneFill, affected)
+            if self.spellAreaCheck:
+                self.handleSpellAreaCheck(scene_pos)
+                #affected = self.getConeHexes(distance_hexes=6, mouse_pos=scene_pos)
+                #self.setHexColors(self.coneFill, affected)
             #print('setting', affected)
 
         if event.buttons() == Qt.LeftButton and self.selected_item:
@@ -357,22 +399,6 @@ class CustomGraphicsView(QGraphicsView):
                         snap_y = snap_center_scene[1] - character_size.height() / 2
                         self.selected_item.setPos(snap_x, snap_y)
 
-                #if len(self.hex_items) > 0:
-                    #item = self.map_item
-                    #delta_x, delta_y = item.pos().x(), item.pos().y()
-
-                    
-                    #scene_pos = self.mapToScene(event.pos())
-                    #hex_centers = [[x.x(), x.y()] for x in self.arrayCenters]
-
-                    #hex_arrays = np.array(hex_centers) + np.array([delta_x, delta_y])
-                    #current_index = spatial.KDTree(hex_arrays).query((scene_pos.x(), scene_pos.y()))[1]
-                    #snap_coord = hex_arrays[current_index]
-
-                    #character_size = self.selected_item.boundingRect().size()
-                    #snap_x = snap_coord[0] - character_size.width() / 2
-                    #snap_y = snap_coord[1] - character_size.height() / 2
-                    #self.selected_item.setPos(snap_x, snap_y)
                 else:
                     self.selected_item.setPos(self.selected_item.pos() + delta_scene)
 
@@ -453,6 +479,220 @@ class CustomGraphicsView(QGraphicsView):
         
         return snap_idx
 
+    def angleDiff(self, a, b):
+        """Return smallest angular difference."""
+        diff = abs(a - b) % (2 * math.pi)
+        if diff > math.pi:
+            diff = 2 * math.pi - diff
+        return diff
+
+    def calcLine(self, index1, index2, hexLimit):
+        """
+        Returns a list of hex indexes forming a straight line starting at index1
+        and pointing toward index2, extending hexLimit hexes.
+        """
+
+        map = self.encounter.map
+        centers = list(map.arrayCenters)
+
+        # starting + target coords
+        c1 = centers[index1]
+        c2 = centers[index2]
+
+        # compute angle from index1 to index2
+        angle = math.atan2(c2[1] - c1[1], c2[0] - c1[0])
+
+        # pick which of the 6 hex directions the angle is closest to
+        # using your axial-coordinate aligned directions
+        axial_dirs = [
+            (1, 0),    # E
+            (1, -1),   # NE
+            (0, -1),   # NW
+            (-1, 0),   # W
+            (-1, 1),   # SW
+            (0, 1),    # SE
+        ]
+
+        # compute ideal angle for each direction
+        dir_angles = [
+            math.atan2(dy, dx) for dx, dy in axial_dirs
+        ]
+
+        # pick direction whose angle is closest
+        best_dir_idx = min(
+            range(6),
+            key=lambda i: abs(self.angleDiff(angle, dir_angles[i]))
+        )
+
+        dx, dy = axial_dirs[best_dir_idx]
+
+        # Walk forward along this direction
+        affected = []
+        cur_x, cur_y = c1
+
+        # Convert map coords → index fast
+        center_to_index = {xy: i for i, xy in enumerate(centers)}
+
+        for _ in range(hexLimit):
+            cur_x += dx
+            cur_y += dy
+            coord = (cur_x, cur_y)
+
+            if coord in center_to_index:
+                affected.append(center_to_index[coord])
+            else:
+                break  # stop if line marches off the map
+        
+        return affected
+
+    
+    @lru_cache(maxsize=2048)
+    def calcHexes(self, index1, index2, hexLimit):
+        import operator, math
+
+        map = self.encounter.map
+        arrayCenters = list(map.arrayCenters)
+
+        # === OPERATIONS (your provided table) =========================
+        operations2 = [
+            [[operator.sub, 1], [operator.add, 1], [operator.sub, 1], [operator.sub, 1]],
+            [[operator.sub, 1], [operator.sub, 1], [operator.add, 0], [operator.sub, 2]],
+            [[operator.add, 0], [operator.sub, 2], [operator.add, 1], [operator.sub, 1]],
+            [[operator.add, 1], [operator.sub, 1], [operator.add, 1], [operator.add, 1]],
+            [[operator.add, 1], [operator.add, 1], [operator.add, 0], [operator.add, 2]],
+            [[operator.add, 0], [operator.add, 2], [operator.sub, 1], [operator.add, 1]]
+        ]
+
+        # === STEP 1: Use ALREADY double-coords ========================
+        ox, oy = arrayCenters[index1]
+        tx, ty = arrayCenters[index2]
+
+        # === STEP 2: compute angle using double-coords ================
+        angle = math.atan2((oy - ty), (ox - tx))
+
+
+        # Hex direction center angles (still correct for double axial)
+        dirAngles = [
+            math.radians(0),     # E
+            math.radians(60),    # NE
+            math.radians(120),   # NW
+            math.radians(180),   # W
+            math.radians(-120),  # SW
+            math.radians(-60)    # SE
+        ]
+
+        # Select closest operation
+        bestOpIndex = min(
+            range(6),
+            key=lambda i: abs((angle - dirAngles[i] + math.pi) % (2 * math.pi) - math.pi)
+        )
+        selectedOp = operations2[bestOpIndex]
+
+        affectedCoords = []
+
+        # === STEP 3: Cone sweep (EXACT logic from your method) ========
+        for cell in range(hexLimit):
+
+            # POSITIVE direction
+            if selectedOp[0][1] == 0:
+                px = selectedOp[0][0](ox, selectedOp[0][1])
+                py = selectedOp[1][0](selectedOp[1][0](oy, cell * 2), selectedOp[1][1])
+            else:
+                px = selectedOp[0][0](selectedOp[0][0](ox, cell), selectedOp[0][1])
+                py = selectedOp[1][0](selectedOp[1][0](oy, cell), selectedOp[1][1])
+
+            # NEGATIVE direction
+            if selectedOp[2][1] == 0:
+                nx = selectedOp[2][0](ox, selectedOp[2][1])
+                ny = selectedOp[3][0](selectedOp[3][0](oy, cell * 2), selectedOp[3][1])
+            else:
+                nx = selectedOp[2][0](selectedOp[2][0](ox, cell), selectedOp[2][1])
+                ny = selectedOp[3][0](selectedOp[3][0](oy, cell), selectedOp[3][1])
+
+            dx = abs(px - nx)
+            dy = abs(py - ny)
+
+            if dx == 0 and dy == 2:
+                affectedCoords.append((px, py))
+                affectedCoords.append((nx, ny))
+            else:
+                maxX, minX = max(px, nx), min(px, nx)
+                maxY, minY = max(py, ny), min(py, ny)
+
+                if selectedOp[0] == selectedOp[2]:
+                    # vertical fill
+                    for y in range(minY, maxY + 1):
+                        affectedCoords.append((px, y))
+                else:
+                    # diagonal fill
+                    if selectedOp[3][1] == 2:
+                        yLine = list(range(minY, maxY + 1))
+                        xLine = list(range(maxX, minX - 1, -1))
+                    else:
+                        yLine = list(range(minY, maxY + 1))
+                        xLine = list(range(minX, maxX + 1))
+
+                    for k in range(len(xLine)):
+                        affectedCoords.append((xLine[k], yLine[k]))
+
+        # === STEP 4: Convert axial coords → indexes ====================
+        affectedIndexes = []
+
+        coordSet = set(affectedCoords)
+        for i, coord in enumerate(arrayCenters):
+            if coord in coordSet:
+                affectedIndexes.append(i)
+
+        return affectedIndexes
+
+    def getSphereHexes(self, distance_hexes, spellRange, mouse_pos):
+        #print('Please supply sphere stuff here')
+        if self.affected != None:
+            self.setHexColors(self.defaultFill, self.affected)
+            self.setCurMoveCoords(self.curMoveCoords)
+            self.affected = None
+
+        actor_hex = self.getCurActorHexIndex()
+        if actor_hex is None or actor_hex < 0:
+            return []
+        
+        target_hex = self.getHexFromPoint(mouse_pos)
+        if target_hex is None:
+            return []
+        map = self.encounter.map
+        affected = [ind for ind in range(len(self.hex_centers_base ))
+                    if map.distanceCalc(target_hex, ind) <= distance_hexes]
+
+        self.affected = affected
+        
+        return affected
+        
+
+    def getLineHexes(self, distance_hexes, mouse_pos):
+        if self.affected != None:
+            self.setHexColors(self.defaultFill, self.affected)
+            self.setCurMoveCoords(self.curMoveCoords)
+            self.affected = None
+        # Validate actor
+        actor_hex = self.getCurActorHexIndex()
+        if actor_hex is None or actor_hex < 0:
+            return []
+
+        ax, ay = self.hex_centers_base[actor_hex]
+
+        # Identify which hex mouse is pointing at
+        target_hex = self.getHexFromPoint(mouse_pos)
+        if target_hex is None:
+            return []
+        affected = self.calcLine(actor_hex, target_hex, distance_hexes)
+        self.affected = affected
+        return affected
+
+
+    def getSquareHexes(self, distances_hexes, mouse_pos):
+        print('Please supply square stuff here')
+        pass
+
     def getConeHexes(self, distance_hexes, mouse_pos):
         """
         Returns a list of hex indices affected by a cone originating from
@@ -475,48 +715,10 @@ class CustomGraphicsView(QGraphicsView):
         target_hex = self.getHexFromPoint(mouse_pos)
         if target_hex is None:
             return []
-
-        tx, ty = self.hex_centers_base[target_hex]
-
-        # Vector actor→mouse
-        vec = QPointF(tx - ax, ty - ay)
-        angle = math.atan2(vec.y(), vec.x())
-
-        # Snap angle to nearest hex direction
-        # 6 equal slices around the actor
-        dir_index = round((angle / (math.pi / 3))) % 6
-        snapped_angle = dir_index * (math.pi / 3)
-
-        # Cone half-width (60° cone)
-        half_angle = math.radians(30)
-
-        affected = []
-
-        for hex_index, (hx, hy) in enumerate(self.hex_centers_base):
-
-            # Skip actor hex
-            if hex_index == actor_hex:
-                continue
-
-            # Check distance in hex terms
-            # fix this by calling map... now hot to do this
-            map = self.encounter.map
-            if map.distanceCalc(actor_hex, hex_index) > distance_hexes:
-                continue
-
-            # Vector actor→hex
-            dx = hx - ax
-            dy = hy - ay
-            h_angle = math.atan2(dy, dx)
-
-            # Angle difference (wrapped correctly)
-            diff = (h_angle - snapped_angle + math.pi) % (2 * math.pi) - math.pi
-            diff = abs(diff)
-
-            if diff <= half_angle:
-                affected.append(hex_index)
+        affected = self.calcHexes(actor_hex, target_hex, distance_hexes)
         self.affected = affected
         return affected
+       
 
 
     def drawHexGrid(self, heightNumber, map_rect):
@@ -830,7 +1032,7 @@ class TurnActionPanel(QWidget):
 class MapWidget(QWidget):
     def __init__(self, myEncounter):
         super().__init__()
-
+        global gViewer
         main_layout = QVBoxLayout()
         main_layout.setSpacing(15)
 
@@ -859,6 +1061,7 @@ class MapWidget(QWidget):
 
         self.spell_button = QPushButton("Spell Area")
         self.spell_button.setCheckable(True)
+        self.spell_button.clicked.connect(self.spellButton_pressed)
         top_button_row.addWidget(self.spell_button)
 
         top_button_row.addStretch()
@@ -867,6 +1070,7 @@ class MapWidget(QWidget):
 
         # --- Map widget ---
         self.map_view = CustomGraphicsView(myEncounter)
+        gViewer = self.map_view
         self.map_view.setFrameShape(QFrame.Box)
         self.map_view.setMinimumSize(900, 700)
         map_frame_layout.addWidget(self.map_view)
@@ -906,7 +1110,7 @@ class MapWidget(QWidget):
         self.turn_action_panel = TurnActionPanel()
         self.turn_action_panel.setFixedWidth(250)
         self.turn_action_panel.take_turn_button.clicked.connect(self.takeTurnButton)
-
+        self.turn_action_panel.action_dropdown.currentTextChanged.connect(self.actionChanged)
         
         self.turnChoices = None
         self.turnChoice = None
@@ -926,7 +1130,39 @@ class MapWidget(QWidget):
         self.setLayout(main_layout)
         
         self.testingTheory()
+
+    def actionChanged(self):
+        self.spellButton_pressed()
+        self.spell_button.setChecked(False)
     
+    def spellButton_pressed(self):
+        if self.map_view.curActor == None:
+            return
+        if self.map_view.spellAreaCheck:
+            self.map_view.spellAreaCheck = False
+        else:
+            self.map_view.spellAreaCheck = True
+        actor = self.map_view.curActor
+        action = self.turn_action_panel.action_dropdown.currentText()
+        if action in actor.spells.keys():
+            if 'cone' in actor.spells[action]['area']:
+                self.map_view.spellAreaType = 'cone'
+
+            elif 'sphere' in actor.spells[action]['area']:
+                self.map_view.spellAreaType = 'sphere'
+            
+            elif 'line' in actor.spells[action]['area']:
+                self.map_view.spellAreaType = 'line'
+            
+            elif 'square' in actor.spells[action]['area']:
+                self.map_view.spellAreaType = 'square'
+
+            else:
+                self.map_view.spellAreaType = None
+                
+
+                
+        pass
     def takeTurnButton(self):
         # now load inputs and and call doAction function
         #myAction(name =, type=, mod=, numHit=, currCoord=, moveCoord=, targets=, castCoord=)
