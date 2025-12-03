@@ -333,11 +333,10 @@ class CustomGraphicsView(QGraphicsView):
             affected = self.getLineHexes(distance_hexes=6, mouse_pos=mouse_pos)
             self.setHexColors(self.coneFill, affected)
         
+        # uses spell range
         if self.spellAreaType == 'square':
-            affected = self.getConeHexes(distance_hexes=6, mouse_pos=mouse_pos)
+            affected = self.getSquareHexes(distance_hexes=6, mouse_pos=mouse_pos, spellRange = 12)
             self.setHexColors(self.coneFill, affected)
-
-        # sphere is dependent on cast location
         
         if self.spellAreaType == 'sphere':
             affected = self.getSphereHexes(distance_hexes=6, mouse_pos=mouse_pos, spellRange=12) # notionally set
@@ -718,7 +717,7 @@ class CustomGraphicsView(QGraphicsView):
         return affected
 
 
-    def getSquareHexes(self, distances_hexes, mouse_pos):
+    def getSquareHexes(self, distances_hexes, mouse_pos, spellRange):
         print('Please supply square stuff here')
         pass
 
