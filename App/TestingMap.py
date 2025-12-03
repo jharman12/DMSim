@@ -95,7 +95,7 @@ sys.path.insert(1, dmSimPath + '\\model')
 from interactiveEncounter import interactiveEncounter
 from player import createPartyList
 from monster import createMonsterList, Monster
-from modelMethods import myAction, doAction
+from modelMethods import myAction, doAction, drawLine
 
 
 #class Player:
@@ -487,6 +487,35 @@ class CustomGraphicsView(QGraphicsView):
         return diff
 
     def calcLine(self, index1, index2, hexLimit):
+        print("in calcLine")
+        
+        map = self.encounter.map
+        coord1 = list(map.arrayCenters)[index1]
+        coord2 = list(map.arrayCenters)[index2]
+        # simple case... outside hexlimit
+        if map.distanceCalc(index1, index2) >= hexLimit:
+
+            line = drawLine(coord1, coord2, map)
+            hexes = [list(map.arrayCenters).index(coord) for coord in line]
+            affected = [ind for ind in hexes if map.distanceCalc(ind, index1) <= hexLimit]
+            return affected
+        
+        cone = self.calcHexes(index1, index2, hexLimit)
+        
+        maxDist = [ind for ind in cone if map.distanceCalc(ind, index1) == hexLimit]
+        
+        for ind in maxDist:
+            newCoord = list(map.arrayCenters)[ind]
+            line = drawLine(coord1, newCoord, map)
+            #print(coord2, line)
+            if coord2 in line:
+                #print(line)
+                return [list(map.arrayCenters).index(x) for x in line]
+            
+        #print('Error calcLine failed')
+        return []
+
+    def calcLine2(self, index1, index2, hexLimit):
         """
         Returns a list of hex indexes forming a straight line starting at index1
         and pointing toward index2, extending hexLimit hexes.
