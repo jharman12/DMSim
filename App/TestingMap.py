@@ -80,7 +80,7 @@ from PyQt5.QtCore import QSize, Qt
 
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPolygonItem
-from PyQt5.QtCore import Qt, QPointF, QRectF, QSizeF
+from PyQt5.QtCore import Qt, QPointF, QRectF, QSizeF, pyqtSignal
 from PyQt5.QtGui import QPixmap, QPen, QPolygonF, QPainter, QPainterPath, QBitmap, QColor, QBrush
 import math
 from scipy import spatial
@@ -88,6 +88,7 @@ import numpy as np
 import sys
 from functools import lru_cache
 import pathlib
+import re
 dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-4]
 print(dmSimPath)
 sys.path.insert(1, dmSimPath + '\\model')
@@ -114,6 +115,7 @@ from modelMethods import myAction, doAction, drawLine
 
 
 class CustomGraphicsView(QGraphicsView):
+    affectedSaved = pyqtSignal(list)
     def __init__(self, encounter):
         super().__init__()
 
@@ -122,6 +124,8 @@ class CustomGraphicsView(QGraphicsView):
 
         self.spellAreaCheck = False
         self.spellAreaType = None
+        self.spellRange = None
+        self.spellDistance = None
         self.encounter = encounter
         self.curActor = None
         self.curMoveCoords = None
@@ -290,6 +294,7 @@ class CustomGraphicsView(QGraphicsView):
         event.accept()
 
     def mousePressEvent(self, event):
+        super().mousePressEvent(event)
         if event.button() == Qt.RightButton:
             scene_pos = self.mapToScene(event.pos())
 
@@ -311,6 +316,9 @@ class CustomGraphicsView(QGraphicsView):
             self.last_mouse_pos = event.pos()
             item = self.itemAt(event.pos())
             self.selected_item = None # gpt added
+            if self.spellAreaCheck != None and self.affected != None:
+                self.affectedSaved.emit(self.affected)
+                self.spellAreaCheck = None
 
             if item == self.map_item:
                 self.selected_item = item
@@ -326,11 +334,11 @@ class CustomGraphicsView(QGraphicsView):
         # create self.spellrange and self.spellhexdistance?
         # cone and line assume its coming from char
         if self.spellAreaType == 'cone':
-            affected = self.getConeHexes(distance_hexes=6, mouse_pos=mouse_pos)
+            affected = self.getConeHexes(distance_hexes=self.spellDistance, mouse_pos=mouse_pos)
             self.setHexColors(self.coneFill, affected)
         
         if self.spellAreaType == 'line':
-            affected = self.getLineHexes(distance_hexes=6, mouse_pos=mouse_pos)
+            affected = self.getLineHexes(distance_hexes=self.spellDistance, mouse_pos=mouse_pos)
             self.setHexColors(self.coneFill, affected)
         
         # uses spell range
@@ -338,9 +346,10 @@ class CustomGraphicsView(QGraphicsView):
             affected = self.getSquareHexes(distance_hexes=6, mouse_pos=mouse_pos, spellRange = 12)
             self.setHexColors(self.coneFill, affected)
         
-        if self.spellAreaType == 'sphere':
-            affected = self.getSphereHexes(distance_hexes=6, mouse_pos=mouse_pos, spellRange=12) # notionally set
+        if self.spellAreaType == 'sphere' or self.spellAreaType == 'weapon':
+            affected = self.getSphereHexes(distance_hexes=self.spellDistance, mouse_pos=mouse_pos, spellRange=12) # notionally set
             self.setHexColors(self.coneFill, affected)
+        
         
         
         
@@ -1103,6 +1112,8 @@ class MapWidget(QWidget):
         self.map_view.setMinimumSize(900, 700)
         map_frame_layout.addWidget(self.map_view)
 
+        self.map_view.affectedSaved.connect(self.updateTargets)
+
         # Add combined map frame to main middle layout
         mid_layout.addWidget(self.map_frame, 3)
 
@@ -1159,9 +1170,18 @@ class MapWidget(QWidget):
         
         self.testingTheory()
 
+    def updateTargets(self, affectedHexes):
+        #print(affectedHexes)
+        targetsHit = [list(self.myEncounter.map.arrayCenters)[ind] for ind in affectedHexes if 
+                      self.myEncounter.map.arrayCenters[list(self.myEncounter.map.arrayCenters)[ind]] != '']
+        print(targetsHit)
+        self.turnChoice.targets = targetsHit
+        targetNames = [self.myEncounter.map.arrayCenters[coord].name for coord in targetsHit]
+        self.turn_action_panel.targets_input.setText(str(targetNames))
+
     def actionChanged(self):
         self.spellButton_pressed()
-        self.spell_button.setChecked(False)
+        #self.spell_button.setChecked(False)
     
     def spellButton_pressed(self):
         if self.map_view.curActor == None:
@@ -1175,15 +1195,26 @@ class MapWidget(QWidget):
         if action in actor.spells.keys():
             if 'cone' in actor.spells[action]['area']:
                 self.map_view.spellAreaType = 'cone'
+                self.map_view.spellRange = None # cones assume spell range = 0
+                self.map_view.spellDistance = int(int(re.findall(r'\d+', actor.spells[action]['area'])[0])/5)
+                 
+                
 
             elif 'sphere' in actor.spells[action]['area']:
                 self.map_view.spellAreaType = 'sphere'
+                self.map_view.spellRange = None # cones assume spell range = 0
+                self.map_view.spellDistance = int(int(re.findall(r'\d+', actor.spells[action]['area'])[0])/5)
+
             
             elif 'line' in actor.spells[action]['area']:
                 self.map_view.spellAreaType = 'line'
+                self.map_view.spellRange = None # cones assume spell range = 0
+                self.map_view.spellDistance = int(int(re.findall(r'\d+', actor.spells[action]['area'])[0])/5)
             
             elif 'square' in actor.spells[action]['area']:
                 self.map_view.spellAreaType = 'square'
+                self.map_view.spellRange = None # cones assume spell range = 0
+                self.map_view.spellDistance = int(int(re.findall(r'\d+', actor.spells[action]['area'])[0])/5)
 
             else:
                 self.map_view.spellAreaType = None
