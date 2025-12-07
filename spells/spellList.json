@@ -4533,7 +4533,7 @@
         "time": "1 Action",
         "duration": "Instantaneous",
         "range": "150 ft",
-        "area": "",
+        "area": "",  
         "attack": "",
         "save": "Dexterity Save",
         "effect": "Fire",
