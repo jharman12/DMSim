@@ -34,12 +34,10 @@ Things to work on:
         melee is just a 1 hex sphere
     
     show character spell slots
-    in action combo, show weapon attacks and spell levels
+    
+    prevent doAction if error occurs with warning of that error?
 
-    add more detail to turn choices
-        spell vs weap
-        spell level 
-        calc action mod
+    show calc action mod??
 
     properly get changing action drop box reset hex colors and untoggle spell area button if checked
 
@@ -67,7 +65,7 @@ Things to work on:
 
     Add distance calc feature
 
-    add display shape when choosing a hex to cast a spell
+    
     
     
     
@@ -1217,6 +1215,7 @@ class TurnActionPanel(QWidget):
         for weap in actor.weaponList:
             if weap.name in actions:    
                 self.action_dropdown.addItemToGroup(weap.name, data=weap.name)
+                actions.remove(weap.name)
 
         self.action_dropdown.addHeader('\nSpells*******')
         # add spells to dropdown
@@ -1239,7 +1238,10 @@ class TurnActionPanel(QWidget):
                 for spell_name in sorted(level_groups[lvl]):   # alphabetical
                     if spell_name in actions:
                         self.action_dropdown.addItemToGroup(spell_name, data=spells[spell_name])
-        
+                        actions.remove(spell_name)
+        self.action_dropdown.addHeader('\nOther*******')
+        for item in actions:
+            self.action_dropdown.addItemToGroup(item, data=item)
 
         # Set selected action if provided
         selected_action = turnChoice.name
