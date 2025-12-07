@@ -27,7 +27,9 @@ Things to work on:
         hex like spells
     GUI CHANGES *****************************************************************************
 
-    
+    got a crash in nextTurn when party won.
+        It still tried to call next turn even when the enemyList had nothing in it. 
+        called self.curTurn that was a larger list than self.sortedInitList
     create best square
     figure out targeting of non spells
         melee is just a 1 hex sphere
@@ -1060,6 +1062,8 @@ class TurnOrderWidget(QWidget):
         self.current_icon = QLabel()
         self.current_icon.setPixmap(placeholder_pix)
         self.current_icon.setFixedSize(50, 50)
+        self.current_icon.setScaledContents(True)
+
 
         layout.addWidget(self.current_icon)
 
@@ -1069,11 +1073,15 @@ class TurnOrderWidget(QWidget):
             lbl = QLabel()
             lbl.setPixmap(placeholder_pix)
             lbl.setFixedSize(40, 40)
+            lbl.setScaledContents(True)
             layout.addWidget(lbl)
             self.next_icons.append(lbl)
 
         layout.addStretch()
         self.setLayout(layout)
+    
+    
+
 
 class TurnActionPanel(QWidget):
     def __init__(self):
@@ -1278,6 +1286,46 @@ class MapWidget(QWidget):
         
         self.testingTheory()
 
+    def updateTurnOrder(self):
+        encounter = self.myEncounter
+        turnOrder = encounter.sortedInitList
+        curTurn = [encounter.curTurn][0]
+        print('Current Turn', curTurn)
+        print(turnOrder)
+        
+        for i in range(6): # hard set to five for now but this should be length of turn indicator
+            print('\t', list(turnOrder)[curTurn].name)
+            player = list(turnOrder)[curTurn]
+            if player.Image == None:
+                pixmap = QPixmap(dmSimPath + "\\App\\unknown.jpg")
+            elif os.path.exists(dmSimPath + player.Image):
+                pixmap = QPixmap(dmSimPath + player.Image)
+            else:
+                print("path doesnt exist, trying unknown")
+                pixmap = QPixmap(dmSimPath + "\\App\\unknown.jpg")
+            
+            if i ==0:
+                lbl = self.turn_order_widget.current_icon
+            else:
+                lbl = self.turn_order_widget.next_icons[i-1]
+
+            # ⬇️ SCALE PIXMAP TO LABEL SIZE
+            scaled = pixmap.scaled(
+                lbl.width(),
+                lbl.height(),
+                Qt.KeepAspectRatio,
+                Qt.SmoothTransformation
+            )
+
+            lbl.setPixmap(scaled)
+            curTurn += 1
+            if curTurn + 1 > len(turnOrder):
+                curTurn = 0
+            
+
+        print('Current Turn', encounter.curTurn)
+
+
     def updateTargets(self, affectedHexes):
         #print(affectedHexes)
         targetsHit = [list(self.myEncounter.map.arrayCenters)[ind] for ind in affectedHexes if 
@@ -1361,7 +1409,7 @@ class MapWidget(QWidget):
                 self.turnChoices = turns[2]
                 self.turnChoice = turns[3]
                 self.turn_action_panel.update_turn_panel(self.actor, self.turnChoices, self.turnChoice)
-
+        self.updateTurnOrder()
         pass
     def run_command(self):
         
@@ -1384,6 +1432,7 @@ class MapWidget(QWidget):
         pixMap = item.pixmap()
         outlined = self.map_view.addRedOutline(pixmap=pixMap)
         item.setPixmap(outlined)
+        self.updateTurnOrder()
         #removeOutline = self.map_view.remove_red_outline(pixMap)
         #item.setPixmap(removeOutline)
 
