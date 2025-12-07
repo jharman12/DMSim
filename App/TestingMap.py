@@ -19,7 +19,7 @@ Things to work on:
         finding a lot of errors in the model while playing out (best choice is always the best choice)
     GUI CHANGES *****************************************************************************
 
-    create best line (try using old method but with caching, might be something I can use in the actual model as well)
+    
     create best square
     figure out targeting of non spells
         melee is just a 1 hex sphere
@@ -27,8 +27,8 @@ Things to work on:
     mouse click while spell area checked unchecks spell area and freezes spell in place
         this will return targets to myAction class
     
-    fix start up not assigning curActor to GV
-        this is making model crash when you cant select a char to move
+    show character spell slots
+    in action combo, show weapon attacks and spell levels
 
     properly get changing action drop box reset hex colors and untoggle spell area button if checked
 
@@ -142,6 +142,10 @@ class CustomGraphicsView(QGraphicsView):
         self.hex_centers_base = []
         self.hex_tree = None
 
+        self.spell_centers = []
+        self.spell_tree = None
+        self.spell_index = []
+
         self.setSceneRect(0, 0, self.width(), self.height())
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
 
@@ -192,7 +196,34 @@ class CustomGraphicsView(QGraphicsView):
         self.snap_tree = spatial.KDTree(self.snap_centers)
 
         #print("Snap KD-Tree built with", len(self.snap_centers), "hexes")
+    
+    def build_spell_tree(self, indexes):
+        snap_centers = [self.hex_centers_base[i] for i in indexes]
 
+        if not snap_centers:
+            self.spell_centers = []
+            self.spell_tree = None
+            return
+
+        self.spell_centers = snap_centers
+        self.spell_index = indexes
+
+        self.spell_tree = spatial.KDTree(self.spell_centers)
+
+    def getSnapSpellIndex(self, scene_pos):
+        if not self.spell_tree:
+            return None
+
+        map_offset = self.map_item.pos()
+        local_x = scene_pos.x() - map_offset.x()
+        local_y = scene_pos.y() - map_offset.y()
+
+        dist, snap_idx = self.spell_tree.query((local_x, local_y))
+
+        # Convert snap_idx → real index in hex grid
+        
+        return snap_idx
+    
     def getSnapHexIndex(self, scene_pos):
         if not self.snap_tree:
             return None
@@ -347,7 +378,7 @@ class CustomGraphicsView(QGraphicsView):
             self.setHexColors(self.coneFill, affected)
         
         if self.spellAreaType == 'sphere' or self.spellAreaType == 'weapon':
-            affected = self.getSphereHexes(distance_hexes=self.spellDistance, mouse_pos=mouse_pos, spellRange=12) # notionally set
+            affected = self.getSphereHexes(distance_hexes=self.spellDistance, mouse_pos=mouse_pos, spellRange=self.spellRange)
             self.setHexColors(self.coneFill, affected)
         
         
@@ -495,7 +526,7 @@ class CustomGraphicsView(QGraphicsView):
         return diff
 
     def calcLine(self, index1, index2, hexLimit):
-        print("in calcLine")
+        
         
         map = self.encounter.map
         coord1 = list(map.arrayCenters)[index1]
@@ -505,7 +536,7 @@ class CustomGraphicsView(QGraphicsView):
 
             line = drawLine(coord1, coord2, map)
             hexes = [list(map.arrayCenters).index(coord) for coord in line]
-            affected = [ind for ind in hexes if map.distanceCalc(ind, index1) <= hexLimit]
+            affected = [ind for ind in hexes if map.distanceCalc(ind, index1) <= hexLimit and ind != index1]
             return affected
         
         cone = self.calcHexes(index1, index2, hexLimit)
@@ -518,7 +549,7 @@ class CustomGraphicsView(QGraphicsView):
             #print(coord2, line)
             if coord2 in line:
                 #print(line)
-                return [list(map.arrayCenters).index(x) for x in line]
+                return [list(map.arrayCenters).index(x) for x in line if x != coord1]
             
         #print('Error calcLine failed')
         return []
@@ -683,7 +714,7 @@ class CustomGraphicsView(QGraphicsView):
         return affectedIndexes
 
     def getSphereHexes(self, distance_hexes, spellRange, mouse_pos):
-        #print('Please supply sphere stuff here')
+        
         if self.affected != None:
             self.setHexColors(self.defaultFill, self.affected)
             self.setCurMoveCoords(self.curMoveCoords)
@@ -693,7 +724,12 @@ class CustomGraphicsView(QGraphicsView):
         if actor_hex is None or actor_hex < 0:
             return []
         
-        target_hex = self.getHexFromPoint(mouse_pos)
+
+        # calc snap coords this section should be moved to combo box change (calc spell hexes once not on each mouse move)
+        
+        spellSnapInd = self.getSnapSpellIndex(mouse_pos)
+        target_hex = self.spell_index[spellSnapInd]
+        print(target_hex)
         if target_hex is None:
             return []
         map = self.encounter.map
@@ -703,9 +739,15 @@ class CustomGraphicsView(QGraphicsView):
         self.affected = affected
         
         return affected
-        
-
+    
+    def calcSpellLimit(self, spellRange):
+        actor_hex = self.getCurActorHexIndex()
+        arrayCenters = self.encounter.map.arrayCenters
+        hexInRange = [list(arrayCenters).index(coord) for coord in arrayCenters 
+                      if self.encounter.map.distanceCalc(actor_hex, list(arrayCenters).index(coord)) <= spellRange]
+        self.build_spell_tree(hexInRange)
     def getLineHexes(self, distance_hexes, mouse_pos):
+        
         if self.affected != None:
             self.setHexColors(self.defaultFill, self.affected)
             self.setCurMoveCoords(self.curMoveCoords)
@@ -737,6 +779,7 @@ class CustomGraphicsView(QGraphicsView):
 
         No drawing or highlighting — just logic.
         """
+        
         if self.affected != None:
             self.setHexColors(self.defaultFill, self.affected)
             self.setCurMoveCoords(self.curMoveCoords)
@@ -1192,32 +1235,39 @@ class MapWidget(QWidget):
             self.map_view.spellAreaCheck = True
         actor = self.map_view.curActor
         action = self.turn_action_panel.action_dropdown.currentText()
+        weapons = [x.name for x in actor.weaponList]
+        self.map_view.spell_centers = []
+        self.map_view.spell_tree = None
+        self.map_view.spell_index = []
         if action in actor.spells.keys():
             if 'cone' in actor.spells[action]['area']:
                 self.map_view.spellAreaType = 'cone'
                 self.map_view.spellRange = None # cones assume spell range = 0
                 self.map_view.spellDistance = int(int(re.findall(r'\d+', actor.spells[action]['area'])[0])/5)
-                 
-                
 
             elif 'sphere' in actor.spells[action]['area']:
                 self.map_view.spellAreaType = 'sphere'
-                self.map_view.spellRange = None # cones assume spell range = 0
+                self.map_view.spellRange = int(int(re.findall(r'\d+', actor.spells[action]['range'])[0])/5) 
                 self.map_view.spellDistance = int(int(re.findall(r'\d+', actor.spells[action]['area'])[0])/5)
-
+                self.map_view.calcSpellLimit(self.map_view.spellRange)
             
             elif 'line' in actor.spells[action]['area']:
                 self.map_view.spellAreaType = 'line'
-                self.map_view.spellRange = None # cones assume spell range = 0
+                self.map_view.spellRange = None # line assume spell range = 0
                 self.map_view.spellDistance = int(int(re.findall(r'\d+', actor.spells[action]['area'])[0])/5)
             
             elif 'square' in actor.spells[action]['area']:
                 self.map_view.spellAreaType = 'square'
-                self.map_view.spellRange = None # cones assume spell range = 0
+                self.map_view.spellRange = int(int(re.findall(r'\d+', actor.spells[action]['range'])[0])/5) 
                 self.map_view.spellDistance = int(int(re.findall(r'\d+', actor.spells[action]['area'])[0])/5)
+                self.map_view.calcSpellLimit(self.map_view.spellRange)
 
             else:
                 self.map_view.spellAreaType = None
+        elif action in weapons:
+            weapon = actor.weaponList[weapons.index(action)]
+            print(weapon.name, weapon.range)
+
                 
 
                 
@@ -1233,7 +1283,12 @@ class MapWidget(QWidget):
             if hexIndex != None:
                 currLocation = list(self.myEncounter.map.arrayCenters)[hexIndex]
                 self.turnChoice.moveCoord = currLocation
+            currAction = self.turn_action_panel.action_dropdown.currentText()
+            self.turnChoice.type = [x.type for x in self.turnChoices if x.name == currAction][0]
+            self.turnChoice.name = currAction
             doAction(self.actor, self.myEncounter.map, self.turnChoice)
+            self.map_view.spellAreaCheck = None
+            self.map_view.affected = None
             self.myEncounter.nextTurn()
             turns = self.myEncounter.calcTurn()
             if turns != None:
@@ -1248,6 +1303,7 @@ class MapWidget(QWidget):
         turns = self.myEncounter.calcTurn()
         if turns != None:
             self.actor = turns[0]
+            self.map_view.setCurTurn(self.actor)
             self.turnChoices = turns[2]
             self.turnChoice = turns[3]
             self.turn_action_panel.update_turn_panel(self.actor, self.turnChoices, self.turnChoice)
