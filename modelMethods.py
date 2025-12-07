@@ -1039,6 +1039,18 @@ def drawLine( coord1, coord2, map):
     
     return snapCoord
 
+def calcMoveHexes(actor, map, type= None):
+    arrayCenters = map.arrayCenters
+
+    actorCoords = [coord for coord in arrayCenters if arrayCenters[coord] == actor][0]
+    actorIndex = list(arrayCenters).index(actorCoords)
+    speed = int(actor.speed/5)
+    dashSpeed = speed * 2
+    if type == 'dash':
+        dashIndexes = [ind for ind in range(len(list(arrayCenters))) if map.distanceCalc(actorIndex, ind) <= dashSpeed ]
+    else:
+        dashIndexes = [ind for ind in range(len(list(arrayCenters))) if map.distanceCalc(actorIndex, ind) <= speed ]
+    return dashIndexes
 def bestSquare(actor, map, length, reach):
     setRatio = 4
     actorCoord = [x for x in map.arrayCenters.keys() if map.arrayCenters[x] == actor][0]

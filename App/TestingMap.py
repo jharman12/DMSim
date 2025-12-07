@@ -27,15 +27,11 @@ Things to work on:
         hex like spells
     GUI CHANGES *****************************************************************************
 
-    got a crash in nextTurn when party won.
-        It still tried to call next turn even when the enemyList had nothing in it. 
-        called self.curTurn that was a larger list than self.sortedInitList
+    
     create best square
+        choose which op to do (currently just does a default operation)
     figure out targeting of non spells
         melee is just a 1 hex sphere
-    
-    mouse click while spell area checked unchecks spell area and freezes spell in place
-        this will return targets to myAction class
     
     show character spell slots
     in action combo, show weapon attacks and spell levels
@@ -62,14 +58,9 @@ Things to work on:
     
 
     create gui for character actions 
-        select target (hex of area or creature if single)
-            add not an appropiate target reselect feature for single target
         auto-roll or manual
-        display best turn action?
+        disaggregate move, action and turn done    
         turn done
-
-    
-    list turn with icon order at top of the screen 
     
 
     Create warning for oportunity attacks
@@ -87,8 +78,10 @@ from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QLineEdit, QScrollArea, QFrame, QProgressBar, QComboBox
 )
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QFont
+
 from PyQt5.QtGui import QPixmap, QIcon
-from PyQt5.QtCore import Qt, QSize
+
 from PyQt5.QtWidgets import QApplication, QPushButton, QMainWindow, QWidget, QVBoxLayout
 from PyQt5.QtCore import QSize, Qt
 
@@ -110,7 +103,7 @@ sys.path.insert(1, dmSimPath + '\\model')
 from interactiveEncounter import interactiveEncounter
 from player import createPartyList
 from monster import createMonsterList, Monster
-from modelMethods import myAction, doAction, drawLine
+from modelMethods import myAction, doAction, drawLine, calcMoveHexes
 
 
 #class Player:
@@ -388,7 +381,7 @@ class CustomGraphicsView(QGraphicsView):
         
         # uses spell range
         if self.spellAreaType == 'square':
-            affected = self.getSquareHexes(distance_hexes=6, mouse_pos=mouse_pos, spellRange = 12)
+            affected = self.getSquareHexes(distance_hexes=self.spellDistance, mouse_pos=mouse_pos, spellRange = self.spellRange)
             self.setHexColors(self.coneFill, affected)
         
         if self.spellAreaType == 'sphere' or self.spellAreaType == 'weapon':
@@ -832,7 +825,8 @@ class CustomGraphicsView(QGraphicsView):
         ax, ay = self.hex_centers_base[actor_hex]
 
         # Identify which hex mouse is pointing at
-        target_hex = self.getHexFromPoint(mouse_pos)
+        spellSnapInd = self.getSnapSpellIndex(mouse_pos)
+        target_hex = self.spell_index[spellSnapInd]
         if target_hex is None:
             return []
         affected = self.calcSquare(actor_hex, target_hex, distance_hexes)
@@ -1047,6 +1041,57 @@ class CustomGraphicsView(QGraphicsView):
 
         return cropped
 
+
+
+class GroupedComboBox(QComboBox):
+    """
+    A QComboBox that supports non-selectable section headers,
+    useful for grouping items such as spell levels.
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        # Use a standard item model so we can mark headers as unselectable
+        self.model = QStandardItemModel()
+        self.setModel(self.model)
+
+    def addHeader(self, text):
+        """
+        Add a non-selectable header row.
+        """
+        item = QStandardItem(text)
+
+        # Make header visually distinct
+        font = QFont()
+        font.setBold(True)
+        item.setFont(font)
+        item.setFlags(Qt.NoItemFlags)     # Not selectable
+        item.setData(True, Qt.UserRole+1) # custom flag marking this as a header
+
+        self.model.appendRow(item)
+
+    def addItemToGroup(self, text, data=None):
+        """
+        Add a normal selectable item.
+        """
+        item = QStandardItem(text)
+        item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
+
+        if data is not None:
+            item.setData(data, Qt.UserRole)
+
+        self.model.appendRow(item)
+
+    def isHeader(self, index):
+        """
+        Optional helper to check if a model row is a header.
+        """
+        item = self.model.item(index)
+        if item:
+            return bool(item.data(Qt.UserRole+1))
+        return False
+
 class TurnOrderWidget(QWidget):
     def __init__(self):
         super().__init__()
@@ -1114,7 +1159,7 @@ class TurnActionPanel(QWidget):
         # -------------------------------
         # ACTION DROP-DOWN
         # -------------------------------
-        self.action_dropdown = QComboBox()
+        self.action_dropdown = GroupedComboBox()
         self.action_dropdown.addItems(["Attack", "Cast Spell", "Dash", "Use Item"])  # placeholder actions
         main_layout.addWidget(self.action_dropdown)
 
@@ -1167,7 +1212,34 @@ class TurnActionPanel(QWidget):
         # Update action dropdown
         actions = [x.name for x in turnChoices]
         self.action_dropdown.clear() 
-        self.action_dropdown.addItems(actions)
+        # add weapon to actions
+        self.action_dropdown.addHeader('Wepons*******')
+        for weap in actor.weaponList:
+            if weap.name in actions:    
+                self.action_dropdown.addItemToGroup(weap.name, data=weap.name)
+
+        self.action_dropdown.addHeader('\nSpells*******')
+        # add spells to dropdown
+        spells = actor.spells  # dictionary of spells
+        # Build dictionary grouping spell names by level:
+        #   { 0: [...], 1: [...], ... }
+        level_groups = {}
+        for spell_name, data in spells.items():
+            lvl = data.get("lvl", 0)
+            level_groups.setdefault(lvl, []).append(spell_name)
+
+        # Loop levels in ascending order
+        for lvl in sorted(level_groups.keys()):
+            if any(x in actions for x in level_groups[lvl]):
+                # Add header
+                header_text = f"\nLevel {lvl} Spells"
+                self.action_dropdown.addHeader(header_text)
+
+                # Add spell items underneath
+                for spell_name in sorted(level_groups[lvl]):   # alphabetical
+                    if spell_name in actions:
+                        self.action_dropdown.addItemToGroup(spell_name, data=spells[spell_name])
+        
 
         # Set selected action if provided
         selected_action = turnChoice.name
@@ -1346,7 +1418,11 @@ class MapWidget(QWidget):
             self.map_view.spellAreaCheck = False
         else:
             self.map_view.spellAreaCheck = True
+        
         actor = self.map_view.curActor
+        newMoves = calcMoveHexes(actor, self.myEncounter.map)
+        self.map_view.setCurMoveCoords(newMoves)
+        
         action = self.turn_action_panel.action_dropdown.currentText()
         weapons = [x.name for x in actor.weaponList]
         # set spell defaults to none
@@ -1384,6 +1460,10 @@ class MapWidget(QWidget):
         elif action in weapons:
             weapon = actor.weaponList[weapons.index(action)]
             print(weapon.name, weapon.range)
+        elif action == 'dash':
+            print('dash action')
+            newMoves = calcMoveHexes(actor, self.myEncounter.map, type = 'dash')
+            self.map_view.setCurMoveCoords(newMoves)
 
                 
 
