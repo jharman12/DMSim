@@ -70,11 +70,16 @@ Things to work on:
     
     
 '''
+
+
+
+
 import os
+
 import sys
 from PyQt5.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QPushButton, QLineEdit, QScrollArea, QFrame, QProgressBar, QComboBox
+    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy,
+    QLabel, QPushButton, QLineEdit, QScrollArea, QFrame, QProgressBar, QComboBox, QSplitter, QSplitterHandle
 )
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QFont
 
@@ -1256,10 +1261,13 @@ class TurnActionPanel(QWidget):
         move_coords = str(turnChoice.moveCoord)
         self.move_input.setText(move_coords)
 
+
+
 class MapWidget(QWidget):
     def __init__(self, myEncounter):
         super().__init__()
         global gViewer
+
         main_layout = QVBoxLayout()
         main_layout.setSpacing(15)
 
@@ -1267,8 +1275,49 @@ class MapWidget(QWidget):
         self.turn_order_widget = TurnOrderWidget()
         main_layout.addWidget(self.turn_order_widget)
 
-        # ---- Middle: Map + Right Panel ----
-        mid_layout = QHBoxLayout()
+        # ------------------------------------------------------------------
+        # CUSTOM SPLITTER WITH HOVER-CURSOR + DOUBLE CLICK BEHAVIOR
+        # ------------------------------------------------------------------
+        class SmartSplitter(QSplitter):
+            def __init__(self, orientation):
+                super().__init__(orientation)
+                self.setHandleWidth(10)
+
+            def createHandle(self):
+                return SmartSplitterHandle(self.orientation(), self)
+
+        class SmartSplitterHandle(QSplitterHandle):
+            def mouseMoveEvent(self, event):
+                splitter = self.splitter()
+
+                # Mouse coordinate in global splitter space
+                pos = event.pos().x() if splitter.orientation() == Qt.Horizontal else event.pos().y()
+
+                # Set sizes based on mouse position directly
+                total = sum(splitter.sizes())
+
+                # clamp positions
+                pos = max(100, min(total - 100, pos))
+
+                # New sizes
+                if splitter.orientation() == Qt.Horizontal:
+                    sizes = [pos, total - pos]
+                else:
+                    sizes = [pos, total - pos]
+
+                splitter.setSizes(sizes)
+
+                super().mouseMoveEvent(event)
+
+            def mouseDoubleClickEvent(self, event):
+                # Keep your double-click behavior
+                splitter = self.splitter()
+                right = splitter.widget(1)
+                splitter.setSizes([2000, right.minimumWidth()])
+                super().mouseDoubleClickEvent(event)
+
+
+            self.splitter = SmartSplitter(Qt.Horizontal)
 
         # ============================================================
         # LEFT SIDE: MAP FRAME (buttons + graphics viewer)
@@ -1292,20 +1341,24 @@ class MapWidget(QWidget):
         top_button_row.addWidget(self.spell_button)
 
         top_button_row.addStretch()
-
         map_frame_layout.addLayout(top_button_row)
 
         # --- Map widget ---
         self.map_view = CustomGraphicsView(myEncounter)
         gViewer = self.map_view
+        self.map_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+
         self.map_view.setFrameShape(QFrame.Box)
-        self.map_view.setMinimumSize(900, 700)
-        map_frame_layout.addWidget(self.map_view)
+        self.map_view.setMinimumHeight(1400)   # allow width to shrink
+        self.map_view.setMinimumWidth(300)    # use smaller minimum
+
+        map_frame_layout.addWidget(self.map_view, stretch=1) 
 
         self.map_view.affectedSaved.connect(self.updateTargets)
 
-        # Add combined map frame to main middle layout
-        mid_layout.addWidget(self.map_frame, 3)
+        # Add left side to splitter
+        self.splitter.addWidget(self.map_frame)
 
         # ============================================================
         # SETUP MAP PIXMAP
@@ -1313,20 +1366,18 @@ class MapWidget(QWidget):
         pixmap = QPixmap(myEncounter.mapImage)
         self.map_view.setMapPixmap(pixmap)
 
-        # Add every player to the map
+        # Add players to map
         for player in myEncounter.totalList:
-            print(player.Image, 'Trying to create character pixmap')
-            if player.Image == None:
-                pixmap = QPixmap(dmSimPath + "\\App\\unknown.jpg")
+            if player.Image is None:
+                px = QPixmap(dmSimPath + "\\App\\unknown.jpg")
             elif os.path.exists(dmSimPath + player.Image):
-                pixmap = QPixmap(dmSimPath + player.Image)
+                px = QPixmap(dmSimPath + player.Image)
             else:
-                print("path doesnt exist, trying unknown")
-                pixmap = QPixmap(dmSimPath + "\\App\\unknown.jpg")
+                px = QPixmap(dmSimPath + "\\App\\unknown.jpg")
 
-            self.map_view.addCharacterPixmap(pixmap, player)
+            self.map_view.addCharacterPixmap(px, player)
 
-        # Add hexes
+        # Add hex grid
         num_vertical_grids = int(myEncounter.numHexes)
         map_rect = self.map_view.map_item.boundingRect()
         self.map_view.drawHexGrid(num_vertical_grids, map_rect)
@@ -1337,18 +1388,42 @@ class MapWidget(QWidget):
         # RIGHT SIDE: TURN ACTION PANEL
         # ============================================================
         self.turn_action_panel = TurnActionPanel()
-        self.turn_action_panel.setFixedWidth(250)
+        self.turn_action_panel.setMinimumWidth(250)
+        #self.turn_action_panel.setMaximumWidth(500)  # optional
         self.turn_action_panel.take_turn_button.clicked.connect(self.takeTurnButton)
         self.turn_action_panel.action_dropdown.currentTextChanged.connect(self.actionChanged)
-        
+
         self.turnChoices = None
         self.turnChoice = None
         self.actor = None
 
-        mid_layout.addWidget(self.turn_action_panel, 1)
+        # Add right panel to splitter
+        self.splitter.addWidget(self.turn_action_panel)
 
-        # Add mid layout to main
-        main_layout.addLayout(mid_layout)
+        # ------------------------------------------------------------
+        # SPLITTER BEHAVIOR IMPROVEMENTS
+        # ------------------------------------------------------------
+
+        # Map gets 3x more space than action panel initially
+        self.splitter.setStretchFactor(0, 3)
+        self.splitter.setStretchFactor(1, 1)
+        self.splitter.setSizes([1100, 300])
+
+        # Double-click handle to restore action panel to minimum width
+        def resetPanels():
+            self.splitter.setSizes([2000, self.turn_action_panel.minimumWidth()])
+
+        handle = self.splitter.handle(1)
+        oldDoubleClick = handle.mouseDoubleClickEvent
+
+        def doubleClickOverride(event):
+            resetPanels()
+            oldDoubleClick(event)
+
+        handle.mouseDoubleClickEvent = doubleClickOverride
+
+        # Add splitter to layout
+        main_layout.addWidget(self.splitter)
 
         # ---- Bottom: Start Encounter Button ----
         self.start_button = QPushButton("Start Encounter")
@@ -1357,7 +1432,7 @@ class MapWidget(QWidget):
         main_layout.addWidget(self.start_button)
 
         self.setLayout(main_layout)
-        
+
         self.testingTheory()
 
     def updateTurnOrder(self):
