@@ -1349,6 +1349,10 @@ class MapWidget(QWidget):
         actor = self.map_view.curActor
         action = self.turn_action_panel.action_dropdown.currentText()
         weapons = [x.name for x in actor.weaponList]
+        # set spell defaults to none
+        self.map_view.spellAreaType = None
+        self.map_view.spellRange = None # line assume spell range = 0
+        self.map_view.spellDistance = None
         self.map_view.spell_centers = []
         self.map_view.spell_tree = None
         self.map_view.spell_index = []

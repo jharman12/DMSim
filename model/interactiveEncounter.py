@@ -45,9 +45,10 @@ class interactiveEncounter(QThread):
 
     def nextTurn(self):
         
-        self.removeDeadActors()
+        
         # Add remove red outline, add red line to new turn
         # should probably just make below a function
+        
         curActor = list(self.sortedInitList)[self.curTurn]
         #print("trying to remove red outline from ", curActor.name)
         curIndex = self.graphicsViewer.character_objs.index(curActor)
@@ -56,6 +57,7 @@ class interactiveEncounter(QThread):
         removeOutline = self.graphicsViewer.remove_red_outline(pixMap)
         item.setPixmap(removeOutline)
 
+        self.removeDeadActors()
         self.curTurn += 1 
         
         if self.curTurn >= len(self.sortedInitList):
