@@ -17,9 +17,17 @@ Things to work on:
 
     Eventually, check that model sim actually works and calls all of the same methods as interactive
         finding a lot of errors in the model while playing out (best choice is always the best choice)
+
+    add specific status effects to characters during their turn
+        a lot of work here
+    
+    add unique spell interaction (outside of basic)
+        bonus actions
+        concentration
+        hex like spells
     GUI CHANGES *****************************************************************************
 
-    create best line (try using old method but with caching, might be something I can use in the actual model as well)
+    
     create best square
     figure out targeting of non spells
         melee is just a 1 hex sphere
@@ -30,9 +38,13 @@ Things to work on:
     fix start up not assigning curActor to GV
         this is making model crash when you cant select a char to move
 
+    add more detail to turn choices
+        spell vs weap
+        spell level 
+        calc action mod
+
     properly get changing action drop box reset hex colors and untoggle spell area button if checked
 
-    
     move character to on GV to what the best location is?
     
             
@@ -485,8 +497,11 @@ class CustomGraphicsView(QGraphicsView):
             diff = 2 * math.pi - diff
         return diff
 
+    @lru_cache(maxsize=2048)
     def calcLine(self, index1, index2, hexLimit):
-        print("in calcLine")
+        # move this, cone, and square into model methods?
+        # mainly just want to see if we can use this version on line
+        # in the main model
         
         map = self.encounter.map
         coord1 = list(map.arrayCenters)[index1]
@@ -513,67 +528,7 @@ class CustomGraphicsView(QGraphicsView):
             
         #print('Error calcLine failed')
         return []
-
-    def calcLine2(self, index1, index2, hexLimit):
-        """
-        Returns a list of hex indexes forming a straight line starting at index1
-        and pointing toward index2, extending hexLimit hexes.
-        """
-
-        map = self.encounter.map
-        centers = list(map.arrayCenters)
-
-        # starting + target coords
-        c1 = centers[index1]
-        c2 = centers[index2]
-
-        # compute angle from index1 to index2
-        angle = math.atan2(c2[1] - c1[1], c2[0] - c1[0])
-
-        # pick which of the 6 hex directions the angle is closest to
-        # using your axial-coordinate aligned directions
-        axial_dirs = [
-            (1, 0),    # E
-            (1, -1),   # NE
-            (0, -1),   # NW
-            (-1, 0),   # W
-            (-1, 1),   # SW
-            (0, 1),    # SE
-        ]
-
-        # compute ideal angle for each direction
-        dir_angles = [
-            math.atan2(dy, dx) for dx, dy in axial_dirs
-        ]
-
-        # pick direction whose angle is closest
-        best_dir_idx = min(
-            range(6),
-            key=lambda i: abs(self.angleDiff(angle, dir_angles[i]))
-        )
-
-        dx, dy = axial_dirs[best_dir_idx]
-
-        # Walk forward along this direction
-        affected = []
-        cur_x, cur_y = c1
-
-        # Convert map coords → index fast
-        center_to_index = {xy: i for i, xy in enumerate(centers)}
-
-        for _ in range(hexLimit):
-            cur_x += dx
-            cur_y += dy
-            coord = (cur_x, cur_y)
-
-            if coord in center_to_index:
-                affected.append(center_to_index[coord])
-            else:
-                break  # stop if line marches off the map
-        
-        return affected
-
-    
+ 
     @lru_cache(maxsize=2048)
     def calcHexes(self, index1, index2, hexLimit):
         import operator, math
@@ -673,8 +628,103 @@ class CustomGraphicsView(QGraphicsView):
 
         return affectedIndexes
 
+    #def calcSquare(self, index1, index2, hexLimit):
+    #
+    #    map = self.encounter.map
+    #    centers = list(map.arrayCenters)
+    #
+    #    c1 = centers[index1]
+    #    c2 = centers[index2]
+    #
+    #    # angle from index1 → index2
+    #    angle = math.atan2(c2[1] - c1[1], c2[0] - c1[0])
+    #
+    #    # 8 direction vectors in double-coordinate space
+    #    dirs8 = [
+    #        ( 1,  0),   # E
+    #        ( 1, -1),   # NE
+    #        ( 0, -1),   # N
+    #        (-1, -1),   # NW
+    #        (-1,  0),   # W
+    #        (-1,  1),   # SW
+    #        ( 0,  1),   # S
+    #        ( 1,  1),   # SE
+    #    ]
+    #
+    #    dir_angles = [math.atan2(dy, dx) for dx, dy in dirs8]
+    #
+    #    # choose the closest directional facing
+    #    best_dir = min(range(8), key=lambda i: abs(self.angleDiff(angle, dir_angles[i])))
+    #    dx, dy = dirs8[best_dir]
+    #
+    #    # square is centered directly on index1 (spellRange removed)
+    #    cx, cy = c1
+    #
+    #    # orthogonal axis (90° rotated)
+    #    ox, oy = -dy, dx
+    #
+    #    affected = []
+    #    center_to_index = {xy: i for i, xy in enumerate(centers)}
+    #
+    #    # Build the hex “square”
+    #    for i in range(-hexLimit//2, hexLimit//2 + 1):
+    #        for j in range(-hexLimit//2, hexLimit//2 + 1):
+    #
+    #            x = cx + dx * i + ox * j
+    #            y = cy + dy * i + oy * j
+    #
+    #            # fix hex parity drift (your original rule)
+    #            if (x + y) % 2 != (cx + cy) % 2:
+    #                y += 1
+    #
+    #            if (x, y) in center_to_index:
+    #                affected.append(center_to_index[(x, y)])
+    #
+    #    return affected
+    #
+    def calcSquare(self, index1, index2, hexLimit):
+        import operator, math
+
+        map = self.encounter.map
+        arrayCenters = list(map.arrayCenters)
+        # === STEP 1: Use ALREADY double-coords ========================
+        ox, oy = arrayCenters[index1]
+        tx, ty = arrayCenters[index2]
+
+        # === STEP 2: compute angle using double-coords ================
+        angle = math.atan2((oy - ty), (ox - tx))
+
+        
+        operations = [[operator.sub,1, operator.add, 1,operator.add,0,operator.sub,0], 
+                    [operator.sub, 1, operator.sub, 1,operator.add,0,operator.sub,0],
+                    [operator.add,1, operator.add, 1,operator.add,0,operator.sub,0], 
+                    [operator.add, 1, operator.sub, 1,operator.add,0,operator.sub,0],
+                    [operator.sub, 1, operator.add, 2,operator.add,1,operator.sub,5],
+                    [operator.add, 1, operator.sub, 2,operator.sub,1,operator.add,5],
+                    [operator.add, 1, operator.sub, 2,operator.sub,1,operator.sub,5],
+                    [operator.sub, 1, operator.add, 2,operator.add,1,operator.add,5]]
+        moveCoord = list(arrayCenters)[index2]
+        op = operations[0]
+        startCoord = (op[0](moveCoord[0], op[1]), op[2](moveCoord[1], op[3]))
+        squareCoords = []
+        ##print(op)
+        for k in range(hexLimit):
+            for l in range(hexLimit):
+                x = op[4](op[0](startCoord[0], k),op[5])
+                if op[2] == operator.add:
+                    y= op[6](operator.sub(startCoord[1], 2*l),op[7])
+                else:
+                    y= op[6](operator.add(startCoord[1], 2*l),op[7])
+                if x % 2 != y % 2 :
+                    y = op[2](y, 1)
+                if (x,y) in list(arrayCenters):
+                    squareCoords.append((x,y))
+        return [list(arrayCenters).index(coord) for coord in squareCoords]
+            
+        #return []
     def getSphereHexes(self, distance_hexes, spellRange, mouse_pos):
         #print('Please supply sphere stuff here')
+        # should i move this to under a calcSphere and just make them all cached?
         if self.affected != None:
             self.setHexColors(self.defaultFill, self.affected)
             self.setCurMoveCoords(self.curMoveCoords)
@@ -717,9 +767,25 @@ class CustomGraphicsView(QGraphicsView):
         return affected
 
 
-    def getSquareHexes(self, distances_hexes, mouse_pos, spellRange):
-        print('Please supply square stuff here')
-        pass
+    def getSquareHexes(self, distance_hexes, mouse_pos, spellRange):
+        if self.affected != None:
+            self.setHexColors(self.defaultFill, self.affected)
+            self.setCurMoveCoords(self.curMoveCoords)
+            self.affected = None
+        # Validate actor
+        actor_hex = self.getCurActorHexIndex()
+        if actor_hex is None or actor_hex < 0:
+            return []
+
+        ax, ay = self.hex_centers_base[actor_hex]
+
+        # Identify which hex mouse is pointing at
+        target_hex = self.getHexFromPoint(mouse_pos)
+        if target_hex is None:
+            return []
+        affected = self.calcSquare(actor_hex, target_hex, distance_hexes)
+        self.affected = affected
+        return affected
 
     def getConeHexes(self, distance_hexes, mouse_pos):
         """
