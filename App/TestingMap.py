@@ -387,7 +387,11 @@ class CustomGraphicsView(QGraphicsView):
             affected = self.getSquareHexes(distance_hexes=self.spellDistance, mouse_pos=mouse_pos, spellRange = self.spellRange)
             self.setHexColors(self.coneFill, affected)
         
-        if self.spellAreaType == 'sphere' or self.spellAreaType == 'weapon':
+        if self.spellAreaType == 'sphere':
+            affected = self.getSphereHexes(distance_hexes=self.spellDistance, mouse_pos=mouse_pos, spellRange=self.spellRange)
+            self.setHexColors(self.coneFill, affected)
+        
+        if self.spellAreaType == 'single':
             affected = self.getSphereHexes(distance_hexes=self.spellDistance, mouse_pos=mouse_pos, spellRange=self.spellRange)
             self.setHexColors(self.coneFill, affected)
         
@@ -1532,11 +1536,17 @@ class MapWidget(QWidget):
                 self.map_view.spellDistance = int(int(re.findall(r'\d+', actor.spells[action]['area'])[0])/5)
                 self.map_view.calcSpellLimit(self.map_view.spellRange)
 
-            else:
-                self.map_view.spellAreaType = None
+            else: #youre a single target spell
+                self.map_view.spellAreaType = 'single'
+                self.map_view.spellRange = int(int(re.findall(r'\d+', actor.spells[action]['range'])[0])/5) 
+                self.map_view.spellDistance = 0 
+                self.map_view.calcSpellLimit(self.map_view.spellRange)
         elif action in weapons:
             weapon = actor.weaponList[weapons.index(action)]
-            print(weapon.name, weapon.range)
+            self.map_view.spellAreaType = 'single'
+            self.map_view.spellRange = weapon.range
+            self.map_view.spellDistance = 0 
+            self.map_view.calcSpellLimit(self.map_view.spellRange)
         elif action == 'dash':
             print('dash action')
             newMoves = calcMoveHexes(actor, self.myEncounter.map, type = 'dash')
