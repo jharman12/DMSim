@@ -44,7 +44,8 @@ def takeTurn(actor, m, interactive = False, gViewer = None):
     
     loops through every weapon and spell and decides best movement/castcoord to do the most damage
     '''
-    global map
+    global map, log
+    log = m.combatLog
     print(gViewer)
     map = m
     player = 1
@@ -616,7 +617,7 @@ def doAction(actor, map, turnChoice):
     
     # need closestGuy, closestCoord, minDIst
 
-    
+    map.combatLog('\tAction: ' + turnChoice.name)
 
     if turnChoice.type == 'dash':
         map.dashActor(actor, turnChoice.moveCoord)
@@ -781,7 +782,9 @@ def weaponAttack(actor, target, weap, map):
         rollToHit = [x + int(weap.attackMod) + int(prof) for x in rollDice(numAttack, 20) ]
         hits = []
         for roll in rollToHit:
+            map.combatLog('\tRolling to Hit against '+ target.name + '\n\t\tRoll: ' + str(roll - int(weap.attackMod) - int(prof)) + ' + ' + str(int(weap.attackMod) + (prof)))
             if roll >= int(target.ac):
+                map.combatLog('\t\t' + str(roll) + ' hits against ' + str(target.ac))
                 if roll == 20 + int(prof) + int(weap.attackMod):
                     hits.append(2)
                 else:
@@ -1480,10 +1483,18 @@ def moveWithingReach(actor, target, reach, map):
     ##print(moveTo)
     
 def rollDice(n, diceType):
-        
+    
     rolls = []
     for i in range(n):
-        rolls.append(r.randint(1,diceType))
+        roll = r.randint(1,diceType)
+        rolls.append(roll)
+        
+    string = '\t' + str(n) + 'd' + str(diceType) + ': '
+    for roll in rolls:
+        string += str(roll) + ', '
+        
+    string = string[:-2]
+    log(string)
     return rolls
 
 def rollSave(actor, abilityType, dc):
@@ -1493,18 +1504,19 @@ def rollSave(actor, abilityType, dc):
     true if failed
     '''
     roll = r.randint(1,20) # initial roll
-    ##print(' in player rollSave')
-    ##print(abilityType)
-    ##print(dc)
-    #print(down_round((actor.modDict[abilityType]- 10)/2))
-    roll += down_round((actor.modDict[abilityType]- 10)/2) # add modifier
-    #print(roll,'vs', dc)
-    # return true false 
-    ##print('\t\t\t Roll:',roll,'vs DC:', dc)
-    return roll < dc
+    mod = down_round((actor.modDict[abilityType]- 10)/2) 
+    log('\t' + actor.name + ' ' + abilityType + ' save: \n\t\t' + str(roll) + ' + ' + str(mod) + ' = ' + str(roll + mod))
+    roll += mod 
 
+    return roll < dc
+def printDeathSaves(map, deathSaves):
+    passes = deathSaves['pass']
+    fails = deathSaves['fail']
+    map.combatLog('\t\tPasses: ' + str(passes))
+    map.combatLog('\t\Fails: ' + str(fails))
 def takeDmg(actor, target, dmg, map):
     print(actor.name, 'is doing ', dmg, 'to', target.name)
+    map.combatLog('\t' + actor.name + ' is doing ' + str(dmg) + ' to ' + target.name)
     if str(type(target)) == "<class 'monster.Monster'>":
         target.health -= dmg
         if target.health <= 0:
@@ -1513,6 +1525,7 @@ def takeDmg(actor, target, dmg, map):
         if 'deathSaves' in target.status:
             target.deathSaves['fail'].append(1)
             print(target.deathSaves)
+            map.combatLog('\t\tActor: ' + target.name + ' is in deathSaves')
             if sum(target.deathSaves['fail']) >= 3:
                 target.alive = 0
         else:

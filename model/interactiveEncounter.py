@@ -102,7 +102,7 @@ class interactiveEncounter(QThread):
         #   calc best turn
         print(self.sortedInitList, self.curTurn)
         actor = list(self.sortedInitList)[self.curTurn]
-        print(actor)
+        self.map.combatLog('Current Turn:' + str(self.curTurn) + '\n\t' + actor.name)
 
         # do some initial checks to see current state
         for healthCheck in list(self.sortedInitList.keys()):
@@ -113,7 +113,9 @@ class interactiveEncounter(QThread):
             #print('\t Actor used Leg Res to not be cced : '+actor.name+ ' has  '+ str(actor.legRes) + ' more\n')
             actor.cc = []
         elif len(actor.cc) > 0: # if actor cced then spend turn trying to save
+            self.map.combatLog('\t' + actor.name + ' is cc\'ed. Rolling Save')
             outcome = rollSave(actor, actor.cc[1][0], actor.cc[2]) 
+            
             #print('\t Actor cced, trying to save...either way no turn taken \n')
             if outcome: # if failed save... still cced
                 self.nextTurn()
@@ -129,7 +131,7 @@ class interactiveEncounter(QThread):
             takeTurn(actor, self.map, interactive=False)
             self.nextTurn()
             testing = self.calcTurn()
-            print("return ", testing)
+            
             return testing
             
             

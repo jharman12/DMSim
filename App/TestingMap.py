@@ -458,7 +458,7 @@ class CustomGraphicsView(QGraphicsView):
         self.last_mouse_pos = event.pos()
     
     def moveActor(self, actor, newIndex):
-        print(actor.name, newIndex)
+        #print(actor.name, newIndex)
         index = self.character_objs.index(actor)
         pixmap = self.character_items[index]
 
@@ -473,7 +473,7 @@ class CustomGraphicsView(QGraphicsView):
         character_size = pixmap.boundingRect().size()
         snap_x = snap_coord[0] - character_size.width() / 2
         snap_y = snap_coord[1] - character_size.height() / 2
-        print(snap_x, snap_y)
+        #print(snap_x, snap_y)
         pixmap.setPos(snap_x, snap_y)  # snap to this coord
 
         # this might be kinda hard... 
@@ -780,7 +780,7 @@ class CustomGraphicsView(QGraphicsView):
         
         spellSnapInd = self.getSnapSpellIndex(mouse_pos)
         target_hex = self.spell_index[spellSnapInd]
-        print(target_hex)
+        #print(target_hex)
         if target_hex is None:
             return []
         map = self.encounter.map
@@ -1419,7 +1419,7 @@ class MapWidget(QWidget):
         self.turn_action_panel.take_turn_button.clicked.connect(self.takeTurnButton)
         self.turn_action_panel.action_dropdown.currentTextChanged.connect(self.actionChanged)
 
-        #myEncounter.map.combatLog = self.turn_action_panel
+        
         self.turnChoices = None
         self.turnChoice = None
         self.actor = None
@@ -1466,11 +1466,11 @@ class MapWidget(QWidget):
         encounter = self.myEncounter
         turnOrder = encounter.sortedInitList
         curTurn = [encounter.curTurn][0]
-        self.turn_action_panel.log('Current Turn' + str(curTurn))
+        
         
         
         for i in range(6): # hard set to five for now but this should be length of turn indicator
-            self.turn_action_panel.log('\t'+ list(turnOrder)[curTurn].name)
+            #self.turn_action_panel.log('\t'+ list(turnOrder)[curTurn].name)
             player = list(turnOrder)[curTurn]
             if player.Image == None:
                 pixmap = QPixmap(dmSimPath + "\\App\\unknown.jpg")
@@ -1499,14 +1499,14 @@ class MapWidget(QWidget):
                 curTurn = 0
             
 
-        print('Current Turn', encounter.curTurn)
+        #print('Current Turn', encounter.curTurn)
 
 
     def updateTargets(self, affectedHexes):
         #print(affectedHexes)
         targetsHit = [list(self.myEncounter.map.arrayCenters)[ind] for ind in affectedHexes if 
                       self.myEncounter.map.arrayCenters[list(self.myEncounter.map.arrayCenters)[ind]] != '']
-        print(targetsHit)
+        #print(targetsHit)
         self.turnChoice.targets = targetsHit
         targetNames = [self.myEncounter.map.arrayCenters[coord].name for coord in targetsHit]
         self.turn_action_panel.targets_input.setText(str(targetNames))
@@ -1567,11 +1567,11 @@ class MapWidget(QWidget):
         elif action in weapons:
             weapon = actor.weaponList[weapons.index(action)]
             self.map_view.spellAreaType = 'single'
-            self.map_view.spellRange = weapon.range
+            self.map_view.spellRange = weapon.range/5
             self.map_view.spellDistance = 0 
             self.map_view.calcSpellLimit(self.map_view.spellRange)
         elif action == 'dash':
-            print('dash action')
+            #print('dash action')
             newMoves = calcMoveHexes(actor, self.myEncounter.map, type = 'dash')
             self.map_view.setCurMoveCoords(newMoves)
 
@@ -1616,10 +1616,12 @@ class MapWidget(QWidget):
             self.turn_action_panel.update_turn_panel(self.actor, self.turnChoices, self.turnChoice)
 
     def testingTheory(self):
+        
         # should populate turn_order_widget
         # create the initial movement grids highlight 
 
         self.myEncounter.preCombat(self.map_view)
+        self.myEncounter.map.combatLog = self.turn_action_panel.log
         curActor = list(self.myEncounter.sortedInitList)[self.myEncounter.curTurn]
         index = self.map_view.character_objs.index(curActor)
         item = self.map_view.character_items[index] 
@@ -1633,7 +1635,7 @@ class MapWidget(QWidget):
     
         
 dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-4]
-print(dmSimPath)
+
 
 path = dmSimPath + '\\actors\\savedObjs\\'
 myPlayers = createPartyList(['Ephraim', 'Arabella', 'Root', 'Darian'], path = path)
