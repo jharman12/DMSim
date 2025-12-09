@@ -78,7 +78,7 @@ import os
 
 import sys
 from PyQt5.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy,
+    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QTextEdit,
     QLabel, QPushButton, QLineEdit, QScrollArea, QFrame, QProgressBar, QComboBox, QSplitter, QSplitterHandle
 )
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QFont
@@ -387,7 +387,11 @@ class CustomGraphicsView(QGraphicsView):
             affected = self.getSquareHexes(distance_hexes=self.spellDistance, mouse_pos=mouse_pos, spellRange = self.spellRange)
             self.setHexColors(self.coneFill, affected)
         
-        if self.spellAreaType == 'sphere' or self.spellAreaType == 'weapon':
+        if self.spellAreaType == 'sphere':
+            affected = self.getSphereHexes(distance_hexes=self.spellDistance, mouse_pos=mouse_pos, spellRange=self.spellRange)
+            self.setHexColors(self.coneFill, affected)
+        
+        if self.spellAreaType == 'single':
             affected = self.getSphereHexes(distance_hexes=self.spellDistance, mouse_pos=mouse_pos, spellRange=self.spellRange)
             self.setHexColors(self.coneFill, affected)
         
@@ -1187,8 +1191,30 @@ class TurnActionPanel(QWidget):
         #self.take_turn_button.clicked.connect(self.take_turn)
         main_layout.addWidget(self.take_turn_button)
 
+        # ---------------- GAME LOG ----------------
+        self.game_log_label = QLabel("Game Log")
+        self.game_log_label.setStyleSheet("font-weight: bold;")
+        main_layout.addWidget(self.game_log_label)
+
+        self.game_log_box = QTextEdit() 
+        self.game_log_box.setReadOnly(True)
+        self.game_log_box.setMinimumHeight(200)
+        self.game_log_box.setStyleSheet(
+            "background-color: #111; color: #ddd; font-family: Consolas, monospace;"
+        )
+        main_layout.addWidget(self.game_log_box)
+
+
         main_layout.addStretch()
         self.setLayout(main_layout)
+
+    def log(self, text):
+        """Append text to the game log (like print())."""
+        self.game_log_box.append(text)
+        self.game_log_box.verticalScrollBar().setValue(
+            self.game_log_box.verticalScrollBar().maximum()
+        )
+
 
     def update_turn_panel(self, actor, turnChoices, turnChoice):
         """
@@ -1440,11 +1466,11 @@ class MapWidget(QWidget):
         encounter = self.myEncounter
         turnOrder = encounter.sortedInitList
         curTurn = [encounter.curTurn][0]
-        print('Current Turn', curTurn)
-        print(turnOrder)
+        self.turn_action_panel.log('Current Turn' + str(curTurn))
+        
         
         for i in range(6): # hard set to five for now but this should be length of turn indicator
-            print('\t', list(turnOrder)[curTurn].name)
+            self.turn_action_panel.log('\t'+ list(turnOrder)[curTurn].name)
             player = list(turnOrder)[curTurn]
             if player.Image == None:
                 pixmap = QPixmap(dmSimPath + "\\App\\unknown.jpg")
@@ -1533,11 +1559,17 @@ class MapWidget(QWidget):
                 self.map_view.spellDistance = int(int(re.findall(r'\d+', actor.spells[action]['area'])[0])/5)
                 self.map_view.calcSpellLimit(self.map_view.spellRange)
 
-            else:
-                self.map_view.spellAreaType = None
+            else: #youre a single target spell
+                self.map_view.spellAreaType = 'single'
+                self.map_view.spellRange = int(int(re.findall(r'\d+', actor.spells[action]['range'])[0])/5) 
+                self.map_view.spellDistance = 0 
+                self.map_view.calcSpellLimit(self.map_view.spellRange)
         elif action in weapons:
             weapon = actor.weaponList[weapons.index(action)]
-            print(weapon.name, weapon.range)
+            self.map_view.spellAreaType = 'single'
+            self.map_view.spellRange = weapon.range
+            self.map_view.spellDistance = 0 
+            self.map_view.calcSpellLimit(self.map_view.spellRange)
         elif action == 'dash':
             print('dash action')
             newMoves = calcMoveHexes(actor, self.myEncounter.map, type = 'dash')
@@ -1574,7 +1606,7 @@ class MapWidget(QWidget):
         self.updateTurnOrder()
         pass
     def run_command(self):
-        
+        self.turn_action_panel.log('Starting Combat!')
         turns = self.myEncounter.calcTurn()
         if turns != None:
             self.actor = turns[0]
