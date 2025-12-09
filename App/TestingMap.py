@@ -1393,6 +1393,7 @@ class MapWidget(QWidget):
         self.turn_action_panel.take_turn_button.clicked.connect(self.takeTurnButton)
         self.turn_action_panel.action_dropdown.currentTextChanged.connect(self.actionChanged)
 
+        #myEncounter.map.combatLog = self.turn_action_panel
         self.turnChoices = None
         self.turnChoice = None
         self.actor = None

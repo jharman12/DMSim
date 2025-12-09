@@ -616,7 +616,7 @@ def doAction(actor, map, turnChoice):
     
     # need closestGuy, closestCoord, minDIst
 
-    print('in doAction')
+    
 
     if turnChoice.type == 'dash':
         map.dashActor(actor, turnChoice.moveCoord)

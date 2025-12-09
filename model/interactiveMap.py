@@ -16,6 +16,7 @@ class interactiveMap:
         #self.defineArrayGrid(numHex, 100, 100)
         ##print('distance')
         #self.distanceCalc(0,23)
+        self.combatLog = None
 
         self.party = partyList
         self.enemy = enemyList
