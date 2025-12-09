@@ -27,7 +27,9 @@ Things to work on:
         hex like spells
     GUI CHANGES *****************************************************************************
 
-    
+    death saves is acting weird...
+        sometimes when enemy downs them, on their next turn maybe takeDmg called twice?
+            seems like you get a fail even on the first hit
     create best square
         choose which op to do (currently just does a default operation)
     figure out targeting of non spells
@@ -1638,8 +1640,9 @@ dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-4]
 
 
 path = dmSimPath + '\\actors\\savedObjs\\'
-myPlayers = createPartyList(['Ephraim', 'Arabella', 'Root', 'Darian'], path = path)
-badGuys = createMonsterList(["Quenth"] + ["Demogorgon" for i in range(1)], path = path)
+myPlayers = createPartyList(['Arabella', 'Root'], path = path)
+badGuys = createPartyList(['Ephraim',  'Darian'], path = path)
+#badGuys = createMonsterList(["Quenth"] + ["Demogorgon" for i in range(1)], path = path)
 myEncounter = interactiveEncounter(myPlayers, [], badGuys, 20, dmSimPath + "\\App\\Maps\\maze Engine.webp")
 #myMap = Map('mazeEngine',dmSimPath + "\\App\\Maps\\maze Engine.webp", 10, myPlayers)
 

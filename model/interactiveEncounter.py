@@ -80,6 +80,7 @@ class interactiveEncounter(QThread):
         if len(deadActors) >= 1:
             for deadActor in deadActors:
                 print(deadActor.name, 'is dead')
+                self.map.combatLog(deadActor.name + ' has died!')
                 if deadActor in map.party:
                     map.party.remove(deadActor)
                 else:

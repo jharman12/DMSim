@@ -50,7 +50,7 @@ def takeTurn(actor, m, interactive = False, gViewer = None):
     map = m
     player = 1
     healDownedTeammate = []
-    print(actor.name, "called taketurns")
+    #print(actor.name, "called taketurns")
     if str(type(actor)) == "<class 'monster.Monster'>":
         player = 0
         actor.legActions = actor.maxLegActions # if monster reset legendary actions
@@ -60,6 +60,7 @@ def takeTurn(actor, m, interactive = False, gViewer = None):
             # skip your turn if youre still in death saves or succeeded but still unconscious
             if 'deathSaves' in actor.status or 'unconscious' in actor.status: 
                 print(actor.name, 'turn is skipped, in deathSaves or unconscious', actor.status)
+                log('\t' + actor.name + ' turn is skipped, in deathSaves or unconscious ' + str(actor.status))
                 return
             # if you get passed the above check, you should have rolled a nat 20
         if 'unconscious' in actor.status: # skip turn
@@ -685,6 +686,7 @@ def healSpellTurn(actor, turnChoice, map):
 
 def takeHealing(actor, people, dmg, map):
     print(actor.name, 'is healing', people.name, 'for',dmg)
+    log('\t' + actor.name +  ' is healing ' + people.name + ' for ' + str(dmg))
     player = 1
     if str(type(actor)) == "<class 'monster.Monster'>":
         player = 0
@@ -765,6 +767,8 @@ def weaponAttack(actor, target, weap, map):
         
         if targDistance > weap.range/5:
             print(actor.name,'out of range to hit',target.name,'with',weap.name,'...',targDistance,'..',weap.range/5)
+            log('\t' + actor.name + ' out of range to hit ' + target.name + ' with ' + weap.name + ' ... '+ str(targDistance) + ' .. ' + str(weap.range/5))
+            # jth figure out a return value for this so that it doesnt just crash and insteads sends a warning 
             raise SystemExit('Crashed in weaponAttack')
         
         
@@ -945,12 +949,12 @@ def bestLine2(actor, map, length, reach):
         line = drawLine(actorCoord,targetCoord, map)
         for coord in line:
             lineDist =  map.distanceCalc(list(map.arrayCenters).index(targetCoord), list(map.arrayCenters).index(coord))
-            print(coord, targetCoord, lineDist, '<=', moveLimit + hexLimit)
+            #print(coord, targetCoord, lineDist, '<=', moveLimit + hexLimit)
         moveTo = [coord for coord in line if map.distanceCalc(list(map.arrayCenters).index(targetCoord), list(map.arrayCenters).index(coord)) <= moveLimit + hexLimit and (map.arrayCenters[coord] == '' or map.arrayCenters[coord] == actor)][0] # closest inside reach
-        print("in best line returning ", [targetCoord])
+        #print("in best line returning ", [targetCoord])
         return(1, moveTo, moveTo, [targetCoord])
     
-    print('more than one enemy')
+    #print('more than one enemy')
     test = []
     for enemy in enemyList:
         for e2 in enemyList:
@@ -1017,7 +1021,7 @@ def bestLine2(actor, map, length, reach):
                 badGuys =  [ list(map.arrayCenters)[badGuy]for badGuy in enemyList if list(map.arrayCenters)[badGuy] in inBetweenCoords]
                 finalCoord = [guys, moveTo[0], moveTo[0], badGuys]
                 EndTime = time.time()
-                print("in best line returning ", badGuys)
+                #print("in best line returning ", badGuys)
                 return finalCoord
             
     return(0,0)        
@@ -1462,12 +1466,12 @@ def coordWithinReach(actorCoord, targetCoord, reach, map):
 def moveWithingReach(actor, target, reach, map):
     actorCoord = [x for x in map.arrayCenters.keys() if map.arrayCenters[x] == actor][0]
     targetCoord = [x for x in map.arrayCenters.keys() if map.arrayCenters[x] == target][0]
-    print('player moveWithinReach')
-    print(actorCoord, targetCoord)
+    #print('player moveWithinReach')
+    #print(actorCoord, targetCoord)
     
     hexLimit = reach/5
     dist = map.distanceCalc(list(map.arrayCenters).index(targetCoord), list(map.arrayCenters).index(actorCoord))
-    print(dist)
+    #print(dist)
     if dist <= hexLimit:
         return
     line = drawLine(actorCoord,targetCoord, map)
@@ -1509,11 +1513,12 @@ def rollSave(actor, abilityType, dc):
     roll += mod 
 
     return roll < dc
-def printDeathSaves(map, deathSaves):
+def printDeathSaves(deathSaves):
     passes = deathSaves['pass']
     fails = deathSaves['fail']
-    map.combatLog('\t\tPasses: ' + str(passes))
-    map.combatLog('\t\Fails: ' + str(fails))
+    log('\t\tPasses: ' + str(passes))
+    log('\t\tFails: ' + str(fails))
+
 def takeDmg(actor, target, dmg, map):
     print(actor.name, 'is doing ', dmg, 'to', target.name)
     map.combatLog('\t' + actor.name + ' is doing ' + str(dmg) + ' to ' + target.name)
@@ -1521,11 +1526,12 @@ def takeDmg(actor, target, dmg, map):
         target.health -= dmg
         if target.health <= 0:
             target.alive = 0
-    else: # right now no death saves
+    else: 
         if 'deathSaves' in target.status:
             target.deathSaves['fail'].append(1)
             print(target.deathSaves)
             map.combatLog('\t\tActor: ' + target.name + ' is in deathSaves')
+            printDeathSaves(target.deathSaves)
             if sum(target.deathSaves['fail']) >= 3:
                 target.alive = 0
         else:
@@ -1601,6 +1607,7 @@ def takeReaction(actor, m, target):
     ##print(hits)
     #dmg = sum(rollDice(hits*int(weap.diceCount), int(weap.diceType))) 
     dmg = 0
+    log('\t' + actor.name + ' is taking a reaction against ' + target.name)
     for hit in hits:
         if not player:
             dmg = sum([rollDice(int(attackWith.diceCount[i]), int(attackWith.diceType[i])) for i in range(len(attackWith.diceType))][0]) + int(attackWith.dmgMod)
@@ -1615,21 +1622,26 @@ def takeReaction(actor, m, target):
     ##print(target.health)
     if player:
         dmg += actor.classMeleeDmg(hits, dmg)
+    
     takeDmg(actor, target, dmg, map)
     actor.reaction = 0
     #print(actor.name,'is doing a weapon attack and is doing', dmg, 'to', target.name, 'and they are now at', target.health)
 
 def rollDeathSave(actor):
     print(actor.name, ' is rolling death saves')
+    log('\t' +actor.name + ' is rolling death saves!')
     roll = rollDice(1, 20)[0]
     if roll <= 10:
         print(actor.name, 'failed death save with ', roll)
+        log('\t' + actor.name +' failed death save with ' + str(roll))
         if roll == 1:
             actor.deathSaves['fail'].append(2)    
-        actor.deathSaves['fail'].append(1)
+        else:
+            actor.deathSaves['fail'].append(1)
     else:
         if roll == 20:
             print(actor.name, 'is getting up with a Natural 20!')
+            log(actor.name + ' is getting up with a Natural 20!')
             actor.deathSaves['pass'].append(3)    
             actor.health = 1
             actor.status.remove('deathSaves')
@@ -1637,6 +1649,7 @@ def rollDeathSave(actor):
             return
         actor.deathSaves['pass'].append(1)
         print(actor.name, 'passed death save with ', roll)
+        log(actor.name+  ' passed death save with ' + str(roll))
     
     # scores
     fails = sum(actor.deathSaves['fail'])
@@ -1644,12 +1657,15 @@ def rollDeathSave(actor):
     if fails >= 3:
         actor.alive = 0
         #print(actor.name, 'is dead with', fails, 'fails')
+        
     if passes >= 3 and roll != 20:
         actor.health = 1
         actor.status.append('unconscious')
         actor.status.remove('deathSaves')
         actor.deathSaves = {'pass': [], 'fail': []}
         #print(actor.name, 'passed death saves')
+        log('\t' + actor.name + ' has passed death saves')
+    printDeathSaves(actor.deathSaves)
     #print(actor.deathSaves)
 
 def weibull(h):
