@@ -290,7 +290,13 @@ class Player:
                 self.spellSlots['7'] = 2
 
         self.initialTotalSlots = sum(self.spellSlots.values())
-
+        
+        
+        self.maxSpellSlots = {}
+        for level in self.spellSlots:
+            
+            self.maxSpellSlots[level] = self.spellSlots[level]
+        
         self.highestSpell = 0
         for index in range(len(list(self.spellSlots))):
             if self.spellSlots[list(self.spellSlots)[index]] > 0:

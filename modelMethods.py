@@ -694,6 +694,7 @@ def takeHealing(actor, people, dmg, map):
         if any([x in people.status for x in ['deathSaves','unconscious']]):
             people.health = 0
             people.status = []
+            people.deathSaves = {'pass': [], 'fail': []}
     people.health += dmg
 
 def castSpellTurn(actor, turnChoice, map):
@@ -1645,6 +1646,7 @@ def rollDeathSave(actor):
             actor.deathSaves['pass'].append(3)    
             actor.health = 1
             actor.status.remove('deathSaves')
+            del actor.deathSaves
             actor.deathSaves = {'pass':[], 'fail':[]}
             return
         actor.deathSaves['pass'].append(1)
@@ -1662,6 +1664,7 @@ def rollDeathSave(actor):
         actor.health = 1
         actor.status.append('unconscious')
         actor.status.remove('deathSaves')
+        del actor.deathSaves
         actor.deathSaves = {'pass': [], 'fail': []}
         #print(actor.name, 'passed death saves')
         log('\t' + actor.name + ' has passed death saves')

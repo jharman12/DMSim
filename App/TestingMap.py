@@ -27,13 +27,6 @@ Things to work on:
         hex like spells
     GUI CHANGES *****************************************************************************
 
-    death saves is acting weird...
-        sometimes when enemy downs them, on their next turn maybe takeDmg called twice?
-            seems like you get a fail even on the first hit
-    create best square
-        choose which op to do (currently just does a default operation)
-    figure out targeting of non spells
-        melee is just a 1 hex sphere
     
     show character spell slots
     
@@ -80,7 +73,7 @@ import os
 
 import sys
 from PyQt5.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QTextEdit,
+    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QTextEdit, QCheckBox,
     QLabel, QPushButton, QLineEdit, QScrollArea, QFrame, QProgressBar, QComboBox, QSplitter, QSplitterHandle
 )
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QFont
@@ -88,7 +81,7 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem, QFont
 from PyQt5.QtGui import QPixmap, QIcon
 
 from PyQt5.QtWidgets import QApplication, QPushButton, QMainWindow, QWidget, QVBoxLayout
-from PyQt5.QtCore import QSize, Qt
+from PyQt5.QtCore import QSize, Qt, QEvent
 
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPolygonItem
@@ -119,11 +112,45 @@ from modelMethods import myAction, doAction, drawLine, calcMoveHexes
 
 
 
+class TextScale:
+    BASE = 12  # <-- change this to scale everything
+
+    XS  = 0.85
+    SM  = 1.0
+    MD  = 1.15
+    LG  = 1.35
+    XL  = 1.6
+    XXL = 2.0
+    max_BASE = 24
+    min_BASE = 12
+
+    @classmethod
+    def size(cls, multiplier):
+        return int(cls.BASE * multiplier)
+    
+    @classmethod
+    def increase(self):
+        self.BASE = min(self.BASE + 1, self.max_BASE)
+
+    @classmethod
+    def decrease(self):
+        self.BASE = min(self.BASE + 1, self.min_BASE)
 
 
         
 
-        
+from PyQt5.QtGui import QFont
+
+def set_font(widget, size, weight=QFont.Normal, monospace=False):
+    if monospace:
+        font = QFont("Consolas")
+    else:
+        font = widget.font()
+
+    font.setPointSize(size)
+    font.setWeight(weight)
+    widget.setFont(font)
+
 
 
 class CustomGraphicsView(QGraphicsView):
@@ -1115,7 +1142,7 @@ class TurnOrderWidget(QWidget):
         # Current turn icon
         self.current_icon = QLabel()
         self.current_icon.setPixmap(placeholder_pix)
-        self.current_icon.setFixedSize(50, 50)
+        self.current_icon.setFixedSize(70, 70)
         self.current_icon.setScaledContents(True)
 
 
@@ -1126,7 +1153,7 @@ class TurnOrderWidget(QWidget):
         for _ in range(5):
             lbl = QLabel()
             lbl.setPixmap(placeholder_pix)
-            lbl.setFixedSize(40, 40)
+            lbl.setFixedSize(60, 60)
             lbl.setScaledContents(True)
             layout.addWidget(lbl)
             self.next_icons.append(lbl)
@@ -1140,7 +1167,7 @@ class TurnOrderWidget(QWidget):
 class TurnActionPanel(QWidget):
     def __init__(self):
         super().__init__()
-
+        self._textScale = None
         main_layout = QVBoxLayout()
         main_layout.setSpacing(10)
 
@@ -1164,6 +1191,29 @@ class TurnActionPanel(QWidget):
         health_layout.addWidget(self.health_label)
 
         main_layout.addLayout(health_layout)
+
+       # ================= SPELL SLOTS (SCROLLABLE) =================
+        self.spell_slot_title = QLabel("Spell Slots")
+        self.spell_slot_title.setStyleSheet("font-weight: bold; margin-top: 6px;")
+        main_layout.addWidget(self.spell_slot_title)
+
+        self.spell_slot_scroll = QScrollArea()
+        self.spell_slot_scroll.setWidgetResizable(True)
+        self.spell_slot_scroll.setFixedHeight(140)  # <-- adjust as desired
+        self.spell_slot_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        # Inner container
+        self.spell_slot_container = QWidget()
+        self.spell_slot_layout = QVBoxLayout(self.spell_slot_container)
+        self.spell_slot_layout.setContentsMargins(4, 4, 4, 4)
+        self.spell_slot_layout.setSpacing(6)
+
+        self.spell_slot_scroll.setWidget(self.spell_slot_container)
+        main_layout.addWidget(self.spell_slot_scroll)
+
+        # Track widgets
+        self.spell_slot_widgets = {}
+
 
         # -------------------------------
         # ACTION DROP-DOWN
@@ -1204,11 +1254,101 @@ class TurnActionPanel(QWidget):
         self.game_log_box.setStyleSheet(
             "background-color: #111; color: #ddd; font-family: Consolas, monospace;"
         )
-        main_layout.addWidget(self.game_log_box)
+        self.game_log_box.setSizePolicy(
+            QSizePolicy.Expanding,
+            QSizePolicy.Expanding
+        )
+        main_layout.addWidget(self.game_log_box, 1)
 
 
-        main_layout.addStretch()
+        #main_layout.addStretch(1)
         self.setLayout(main_layout)
+    def applyFonts(self, textScale):
+        self._textScale = textScale
+        set_font(self.turn_label, textScale.size(textScale.LG), QFont.Bold)
+        set_font(self.health_label, textScale.size(textScale.SM))
+        set_font(self.spell_slot_title, textScale.size(textScale.MD), QFont.Bold)
+
+        set_font(self.action_dropdown, textScale.size(textScale.SM))
+        set_font(self.targets_input, textScale.size(textScale.SM))
+        set_font(self.move_input, textScale.size(textScale.SM))
+        set_font(self.take_turn_button, textScale.size(textScale.SM))
+
+        set_font(self.game_log_label, textScale.size(textScale.MD), QFont.Bold)
+        set_font(
+            self.game_log_box,
+            textScale.size(textScale.MD),
+            monospace=True
+        )
+
+    def buildSpellSlots(self, actor):
+        if not self._textScale:
+            return  # fonts not initialized yet
+
+        slot_data = actor.spellSlots
+        maxSlots = actor.maxSpellSlots
+
+        # Clear existing widgets
+        while self.spell_slot_layout.count():
+            item = self.spell_slot_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+        self.spell_slot_widgets.clear()
+
+        for level in sorted(slot_data.keys()):
+            if level == '0':
+                continue
+
+            max_slots = maxSlots[level]
+            remaining = slot_data[level]
+
+            if max_slots == 0:
+                continue
+
+            # --- Level Label ---
+            lbl = QLabel(f"Level {level}")
+            set_font(
+                lbl,
+                self._textScale.size(self._textScale.SM),
+                QFont.Bold
+            )
+            self.spell_slot_layout.addWidget(lbl)
+
+            # --- Slot Row ---
+            row = QHBoxLayout()
+            row.setSpacing(4)
+
+            self.spell_slot_widgets[level] = []
+
+            for i in range(max_slots):
+                slot = QCheckBox()
+                slot.setEnabled(False)
+                slot.setChecked(i < remaining)
+
+                # Scale checkbox size
+                box_size = self._textScale.size(self._textScale.XS)
+                slot.setFixedSize(box_size + 4, box_size + 4)
+
+                slot.setStyleSheet(f"""
+                    QCheckBox::indicator {{
+                        width: {box_size}px;
+                        height: {box_size}px;
+                        border: 2px solid #999;
+                        background: #222;
+                    }}
+                    QCheckBox::indicator:checked {{
+                        background: #66ccff;
+                    }}
+                """)
+
+                row.addWidget(slot)
+                self.spell_slot_widgets[level].append(slot)
+
+            row.addStretch()
+            self.spell_slot_layout.addLayout(row)
+
+
 
     def log(self, text):
         """Append text to the game log (like print())."""
@@ -1296,6 +1436,8 @@ class MapWidget(QWidget):
         super().__init__()
         global gViewer
 
+        self.installEventFilter(self)
+
         main_layout = QVBoxLayout()
         main_layout.setSpacing(15)
 
@@ -1378,7 +1520,7 @@ class MapWidget(QWidget):
 
 
         self.map_view.setFrameShape(QFrame.Box)
-        self.map_view.setMinimumHeight(1400)   # allow width to shrink
+        self.map_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.map_view.setMinimumWidth(300)    # use smaller minimum
 
         map_frame_layout.addWidget(self.map_view, stretch=1) 
@@ -1416,11 +1558,12 @@ class MapWidget(QWidget):
         # RIGHT SIDE: TURN ACTION PANEL
         # ============================================================
         self.turn_action_panel = TurnActionPanel()
-        self.turn_action_panel.setMinimumWidth(250)
+        #self.turn_action_panel.setMinimumWidth(250)
         #self.turn_action_panel.setMaximumWidth(500)  # optional
         self.turn_action_panel.take_turn_button.clicked.connect(self.takeTurnButton)
         self.turn_action_panel.action_dropdown.currentTextChanged.connect(self.actionChanged)
 
+        self.turn_action_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         
         self.turnChoices = None
         self.turnChoice = None
@@ -1452,7 +1595,7 @@ class MapWidget(QWidget):
         handle.mouseDoubleClickEvent = doubleClickOverride
 
         # Add splitter to layout
-        main_layout.addWidget(self.splitter)
+        main_layout.addWidget(self.splitter, 1)
 
         # ---- Bottom: Start Encounter Button ----
         self.start_button = QPushButton("Start Encounter")
@@ -1464,6 +1607,43 @@ class MapWidget(QWidget):
 
         self.testingTheory()
 
+        self.TextScale = TextScale
+        self.setAllFonts()
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.Wheel:
+            if QApplication.keyboardModifiers() & Qt.ControlModifier:
+                delta = event.angleDelta().y()
+
+                if delta > 0:
+                    self.TextScale.increase()
+                else:
+                    self.TextScale.decrease()
+
+                self.applyTextScale()
+                return True  # stop normal scrolling
+
+        return super().eventFilter(obj, event)
+
+    def applyTextScale(self):
+        # Turn action panel
+        self.turn_action_panel.applyFonts(self.TextScale)
+
+        # Rebuild dynamic widgets
+        if self.actor:
+            self.turn_action_panel.buildSpellSlots(self.actor)
+
+        # Turn order widget
+        #self.turn_order_widget.applyFonts(self.TextScale)
+
+        # Buttons above map
+        set_font(self.distance_button, self.TextScale.size(self.TextScale.SM))
+        set_font(self.spell_button, self.TextScale.size(self.TextScale.SM))
+
+    def setAllFonts(self):
+        self.turn_action_panel.applyFonts(self.TextScale)
+
+        
     def updateTurnOrder(self):
         encounter = self.myEncounter
         turnOrder = encounter.sortedInitList
@@ -1605,6 +1785,7 @@ class MapWidget(QWidget):
                 self.turnChoices = turns[2]
                 self.turnChoice = turns[3]
                 self.turn_action_panel.update_turn_panel(self.actor, self.turnChoices, self.turnChoice)
+        self.turn_action_panel.buildSpellSlots(self.actor)
         self.updateTurnOrder()
         pass
     def run_command(self):
@@ -1640,9 +1821,9 @@ dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-4]
 
 
 path = dmSimPath + '\\actors\\savedObjs\\'
-myPlayers = createPartyList(['Arabella', 'Root'], path = path)
-badGuys = createPartyList(['Ephraim',  'Darian'], path = path)
-#badGuys = createMonsterList(["Quenth"] + ["Demogorgon" for i in range(1)], path = path)
+myPlayers = createPartyList(['Arabella', 'Root', 'Ephraim',  'Darian'], path = path)
+#badGuys = createPartyList(['Ephraim',  'Darian'], path = path)
+badGuys = createMonsterList(["Quenth"] + ["Demogorgon" for i in range(1)], path = path)
 myEncounter = interactiveEncounter(myPlayers, [], badGuys, 20, dmSimPath + "\\App\\Maps\\maze Engine.webp")
 #myMap = Map('mazeEngine',dmSimPath + "\\App\\Maps\\maze Engine.webp", 10, myPlayers)
 
