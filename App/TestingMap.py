@@ -40,6 +40,12 @@ Things to work on:
 
     prevent doAction if error occurs with warning of that error?
 
+    pop up on end turn if you havent taken an action or have move left
+
+    grey out move button when action == dash
+
+    add party & enemy health bar?
+    
     show calc action mod??
 
     properly get changing action drop box reset hex colors and untoggle spell area button if checked
@@ -1598,6 +1604,7 @@ class MapWidget(QWidget):
         #self.turn_action_panel.setMaximumWidth(500)  # optional
         self.turn_action_panel.take_turn_button.clicked.connect(self.takeTurnButton)
         self.turn_action_panel.move_input.clicked.connect(self.moveButton)
+        self.turn_action_panel.endTurnButton.clicked.connect(self.endTurnButton)
         self.turn_action_panel.action_dropdown.currentTextChanged.connect(self.actionChanged)
 
         self.turn_action_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -1683,7 +1690,12 @@ class MapWidget(QWidget):
             self.turn_action_panel.update_turn_panel(self.actor, self.turnChoices, self.turnChoice)
         self.turn_action_panel.buildSpellSlots(self.actor)
         self.updateTurnOrder()
-        self.myEncounter.map.printCurrMap()
+        
+        newMoveHexes = calcMoveHexes(self.actor, self.myEncounter.map)
+        self.map_view.setCurMoveCoords(newMoveHexes)
+        # i need to now whether the undo was a 
+        self.turn_action_panel.take_turn_button.setEnabled(True)
+        self.turn_action_panel.action_dropdown.setEnabled(True)
         pass
 
 
@@ -1845,48 +1857,69 @@ class MapWidget(QWidget):
         pass
     
     def moveButton(self):
-        hexIndex = self.map_view.getCurActorHexIndex()
+        # crashes if dash is enabled maybe should grey out move button when dash is selected??
+        hexIndex = self.map_view.getCurActorHexIndex() # starting index
 
         if self.turnChoice != None and self.actor != None:
             if hexIndex != None:
+                
+                self.saveTurnSnapshot() # save start of new turn
                 currLocation = list(self.myEncounter.map.arrayCenters)[hexIndex]
                 self.turnChoice.moveCoord = currLocation
+                map = self.myEncounter.map
+                origIndex = [list(map.arrayCenters).index(coord) for coord in map.arrayCenters if map.arrayCenters[coord] == self.actor][0]
                 self.myEncounter.map.moveActor(self.actor, currLocation) # need to make return if op attack caused
+                distanceMoved = self.myEncounter.map.distanceCalc(hexIndex, origIndex)
+                self.actor.speed -= distanceMoved*5
+                newMoveHexes = calcMoveHexes(self.actor, self.myEncounter.map)
+                self.map_view.setCurMoveCoords(newMoveHexes)
+                print("I have moved ", distanceMoved, ' and i have ', self.actor.speed/5, ' move left')
                 # add speed reduction and recalc move areas
+
+    def endTurnButton(self):
+        self.map_view.spellAreaCheck = None
+        self.map_view.affected = None
+        self.myEncounter.nextTurn()
+        
+        turns = self.myEncounter.calcTurn()
+        self.actor.speed = int(self.actor.maxSpeed) # reset my speed that I have reduced
+        
+        if turns != None:
+            self.actor = turns[0]
+            self.turnChoices = turns[2]
+            self.turnChoice = turns[3]
+            self.turn_action_panel.update_turn_panel(self.actor, self.turnChoices, self.turnChoice)
+            
+        self.turn_action_panel.buildSpellSlots(self.actor)
+        self.updateTurnOrder()
+        self.turn_action_panel.take_turn_button.setEnabled(True)
+        self.turn_action_panel.action_dropdown.setEnabled(True)
+        
+        
 
     def takeTurnButton(self):
         # now load inputs and and call doAction function
         #myAction(name =, type=, mod=, numHit=, currCoord=, moveCoord=, targets=, castCoord=)
         # grab name of spell
         hexIndex = self.map_view.getCurActorHexIndex()
-        self.saveTurnSnapshot()
+        
         #print('Current Actors current location on the map', currLocation)
         if self.turnChoice != None and self.actor != None: # for now just do the best action. will work on actually choosing action
             if hexIndex != None:
                 currLocation = list(self.myEncounter.map.arrayCenters)[hexIndex]
                 self.turnChoice.moveCoord = currLocation
+            self.saveTurnSnapshot() # save start of new turn
             currAction = self.turn_action_panel.action_dropdown.currentText()
             self.turnChoice.type = [x.type for x in self.turnChoices if x.name == currAction][0]
             self.turnChoice.name = currAction
             doAction(self.actor, self.myEncounter.map, self.turnChoice)
-
+            
             # add grey out take turn button
             # add grey out actions
-            # remove this stuff and move to an end turn button
-
-            self.map_view.spellAreaCheck = None
-            self.map_view.affected = None
-            self.myEncounter.nextTurn()
-            turns = self.myEncounter.calcTurn()
-            
-            if turns != None:
-                self.actor = turns[0]
-                self.turnChoices = turns[2]
-                self.turnChoice = turns[3]
-                self.turn_action_panel.update_turn_panel(self.actor, self.turnChoices, self.turnChoice)
-        self.turn_action_panel.buildSpellSlots(self.actor)
-        self.updateTurnOrder()
-        pass
+            self.turn_action_panel.take_turn_button.setEnabled(False)
+            self.turn_action_panel.action_dropdown.setEnabled(False)
+            self.turn_action_panel.buildSpellSlots(self.actor)
+        
     def run_command(self):
         self.turn_action_panel.log('Starting Combat!')
         turns = self.myEncounter.calcTurn()
@@ -1897,6 +1930,7 @@ class MapWidget(QWidget):
             self.turnChoice = turns[3]
             self.turn_action_panel.update_turn_panel(self.actor, self.turnChoices, self.turnChoice)
             self.turn_action_panel.buildSpellSlots(self.actor)
+        self.saveTurnSnapshot() # save start of new turn
 
     def testingTheory(self):
         

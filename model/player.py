@@ -42,6 +42,7 @@ class Player:
         self.legRes = 0
         self.maxLegRes = 0
         self.speed = 30 
+        self.maxSpeed = 30
         self.reaction = 1
         self.deathSaves = {'pass': [], 'fail': []}
         self.alive = 1
