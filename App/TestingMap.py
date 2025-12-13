@@ -25,11 +25,18 @@ Things to work on:
         bonus actions
         concentration
         hex like spells
+
+    create walls?
+
+    create method for adding in new characters in the middle of combat
+
     GUI CHANGES *****************************************************************************
 
+    create interface for adding walls?
+        might want to have an encounter builder?
+        create a way to run one encounter immediately after the other
     
-    
-    Creating 
+    save encounter
 
     prevent doAction if error occurs with warning of that error?
 
@@ -57,7 +64,14 @@ Things to work on:
     Add distance calc feature
 
     
+    code management *****************************************************************************
     
+
+    restructure code files and create place methods and classes in appropiate files
+        create main file
+        create actual main GUI
+            rebuild dnd_character_builder.py
+
     
     
 '''
@@ -1201,9 +1215,13 @@ class TurnActionPanel(QWidget):
         # -------------------------------
         # ACTION DROP-DOWN
         # -------------------------------
+        actionBox = QHBoxLayout()
+        self.actionLbl = QLabel('Action:')
+        actionBox.addWidget(self.actionLbl)
         self.action_dropdown = GroupedComboBox()
         self.action_dropdown.addItems(["Attack", "Cast Spell", "Dash", "Use Item"])  # placeholder actions
-        main_layout.addWidget(self.action_dropdown)
+        actionBox.addWidget(self.action_dropdown, 1)
+        main_layout.addLayout(actionBox)
 
         # -------------------------------
         # Targets input
@@ -1215,17 +1233,28 @@ class TurnActionPanel(QWidget):
         # -------------------------------
         # Move coords input
         # -------------------------------
-        self.move_input = QLineEdit()
-        self.move_input.setPlaceholderText("Move Coords")
-        main_layout.addWidget(self.move_input)
+        
+        self.move_Action_layout = QHBoxLayout()
+        self.move_input = QPushButton('Move')
+        
+        self.move_Action_layout.addWidget(self.move_input)
+
+        
 
         # -------------------------------
         # Take Turn button
         # -------------------------------
         self.take_turn_button = QPushButton("Take Turn")
         #self.take_turn_button.clicked.connect(self.take_turn)
-        main_layout.addWidget(self.take_turn_button)
+        self.move_Action_layout.addWidget(self.take_turn_button)
+        main_layout.addLayout(self.move_Action_layout)
 
+        # -------------------------------
+        # End Turn button
+        # -------------------------------
+        self.endTurnButton = QPushButton('End Turn')
+
+        main_layout.addWidget(self.endTurnButton)
         # ---------------- GAME LOG ----------------
         self.game_log_label = QLabel("Game Log")
         self.game_log_label.setStyleSheet("font-weight: bold;")
@@ -1253,8 +1282,13 @@ class TurnActionPanel(QWidget):
         set_font(self.health_label, textScale.size(textScale.SM))
         set_font(self.spell_slot_title, textScale.size(textScale.MD), QFont.Bold)
 
+        
+        set_font(self.actionLbl, textScale.size(textScale.SM))
         set_font(self.action_dropdown, textScale.size(textScale.SM))
         set_font(self.targets_input, textScale.size(textScale.SM))
+
+        
+        set_font(self.endTurnButton, textScale.size(textScale.SM))
         set_font(self.move_input, textScale.size(textScale.SM))
         set_font(self.take_turn_button, textScale.size(textScale.SM))
 
