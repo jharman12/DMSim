@@ -1199,7 +1199,7 @@ class TurnActionPanel(QWidget):
 
         self.spell_slot_scroll = QScrollArea()
         self.spell_slot_scroll.setWidgetResizable(True)
-        self.spell_slot_scroll.setFixedHeight(140)  # <-- adjust as desired
+        self.spell_slot_scroll.setMinimumHeight(100)
         self.spell_slot_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         # Inner container
@@ -1209,7 +1209,7 @@ class TurnActionPanel(QWidget):
         self.spell_slot_layout.setSpacing(6)
 
         self.spell_slot_scroll.setWidget(self.spell_slot_container)
-        main_layout.addWidget(self.spell_slot_scroll)
+        main_layout.addWidget(self.spell_slot_scroll, stretch= 1)
 
         # Track widgets
         self.spell_slot_widgets = {}
@@ -1258,11 +1258,12 @@ class TurnActionPanel(QWidget):
             QSizePolicy.Expanding,
             QSizePolicy.Expanding
         )
-        main_layout.addWidget(self.game_log_box, 1)
+        main_layout.addWidget(self.game_log_box, stretch=2)
 
 
         #main_layout.addStretch(1)
         self.setLayout(main_layout)
+
     def applyFonts(self, textScale):
         self._textScale = textScale
         set_font(self.turn_label, textScale.size(textScale.LG), QFont.Bold)
@@ -1280,6 +1281,17 @@ class TurnActionPanel(QWidget):
             textScale.size(textScale.MD),
             monospace=True
         )
+    
+    def clearLayout(self, layout):
+        while layout.count():
+            item = layout.takeAt(0)
+
+            if item.widget():
+                item.widget().deleteLater()
+
+            elif item.layout():
+                self.clearLayout(item.layout())
+
 
     def buildSpellSlots(self, actor):
         if not self._textScale:
@@ -1289,10 +1301,9 @@ class TurnActionPanel(QWidget):
         maxSlots = actor.maxSpellSlots
 
         # Clear existing widgets
-        while self.spell_slot_layout.count():
-            item = self.spell_slot_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+        self.clearLayout(self.spell_slot_layout)
+        self.spell_slot_widgets.clear()
+
 
         self.spell_slot_widgets.clear()
 
@@ -1797,6 +1808,7 @@ class MapWidget(QWidget):
             self.turnChoices = turns[2]
             self.turnChoice = turns[3]
             self.turn_action_panel.update_turn_panel(self.actor, self.turnChoices, self.turnChoice)
+            self.turn_action_panel.buildSpellSlots(self.actor)
 
     def testingTheory(self):
         
