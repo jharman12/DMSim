@@ -28,8 +28,9 @@ Things to work on:
     GUI CHANGES *****************************************************************************
 
     
-    show character spell slots
     
+    Creating 
+
     prevent doAction if error occurs with warning of that error?
 
     show calc action mod??
@@ -38,11 +39,6 @@ Things to work on:
 
     move character to on GV to what the best location is?
     
-            
-    
-    Build model log
-        must also make print statements into a file
-        display contents of file to either popup window or somwhere on the main window
 
     might want to move add/remove red line to before move as its not centering icons
 
@@ -67,7 +63,8 @@ Things to work on:
 '''
 
 
-
+import copy
+from collections import deque
 
 import os
 
@@ -699,60 +696,7 @@ class CustomGraphicsView(QGraphicsView):
 
         return affectedIndexes
 
-    #def calcSquare(self, index1, index2, hexLimit):
-    #
-    #    map = self.encounter.map
-    #    centers = list(map.arrayCenters)
-    #
-    #    c1 = centers[index1]
-    #    c2 = centers[index2]
-    #
-    #    # angle from index1 → index2
-    #    angle = math.atan2(c2[1] - c1[1], c2[0] - c1[0])
-    #
-    #    # 8 direction vectors in double-coordinate space
-    #    dirs8 = [
-    #        ( 1,  0),   # E
-    #        ( 1, -1),   # NE
-    #        ( 0, -1),   # N
-    #        (-1, -1),   # NW
-    #        (-1,  0),   # W
-    #        (-1,  1),   # SW
-    #        ( 0,  1),   # S
-    #        ( 1,  1),   # SE
-    #    ]
-    #
-    #    dir_angles = [math.atan2(dy, dx) for dx, dy in dirs8]
-    #
-    #    # choose the closest directional facing
-    #    best_dir = min(range(8), key=lambda i: abs(self.angleDiff(angle, dir_angles[i])))
-    #    dx, dy = dirs8[best_dir]
-    #
-    #    # square is centered directly on index1 (spellRange removed)
-    #    cx, cy = c1
-    #
-    #    # orthogonal axis (90° rotated)
-    #    ox, oy = -dy, dx
-    #
-    #    affected = []
-    #    center_to_index = {xy: i for i, xy in enumerate(centers)}
-    #
-    #    # Build the hex “square”
-    #    for i in range(-hexLimit//2, hexLimit//2 + 1):
-    #        for j in range(-hexLimit//2, hexLimit//2 + 1):
-    #
-    #            x = cx + dx * i + ox * j
-    #            y = cy + dy * i + oy * j
-    #
-    #            # fix hex parity drift (your original rule)
-    #            if (x + y) % 2 != (cx + cy) % 2:
-    #                y += 1
-    #
-    #            if (x, y) in center_to_index:
-    #                affected.append(center_to_index[(x, y)])
-    #
-    #    return affected
-    #
+    
     def calcSquare(self, index1, index2, hexLimit):
         import operator, math
 
@@ -953,32 +897,9 @@ class CustomGraphicsView(QGraphicsView):
             y += 2 * r * math.sin(a)
 
         if heightNumber > 0:
-            hex_size = QSizeF(4*r * (1+ math.cos(a))/3, 2*r * math.sin(a))  # Adjust size as needed
-            hex_path = self.createHexagonPath(hex_size.toSize())
-
-            # Iterate over character items
-            for character_item in self.character_items:
-                # Resize the character's image to fit within the hexagon
-                character_pixmap = character_item.pixmap().scaled(hex_size.toSize(), Qt.KeepAspectRatio)
-
-                # Create a painter path for the character image
-                character_path = QPainterPath()
-                character_path.addRect(QRectF(QPointF(), hex_size))
-
-                # Clip the character image with the hexagon path
-                character_path = character_path.intersected(hex_path)
-
-                # Create a new pixmap and paint the character image onto it
-                combined_pixmap = QPixmap(hex_size.toSize())
-                combined_pixmap.fill(Qt.transparent)
-                painter = QPainter(combined_pixmap)
-                painter.setClipPath(character_path)
-                painter.drawPixmap(combined_pixmap.rect(), character_pixmap)
-                painter.end()
-
-                # Set the combined pixmap as the pixmap for the character item
-                character_item.setPixmap(combined_pixmap)
-        
+            self.hex_size = QSizeF(4*r * (1+ math.cos(a))/3, 2*r * math.sin(a))  # Adjust size as needed
+            self.hex_path = self.createHexagonPath(self.hex_size.toSize())
+            self.setCharsToHexes()
         
         self.hex_centers_base = [(c.x(), c.y()) for c in self.arrayCenters]
         self.hex_tree = spatial.KDTree(self.hex_centers_base)
@@ -989,6 +910,30 @@ class CustomGraphicsView(QGraphicsView):
         allHexIndexes =  [ int(x) for x in np.linspace(0, hexLength-1, hexLength)]
         
         self.setHexColors(fill_color, allHexIndexes)
+
+    def setCharsToHexes(self):
+        # Iterate over character items
+        for character_item in self.character_items:
+            # Resize the character's image to fit within the hexagon
+            character_pixmap = character_item.pixmap().scaled(self.hex_size.toSize(), Qt.KeepAspectRatio)
+
+            # Create a painter path for the character image
+            character_path = QPainterPath()
+            character_path.addRect(QRectF(QPointF(), self.hex_size))
+
+            # Clip the character image with the hexagon path
+            character_path = character_path.intersected(self.hex_path)
+
+            # Create a new pixmap and paint the character image onto it
+            combined_pixmap = QPixmap(self.hex_size.toSize())
+            combined_pixmap.fill(Qt.transparent)
+            painter = QPainter(combined_pixmap)
+            painter.setClipPath(character_path)
+            painter.drawPixmap(combined_pixmap.rect(), character_pixmap)
+            painter.end()
+
+            # Set the combined pixmap as the pixmap for the character item
+            character_item.setPixmap(combined_pixmap)
     
     def setHexColors(self, fill_color, indexes):
         
@@ -1076,6 +1021,44 @@ class CustomGraphicsView(QGraphicsView):
         )
 
         return cropped
+
+    def removeAllActors(self):
+        for item in self.character_items:
+            self.scene.removeItem(item)
+        
+        self.character_items.clear()
+        self.character_objs.clear()
+
+        #self.character_items = []
+        #self.character_objs = []
+
+    def loadFromEncounter(self, myEncounter):
+        
+        self.removeAllActors()
+        # add the characters back
+        for player in myEncounter.totalList:
+            if player.Image is None:
+                px = QPixmap(dmSimPath + "\\App\\unknown.jpg")
+            elif os.path.exists(dmSimPath + player.Image):
+                px = QPixmap(dmSimPath + player.Image)
+            else:
+                px = QPixmap(dmSimPath + "\\App\\unknown.jpg")
+
+            self.addCharacterPixmap(px, player)
+        
+        # resize them
+        self.setCharsToHexes()
+
+        # set curActor
+        self.curActor = list(myEncounter.sortedInitList)[myEncounter.curTurn]
+
+        # now move chars into character spot
+        map = myEncounter.map
+        for coord in map.arrayCenters:
+            if map.arrayCenters[coord] != '': # youre a character
+                gvIndex = map.convertToViewerCoords(coord)
+                self.moveActor(map.arrayCenters[coord], gvIndex)
+
 
 
 
@@ -1521,6 +1504,10 @@ class MapWidget(QWidget):
         self.spell_button.clicked.connect(self.spellButton_pressed)
         top_button_row.addWidget(self.spell_button)
 
+        self.undo_button = QPushButton("Undo Turn")
+        self.undo_button.setCheckable(True)
+        self.undo_button.clicked.connect(self.undoTurn)
+        top_button_row.addWidget(self.undo_button)
         top_button_row.addStretch()
         map_frame_layout.addLayout(top_button_row)
 
@@ -1564,7 +1551,7 @@ class MapWidget(QWidget):
         self.map_view.drawHexGrid(num_vertical_grids, map_rect)
 
         self.myEncounter = myEncounter
-
+        self.undo_stack = deque(maxlen=20)  # cap memory
         # ============================================================
         # RIGHT SIDE: TURN ACTION PANEL
         # ============================================================
@@ -1620,6 +1607,46 @@ class MapWidget(QWidget):
 
         self.TextScale = TextScale
         self.setAllFonts()
+
+
+    def saveTurnSnapshot(self):
+        # remove pyqt widgets
+        self.myEncounter.graphicsViewer = None
+        self.myEncounter.map.graphicsViewer = None
+        self.myEncounter.map.combatLog = None
+        snapshot = copy.deepcopy(self.myEncounter)
+        self.myEncounter.graphicsViewer = self.map_view
+        self.myEncounter.map.graphicsViewer = self.map_view
+        self.myEncounter.map.combatLog = self.turn_action_panel.log
+        self.undo_stack.append(snapshot)
+        print('undo stack length', len(self.undo_stack))
+    
+    def undoTurn(self):
+        if not self.undo_stack:
+            return
+
+        self.myEncounter = self.undo_stack.pop()
+        self.myEncounter.graphicsViewer = self.map_view
+        self.myEncounter.map.graphicsViewer = self.map_view
+        self.myEncounter.map.combatLog = self.turn_action_panel.log
+        self.rebuildFromEncounter()
+        print('Undo stack length', len(self.undo_stack))
+
+    def rebuildFromEncounter(self):
+        # need to build restarts here.
+        self.map_view.loadFromEncounter(self.myEncounter)
+        turns = self.myEncounter.calcTurn()
+            
+        if turns != None:
+            self.actor = turns[0]
+            self.turnChoices = turns[2]
+            self.turnChoice = turns[3]
+            self.turn_action_panel.update_turn_panel(self.actor, self.turnChoices, self.turnChoice)
+        self.turn_action_panel.buildSpellSlots(self.actor)
+        self.updateTurnOrder()
+        self.myEncounter.map.printCurrMap()
+        pass
+
 
     def eventFilter(self, obj, event):
         if event.type() == QEvent.Wheel:
@@ -1777,7 +1804,7 @@ class MapWidget(QWidget):
         #myAction(name =, type=, mod=, numHit=, currCoord=, moveCoord=, targets=, castCoord=)
         # grab name of spell
         hexIndex = self.map_view.getCurActorHexIndex()
-        
+        self.saveTurnSnapshot()
         #print('Current Actors current location on the map', currLocation)
         if self.turnChoice != None and self.actor != None: # for now just do the best action. will work on actually choosing action
             if hexIndex != None:
@@ -1791,6 +1818,7 @@ class MapWidget(QWidget):
             self.map_view.affected = None
             self.myEncounter.nextTurn()
             turns = self.myEncounter.calcTurn()
+            
             if turns != None:
                 self.actor = turns[0]
                 self.turnChoices = turns[2]

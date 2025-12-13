@@ -17,8 +17,7 @@ print(dmSimPath)
 from modelMethods import takeTurn, removeDeadActors, rollSave
 
 
-class interactiveEncounter(QThread):
-    output_received = pyqtSignal(str)
+class interactiveEncounter:
 
     def __init__(self, partyList, npcList, enemyList, numHexes, mapImage):
         self.numHexes = numHexes
@@ -32,6 +31,13 @@ class interactiveEncounter(QThread):
             actor.legRes = actor.maxLegRes
             actor.legActions = actor.maxLegActions
             actor.cc = []
+
+    
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state.pop("qtStuff", None)
+        return state
+
     def preCombat(self, graphicsViewer):
         partyList = self.party2List
         enemyList = self.enemy2List
