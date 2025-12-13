@@ -1450,12 +1450,16 @@ class TurnActionPanel(QWidget):
         self.action_dropdown.setCurrentIndex(index)
 
         # Update targets input
-        targets = str(turnChoice.targets)
+        #targets = str(turnChoice.targets)
+        targets = ''
+        for target in turnChoice.targets:
+            targets += ' ' + str(target) + ','
+        targets = targets[:-1]
         self.targets_input.setText(targets)
 
         # Update move coords input
         move_coords = str(turnChoice.moveCoord)
-        self.move_input.setText(move_coords)
+        #self.move_input.setText(move_coords)
 
 
 
@@ -1593,6 +1597,7 @@ class MapWidget(QWidget):
         #self.turn_action_panel.setMinimumWidth(250)
         #self.turn_action_panel.setMaximumWidth(500)  # optional
         self.turn_action_panel.take_turn_button.clicked.connect(self.takeTurnButton)
+        self.turn_action_panel.move_input.clicked.connect(self.moveButton)
         self.turn_action_panel.action_dropdown.currentTextChanged.connect(self.actionChanged)
 
         self.turn_action_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -1763,7 +1768,12 @@ class MapWidget(QWidget):
         #print(targetsHit)
         self.turnChoice.targets = targetsHit
         targetNames = [self.myEncounter.map.arrayCenters[coord].name for coord in targetsHit]
-        self.turn_action_panel.targets_input.setText(str(targetNames))
+        targetString = ''
+        for target in targetNames:
+
+            targetString += ' ' + target + ','
+        targetString = targetString[:-1]
+        self.turn_action_panel.targets_input.setText(targetString)
 
     def actionChanged(self):
         self.spellButton_pressed()
@@ -1833,6 +1843,17 @@ class MapWidget(QWidget):
 
                 
         pass
+    
+    def moveButton(self):
+        hexIndex = self.map_view.getCurActorHexIndex()
+
+        if self.turnChoice != None and self.actor != None:
+            if hexIndex != None:
+                currLocation = list(self.myEncounter.map.arrayCenters)[hexIndex]
+                self.turnChoice.moveCoord = currLocation
+                self.myEncounter.map.moveActor(self.actor, currLocation) # need to make return if op attack caused
+                # add speed reduction and recalc move areas
+
     def takeTurnButton(self):
         # now load inputs and and call doAction function
         #myAction(name =, type=, mod=, numHit=, currCoord=, moveCoord=, targets=, castCoord=)
@@ -1848,6 +1869,11 @@ class MapWidget(QWidget):
             self.turnChoice.type = [x.type for x in self.turnChoices if x.name == currAction][0]
             self.turnChoice.name = currAction
             doAction(self.actor, self.myEncounter.map, self.turnChoice)
+
+            # add grey out take turn button
+            # add grey out actions
+            # remove this stuff and move to an end turn button
+
             self.map_view.spellAreaCheck = None
             self.map_view.affected = None
             self.myEncounter.nextTurn()
