@@ -87,7 +87,7 @@ import os
 
 import sys
 from PyQt5.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QTextEdit, QCheckBox,
+    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QTextEdit, QCheckBox, QMenuBar, QMenu, QAction,
     QLabel, QPushButton, QLineEdit, QScrollArea, QFrame, QProgressBar, QComboBox, QSplitter, QSplitterHandle
 )
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QFont
@@ -136,7 +136,7 @@ class TextScale:
     XL  = 1.6
     XXL = 2.0
     max_BASE = 24
-    min_BASE = 12
+    min_BASE = 6
 
     @classmethod
     def size(cls, multiplier):
@@ -144,11 +144,11 @@ class TextScale:
     
     @classmethod
     def increase(self):
-        self.BASE = min(self.BASE + 1, self.max_BASE)
+        self.BASE = min(self.BASE + .2, self.max_BASE)
 
     @classmethod
     def decrease(self):
-        self.BASE = min(self.BASE + 1, self.min_BASE)
+        self.BASE = max(self.BASE - .2, self.min_BASE)
 
 
         
@@ -1476,6 +1476,24 @@ class MapWidget(QWidget):
         main_layout = QVBoxLayout()
         main_layout.setSpacing(15)
 
+        # ---- Menu Bar ----
+        self.menu_bar = QMenuBar(self)
+
+        # File menu
+        file_menu = self.menu_bar.addMenu("File")
+
+        save_action = QAction("Save Encounter", self)
+        save_action.triggered.connect(self.saveEncounter)
+        file_menu.addAction(save_action)
+
+        # Optional placeholders
+        edit_menu = self.menu_bar.addMenu("Edit")
+        view_menu = self.menu_bar.addMenu("View")
+        help_menu = self.menu_bar.addMenu("Help")
+
+        # Add menu bar to layout
+        main_layout.addWidget(self.menu_bar)
+
         # ---- Top: Turn Order Indicator ----
         self.turn_order_widget = TurnOrderWidget()
         main_layout.addWidget(self.turn_order_widget)
@@ -1536,6 +1554,7 @@ class MapWidget(QWidget):
         top_button_row = QHBoxLayout()
         top_button_row.setSpacing(10)
 
+        # ---- Left buttons ----
         self.distance_button = QPushButton("Distance Calc")
         self.distance_button.setCheckable(True)
         top_button_row.addWidget(self.distance_button)
@@ -1545,11 +1564,15 @@ class MapWidget(QWidget):
         self.spell_button.clicked.connect(self.spellButton_pressed)
         top_button_row.addWidget(self.spell_button)
 
+        # ---- Stretch pushes next widget to the right ----
+        top_button_row.addStretch(1)
+
+        # ---- Right button ----
         self.undo_button = QPushButton("Undo Turn")
         self.undo_button.setCheckable(True)
         self.undo_button.clicked.connect(self.undoTurn)
         top_button_row.addWidget(self.undo_button)
-        top_button_row.addStretch()
+
         map_frame_layout.addLayout(top_button_row)
 
         # --- Map widget ---
@@ -1652,6 +1675,14 @@ class MapWidget(QWidget):
         self.setAllFonts()
 
 
+    def saveEncounter(self):
+        print("Saving encounter...")
+        # later:
+        # - deepcopy encounter
+        # - serialize to JSON / pickle
+        # - QFileDialog.getSaveFileName()
+
+
     def saveTurnSnapshot(self):
         # remove pyqt widgets
         self.myEncounter.graphicsViewer = None
@@ -1723,6 +1754,8 @@ class MapWidget(QWidget):
         #self.turn_order_widget.applyFonts(self.TextScale)
 
         # Buttons above map
+        
+        set_font(self.undo_button, self.TextScale.size(self.TextScale.SM))
         set_font(self.distance_button, self.TextScale.size(self.TextScale.SM))
         set_font(self.spell_button, self.TextScale.size(self.TextScale.SM))
 
