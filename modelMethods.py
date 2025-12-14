@@ -1055,9 +1055,11 @@ def calcMoveHexes(actor, map, type= None):
     speed = int(actor.speed/5)
     dashSpeed = speed * 2
     if type == 'dash':
-        dashIndexes = [ind for ind in range(len(list(arrayCenters))) if map.distanceCalc(actorIndex, ind) <= dashSpeed ]
+        dashIndexes = [ind for ind in range(len(list(arrayCenters))) if map.distanceCalc(actorIndex, ind) <= dashSpeed and 
+                       (arrayCenters[list(arrayCenters)[ind]] == '' or arrayCenters[list(arrayCenters)[ind]] == actor)]
     else:
-        dashIndexes = [ind for ind in range(len(list(arrayCenters))) if map.distanceCalc(actorIndex, ind) <= speed ]
+        dashIndexes = [ind for ind in range(len(list(arrayCenters))) if map.distanceCalc(actorIndex, ind) <= speed and 
+                       (arrayCenters[list(arrayCenters)[ind]] == '' or arrayCenters[list(arrayCenters)[ind]] == actor)]
     return dashIndexes
 def bestSquare(actor, map, length, reach):
     setRatio = 4

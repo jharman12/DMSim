@@ -30,6 +30,11 @@ Things to work on:
 
     create method for adding in new characters in the middle of combat
 
+    takehealing doesnt work on monsters
+
+    dash is moving one square away from where I was?
+        nearestHex called 
+
     GUI CHANGES *****************************************************************************
 
     create interface for adding walls?
@@ -42,7 +47,8 @@ Things to work on:
 
     pop up on end turn if you havent taken an action or have move left
 
-    grey out move button when action == dash
+
+    If i move the char on the map without pressing move or take turn we unsync the two maps
 
     add party & enemy health bar?
     
@@ -50,7 +56,7 @@ Things to work on:
 
     properly get changing action drop box reset hex colors and untoggle spell area button if checked
 
-    move character to on GV to what the best location is?
+    
     
 
     might want to move add/remove red line to before move as its not centering icons
@@ -61,8 +67,7 @@ Things to work on:
 
     create gui for character actions 
         auto-roll or manual
-        disaggregate move, action and turn done    
-        turn done
+        
     
 
     Create warning for oportunity attacks
@@ -1789,6 +1794,11 @@ class MapWidget(QWidget):
 
     def actionChanged(self):
         self.spellButton_pressed()
+        action = self.turn_action_panel.action_dropdown.currentText()
+        if action == 'dash':
+            self.turn_action_panel.move_input.setEnabled(False)
+        else:
+            self.turn_action_panel.move_input.setEnabled(True)
         #self.spell_button.setChecked(False)
     
     def spellButton_pressed(self):

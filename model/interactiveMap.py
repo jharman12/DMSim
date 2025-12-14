@@ -134,9 +134,9 @@ class interactiveMap:
         line = drawLine(moverCoord, targetCoord, self)
         #print(line)
         options = [x for x in line if self.distanceCalc(list(self.arrayCenters).index(moverCoord), list(self.arrayCenters).index(x)) <= movement]
-        if options[-1] == targetCoord or self.arrayCenters[options[-1]] != '':
+        if  self.arrayCenters[options[-1]] != '':
             moverIndex = list(self.arrayCenters).index(moverCoord)
-            targetIndex = list(self.arrayCenters).index(targetCoord)
+            targetIndex = list(self.arrayCenters).index(options[-1])
             moverNew = self.nearestFreeHex(moverIndex, targetIndex)
             #print('nearestFreeHex chose', moverNew)
             self.moveActor(mover, moverNew)
