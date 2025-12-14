@@ -688,7 +688,8 @@ def takeHealing(actor, people, dmg, map):
     print(actor.name, 'is healing', people.name, 'for',dmg)
     log('\t' + actor.name +  ' is healing ' + people.name + ' for ' + str(dmg))
     player = 1
-    if str(type(actor)) == "<class 'monster.Monster'>":
+    if str(type(people)) == "<class 'monster.Monster'>":
+        print('I am a monster')
         player = 0
     if player:
         if any([x in people.status for x in ['deathSaves','unconscious']]):
@@ -701,6 +702,7 @@ def castSpellTurn(actor, turnChoice, map):
     actorCoord = [x for x in map.arrayCenters.keys() if map.arrayCenters[x] == actor][0]
     player = 1
     if str(type(actor)) == "<class 'monster.Monster'>":
+        print('cast spell turn: i am a monster')
         player = 0
     
     moveCoord = turnChoice.moveCoord
@@ -721,11 +723,12 @@ def castSpellTurn(actor, turnChoice, map):
         
     else:
         actor.spellSlots[str(actor.spells[turnChoice.name]['lvl'])] -= 1
-    
+    peopleWhoPassedSave = []
     #actor.spellSlots[str(actor.spells[turnChoice.name]['lvl'])] -= 1
     save = spell['save'].split()
     if spell['attack'] == '' and save != []: # youre a save effect
         peopleHit = [x for x in peopleTargeted if rollSave(x, save[0], actor.spellDC)]
+        peopleWhoPassedSave = [x for x in peopleTargeted if x not in peopleHit]
     else: # spell attack
         
         hitRoll = rollDice(1,20)[0] + int(actor.spellAttackMod)
@@ -749,8 +752,10 @@ def castSpellTurn(actor, turnChoice, map):
                 takeDmg(actor, people, round(dmg/2,0), map)
     elif dmg > 0 :
         for people in peopleHit:
-            #people.health -= dmg
             takeDmg(actor, people, dmg, map)
+        if len(peopleWhoPassedSave) != 0:
+            for people in peopleWhoPassedSave:
+                takeDmg(actor, people, int(dmg/2), map)
     
     if turnChoice.type == 'cc':
         for people in peopleHit:

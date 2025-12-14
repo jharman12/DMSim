@@ -5,12 +5,8 @@ Things to work on:
     MODEL CHANGES ***************************************************************************
     melee still calling nearestHex when inside melee range
     
-    move leg actions to doAction?
-        it does not belong in calcTurn as thats just returning best action
+    spells like harm isnt doing damage if it passes??
 
-    heal is not moving anyone
-    
-    need to find optimal movement for heal and some spells as well
 
     Make custom player spells (currently just assumes you have access to all spells)
         this will also make the turnchoice faster 
@@ -30,10 +26,6 @@ Things to work on:
 
     create method for adding in new characters in the middle of combat
 
-    takehealing doesnt work on monsters
-
-    dash is moving one square away from where I was?
-        nearestHex called 
 
     GUI CHANGES *****************************************************************************
 
@@ -1889,6 +1881,15 @@ class MapWidget(QWidget):
     def endTurnButton(self):
         self.map_view.spellAreaCheck = None
         self.map_view.affected = None
+        map = self.myEncounter.map
+        self.myEncounter.removeDeadActors()
+
+        for enemy in map.enemy:
+            if enemy.legActions >= 1 and len(map.party) != 0:
+                # this isnt actually "takeLegAction" its check to see you can take leg action and if you can then take
+                self.turn_action_panel.log('Legendary Action cehck by: ' + enemy.name + '\n')
+                enemy.takeLegAction(map)
+                self.myEncounter.removeDeadActors()
         self.myEncounter.nextTurn()
         
         turns = self.myEncounter.calcTurn()
@@ -1923,7 +1924,7 @@ class MapWidget(QWidget):
             self.turnChoice.type = [x.type for x in self.turnChoices if x.name == currAction][0]
             self.turnChoice.name = currAction
             doAction(self.actor, self.myEncounter.map, self.turnChoice)
-            
+            self.myEncounter.removeDeadActors()
             # add grey out take turn button
             # add grey out actions
             self.turn_action_panel.take_turn_button.setEnabled(False)
