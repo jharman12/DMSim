@@ -8,7 +8,7 @@ sys.path.insert(1, dmSimPath)
 from modelMethods import numberAfterString, numberBeforeString, text2int, WeaponNew, down_round, weibull
 import json
 sys.path.insert(1, dmSimPath + '\model')
-from monsterModel import Monster
+from monster import Monster
 
 class buildMonsterFromString:
     def __init__(self, text):
@@ -18,6 +18,8 @@ class buildMonsterFromString:
         '''
         with open(dmSimPath + "\\spells\\spellList.json", "r") as file:
             spellList = json.load(file)
+
+        self.spellDC = None
         # predefine things on start up
         self.modDict = {}
         self.spells = {}
@@ -50,6 +52,7 @@ class buildMonsterFromString:
         ##print(text.splitlines())
         for line in text.splitlines():
             # Name is alone on first line
+            print(line)
             if len(line) != 0 and not setName:
                 setName = 1
                 self.name = line
@@ -114,7 +117,7 @@ class buildMonsterFromString:
             need to figure out turn Factors... probably at the end based on weapons & spell slots?
             """
 
-            if findWeapon and '+' in line:
+            if findWeapon and '+' in line and '/' not in line:
                 weaponInfo = []
                 avgDmg = 0
                 dmgMod = 0
@@ -180,7 +183,11 @@ class buildMonsterFromString:
         self.speed = grabNumberAfterKey['Speed']
         self.legRes = grabNumberAfterKey['Legendary Resistance']
         self.CR = grabNumberAfterKey['Challenge']
-        self.spellMod = self.spellDC - grabNumberAfterKey['Proficiency']
+        
+        if self.spellDC == None:
+            self.spellMod = 0 # if self.spellDC not defined, then you dont cast spells
+        else:
+            self.spellMod = self.spellDC - grabNumberAfterKey['Proficiency']
         dmgTypes = ['Acid', 'Bludgeoning', 'Cold', 'Fire', 'Force', 'Lightning', 'Necrotic', 'Piercing', 'Poison', 'Psychic', 'Radiant', 'Slashing', 'Thunder']
         spellDmg = 0
         maxDmg = 0
@@ -271,4 +278,5 @@ class buildMonsterFromString:
         
         self.monster = Monster(self.name, self.ac, self.health, self.speed, self.modDict, self.turnFactors, self.aWeapons, self.size, self.spells,
                self.spellMod, self.multiattack, self.legRes, self.legWeapons)
+        
         

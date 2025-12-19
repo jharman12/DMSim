@@ -168,5 +168,176 @@
                 "8"
             ]
         ]
+    },
+
+    "Adrel": {
+        "Image": "None",
+        "Level": "5",
+        "Class": "Rogue",
+        "Size": "Medium",
+        "AC": "15",
+        "HP": "51",
+        "Speed": "30",
+        "AbilityModifiers": {
+            "Strength": "11",
+            "Dexterity": "18",
+            "Constitution": "13",
+            "Intelligence": "12",
+            "Wisdom": "11",
+            "Charisma": "16"
+        },
+        "TurnFactors": {
+            "Melee": "0.0",
+            "Ranged": "0.1",
+            "Ranged Spell": "0.5",
+            "Spell CC": "0.4"
+        },
+        "Weapons": [
+            [
+                "Psychic Blades",
+                "Melee",
+                "60",
+                "7",
+                "d6",
+                "1",
+                "4"
+            ]
+        ]
+    },
+    "Aldric": {
+        "Image": "None",
+        "Level": "5",
+        "Class": "Sorcerer",
+        "Size": "Medium",
+        "AC": "20",
+        "HP": "38",
+        "Speed": "30",
+        "AbilityModifiers": {
+            "Strength": "16",
+            "Dexterity": "8",
+            "Constitution": "14",
+            "Intelligence": "14",
+            "Wisdom": "14",
+            "Charisma": "20"
+        },
+        "TurnFactors": {
+            "Melee": "0.0",
+            "Ranged": "0.1",
+            "Ranged Spell": "0.5",
+            "Spell CC": "0.4"
+        },
+        "Weapons": [
+            [
+                "Rork's Sword",
+                "Melee",
+                "5",
+                "6",
+                "d10",
+                "1",
+                "5"
+            ]
+        ]
+    },
+    "Cobo": {
+        "Image": "None",
+        "Level": "5",
+        "Class": "Sorcerer",
+        "Size": "Medium",
+        "AC": "18",
+        "HP": "36",
+        "Speed": "30",
+        "AbilityModifiers": {
+            "Strength": "13",
+            "Dexterity": "13",
+            "Constitution": "14",
+            "Intelligence": "19",
+            "Wisdom": "11",
+            "Charisma": "20"
+        },
+        "TurnFactors": {
+            "Melee": "0.0",
+            "Ranged": "0.1",
+            "Ranged Spell": "0.5",
+            "Spell CC": "0.4"
+        },
+        "Weapons": [
+            [
+                "Hour's Edge",
+                "Melee",
+                "5",
+                "9",
+                "d10",
+                "1",
+                "8"
+            ]
+        ]
+    },
+        "Galleus": {
+        "Image": "None",
+        "Level": "5",
+        "Class": "Fighter",
+        "Size": "Medium",
+        "AC": "20",
+        "HP": "71",
+        "Speed": "30",
+        "AbilityModifiers": {
+            "Strength": "11",
+            "Dexterity": "20",
+            "Constitution": "18",
+            "Intelligence": "6",
+            "Wisdom": "10",
+            "Charisma": "10"
+        },
+        "TurnFactors": {
+            "Melee": "0.0",
+            "Ranged": "0.1",
+            "Ranged Spell": "0.5",
+            "Spell CC": "0.4"
+        },
+        "Weapons": [
+            [
+                "Shortsword",
+                "Melee",
+                "5",
+                "8",
+                "d6",
+                "1",
+                "5"
+            ]
+        ]
+    },
+        "VV": {
+        "Image": "None",
+        "Level": "5",
+        "Class": "Wizard",
+        "Size": "Medium",
+        "AC": "10",
+        "HP": "30",
+        "Speed": "30",
+        "AbilityModifiers": {
+            "Strength": "10",
+            "Dexterity": "11",
+            "Constitution": "12",
+            "Intelligence": "18",
+            "Wisdom": "16",
+            "Charisma": "10"
+        },
+        "TurnFactors": {
+            "Melee": "0.0",
+            "Ranged": "0.1",
+            "Ranged Spell": "0.5",
+            "Spell CC": "0.4"
+        },
+        "Weapons": [
+            [
+                "Rork's Sword",
+                "Melee",
+                "5",
+                "6",
+                "d10",
+                "1",
+                "5"
+            ]
+        ]
     }
 }

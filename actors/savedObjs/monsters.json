@@ -2501,5 +2501,97 @@
             0,
             []
         ]
+    },
+    "Myconid Sovereign": {
+        "Image": null,
+        "ac": 13,
+        "health": 60,
+        "maxHealth": 60,
+        "speed": 30,
+        "modDict": {
+            "Strength": 12,
+            "Dexterity": 10,
+            "Constitution": 14,
+            "Intelligence": 13,
+            "Wisdom": 15,
+            "Charisma": 10
+        },
+        "weaponList": [
+            {
+                "name": "Fist",
+                "attackType": "Melee",
+                "range": 5,
+                "attackMod": "3",
+                "diceType": [
+                    4
+                ],
+                "diceCount": [
+                    6
+                ],
+                "dmgMod": 1
+            }
+        ],
+        "turnFactors": {
+            "Melee": 1.0,
+            "Ranged": 0.0,
+            "Ranged Spell": 0.0,
+            "Spell CC": 0
+        },
+        "size": 100,
+        "spells": {},
+        "multiAttack": {},
+        "spellAttackMod": 0,
+        "legRes": 0,
+        "legActions": [
+            0,
+            []
+        ],
+        "alive": 1
+    },
+    "Myconid Adult": {
+        "Image": null,
+        "ac": 12,
+        "health": 22,
+        "maxHealth": 22,
+        "speed": 20,
+        "modDict": {
+            "Strength": 10,
+            "Dexterity": 10,
+            "Constitution": 12,
+            "Intelligence": 10,
+            "Wisdom": 13,
+            "Charisma": 7
+        },
+        "weaponList": [
+            {
+                "name": "Fist",
+                "attackType": "Melee",
+                "range": 5,
+                "attackMod": "2",
+                "diceType": [
+                    4
+                ],
+                "diceCount": [
+                    4
+                ],
+                "dmgMod": 0
+            }
+        ],
+        "turnFactors": {
+            "Melee": 1.0,
+            "Ranged": 0.0,
+            "Ranged Spell": 0.0,
+            "Spell CC": 0
+        },
+        "size": 25,
+        "spells": {},
+        "multiAttack": {},
+        "spellAttackMod": 0,
+        "legRes": 0,
+        "legActions": [
+            0,
+            []
+        ],
+        "alive": 1
     }
 }

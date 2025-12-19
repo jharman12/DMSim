@@ -63,7 +63,7 @@ class Player:
         if self.lvl >= 17:
             self.proficiency = 6
         
-        charCasters = ['Paladin','Warlock','Bard','Sorceror']
+        charCasters = ['Paladin','Warlock','Bard','Sorcerer']
         intCasters = ['Wizard']
         wisCasters = ['Cleric','Druid', 'Ranger']
 
@@ -206,7 +206,7 @@ class Player:
 
             also used in Encounter to reset fights
         '''
-        fullCaster = ['Druid','Cleric','Sorceror','Wizard', 'Bard','Warlock'] # dont know if warlock should be here
+        fullCaster = ['Druid','Cleric','Sorcerer','Wizard', 'Bard','Warlock'] # dont know if warlock should be here
         halfCaster = ['Ranger','Paladin', 'Artificer']
         self.twoAttacks = 1
         self.deathSaves = {'pass': [], 'fail': []}
@@ -306,7 +306,7 @@ class Player:
 
    
     def classMeleeDmg(self, hits, dmg):
-        fullCaster = ['Druid','Cleric','Sorceror','Wizard', 'Bard','Warlock'] # dont know if warlock should be here
+        fullCaster = ['Druid','Cleric','Sorcerer','Wizard', 'Bard','Warlock'] # dont know if warlock should be here
         if sum(hits) == 0 or self.DnDclass in fullCaster:
             return 0
         oncePerTurn = 1

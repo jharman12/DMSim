@@ -26,9 +26,15 @@ Things to work on:
 
     create method for adding in new characters in the middle of combat
 
+    sorceror broke
+
 
     GUI CHANGES *****************************************************************************
 
+    
+
+    allow moving chars before combat starts
+        must call GV moveActors for all characters
     create interface for adding walls?
         might want to have an encounter builder?
         create a way to run one encounter immediately after the other
@@ -2000,8 +2006,9 @@ dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-4]
 
 path = dmSimPath + '\\actors\\savedObjs\\'
 myPlayers = createPartyList(['Arabella', 'Root', 'Ephraim',  'Darian'], path = path)
-#badGuys = createPartyList(['Ephraim',  'Darian'], path = path)
-badGuys = createMonsterList(["Quenth"] + ["Demogorgon" for i in range(1)], path = path)
+myPlayers = createPartyList(['Aldric',  'Galleus', 'Adrel', 'VV', 'Cobo'], path = path)
+#badGuys = createMonsterList(["Quenth"] + ["Demogorgon" for i in range(1)], path = path)
+badGuys = createMonsterList(["Myconid Sovereign" for i in range(2)] + ["Myconid Adult" for i in range(6)], path = path)
 myEncounter = interactiveEncounter(myPlayers, [], badGuys, 20, dmSimPath + "\\App\\Maps\\maze Engine.webp")
 #myMap = Map('mazeEngine',dmSimPath + "\\App\\Maps\\maze Engine.webp", 10, myPlayers)
 
