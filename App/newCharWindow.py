@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
     QGridLayout, QGroupBox, QListWidget, QListWidgetItem,
     QScrollArea, QApplication, QTabWidget, QMessageBox
 )
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import Qt
 from pathlib import Path
 
@@ -46,7 +46,15 @@ class CharacterStore:
             del self.characters[name]
             self.save()
 
+def set_font(widget, size, weight=QFont.Normal, monospace=False):
+    if monospace:
+        font = QFont("Consolas")
+    else:
+        font = widget.font()
 
+    font.setPointSize(size)
+    font.setWeight(weight)
+    widget.setFont(font)
 
 class CharacterEditor(QWidget):
     def __init__(self, character_store):
@@ -78,6 +86,40 @@ class CharacterEditor(QWidget):
 
         self._loadCharacterList()
 
+    def applyFonts(self):
+        mw = self.window()
+        if mw is None:
+            return
+
+        base = mw.TextScale.size(mw.text_scale)
+
+        try:
+            set_font(self.character_selector, base)
+        except Exception:
+            pass
+
+        # core inputs
+        for w in (self.name_input, self.class_input, self.ac_input, self.hp_input):
+            try:
+                set_font(w, base)
+            except Exception:
+                pass
+
+        for spin in self.mods.values():
+            try:
+                set_font(spin, base)
+            except Exception:
+                pass
+
+        # weapon widgets
+        for weap in self.weapon_widgets:
+            for widget in weap.values():
+                try:
+                    set_font(widget, base)
+                except Exception:
+                    pass
+
+        
     def _loadCharacterList(self):
         self.character_selector.blockSignals(True)
         self.character_selector.clear()
