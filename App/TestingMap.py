@@ -2004,19 +2004,14 @@ class MapWidget(QWidget):
 dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-4]
 
 
-path = dmSimPath + '\\actors\\savedObjs\\'
-myPlayers = createPartyList(['Arabella', 'Root', 'Ephraim',  'Darian'], path = path)
-myPlayers = createPartyList(['Aldric',  'Galleus', 'Adrel', 'VV', 'Cobo'], path = path)
-#badGuys = createMonsterList(["Quenth"] + ["Demogorgon" for i in range(1)], path = path)
-badGuys = createMonsterList(["Myconid Sovereign" for i in range(2)] + ["Myconid Adult" for i in range(6)], path = path)
-myEncounter = interactiveEncounter(myPlayers, [], badGuys, 20, dmSimPath + "\\App\\Maps\\maze Engine.webp")
+
 #myMap = Map('mazeEngine',dmSimPath + "\\App\\Maps\\maze Engine.webp", 10, myPlayers)
 
-app = QApplication([])
+#app = QApplication([])
 
-window = MapWidget(myEncounter)
-window.show()
+#window = MapWidget(myEncounter)
+#window.show()
 
-app.exec()
+#app.exec()
 
 

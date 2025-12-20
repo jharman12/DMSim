@@ -3,16 +3,57 @@ from PyQt5.QtWidgets import (
     QWidget, QLabel, QLineEdit, QSpinBox, QComboBox,
     QPushButton, QFileDialog, QVBoxLayout, QHBoxLayout,
     QGridLayout, QGroupBox, QListWidget, QListWidgetItem,
-    QScrollArea, QApplication
+    QScrollArea, QApplication, QTabWidget, QMessageBox
 )
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt
+from pathlib import Path
+
+class CharacterStore:
+    def __init__(self, file_path="A:\\Code\\Python\\Git Repo\\DMSim\\actors\\savedObjs\\newChars.json"):
+        self.file_path = Path(file_path)
+        self.characters = {}  # name -> data
+        self.load()
+
+    def load(self):
+        if self.file_path.exists():
+            with open(self.file_path, "r") as f:
+                data = json.load(f)
+
+            # 🔥 FIX HERE
+            self.characters = data.get("characters", {})
+        else:
+            self.characters = {}
+
+
+    def save(self):
+        self.file_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.file_path, "w") as f:
+            json.dump(self.characters, f, indent=2)
+
+    def get_names(self):
+        return sorted(self.characters.keys())
+
+    def get(self, name):
+        return self.characters.get(name)
+
+    def upsert(self, name, data):
+        self.characters[name] = data
+        self.save()
+
+    def delete(self, name):
+        if name in self.characters:
+            del self.characters[name]
+            self.save()
 
 
 
-class CharacterEditorWidget(QWidget):
-    def __init__(self):
+class CharacterEditor(QWidget):
+    def __init__(self, character_store):
         super().__init__()
+        self.store = character_store
+        
+
         self.setWindowTitle("Character Sheet")
         self.weapon_widgets = []
         self.image_path = None
@@ -34,6 +75,16 @@ class CharacterEditorWidget(QWidget):
         self.character_db = {}
         self.current_db_path = None
         self.current_character = None
+
+        self._loadCharacterList()
+
+    def _loadCharacterList(self):
+        self.character_selector.blockSignals(True)
+        self.character_selector.clear()
+        self.character_selector.addItem("New Character")
+        self.character_selector.addItems(self.store.get_names())
+        self.character_selector.blockSignals(False)
+
 
     def addWeaponFromData(self, data):
         self.addWeapon()
@@ -106,16 +157,19 @@ class CharacterEditorWidget(QWidget):
         self.clearWeapons()
 
     def addWeaponFromData(self, data):
-        self.addWeapon()
-        w = self.weapon_widgets[-1]
+        
 
-        w["name"].setText(data["name"])
-        w["type"].setCurrentText(data["type"])
-        w["range"].setValue(data["range"])
-        w["attack_mod"].setValue(data["attack_mod"])
-        w["dice_count"].setValue(data["dice_count"])
-        w["dice_type"].setCurrentText(data["dice_type"])
-        w["damage_mod"].setValue(data["damage_mod"])
+        for weap in data: # data here is list of dictionaries
+            self.addWeapon()
+            w = self.weapon_widgets[-1]
+            print(weap)
+            w["name"].setText(weap["name"])
+            w["type"].setCurrentText(weap["type"])
+            w["range"].setValue(weap["range"])
+            w["attack_mod"].setValue(weap["attack_mod"])
+            w["dice_count"].setValue(weap["dice_count"])
+            w["dice_type"].setCurrentText(weap["dice_type"])
+            w["damage_mod"].setValue(weap["damage_mod"])
 
     def loadSelectedCharacter(self, name):
         if name == "— New Character —" or name not in self.character_db:
@@ -150,7 +204,7 @@ class CharacterEditorWidget(QWidget):
         layout = QHBoxLayout()
 
         self.character_selector = QComboBox()
-        self.character_selector.currentTextChanged.connect(self.loadSelectedCharacter)
+        self.character_selector.currentTextChanged.connect(self.loadCharacter)
 
         load_btn = QPushButton("Load JSON")
         load_btn.clicked.connect(self.loadCharacterDatabase)
@@ -160,6 +214,24 @@ class CharacterEditorWidget(QWidget):
 
         box.setLayout(layout)
         return box
+
+    def loadCharacter(self, name):
+        if name == "New Character":
+            self.clearForm()
+            return
+
+        data = self.store.get(name)
+        print(data)
+        if not data:
+            return
+
+        self.name_input.setText(name)
+        self.level_input.setValue(data["level"])
+        self.ac_input.setValue(data["ac"])
+        self.hp_input.setValue(data["hp"])
+
+        self.loadModifiers(data["mods"])
+        self.addWeaponFromData(data["weapons"])
 
 
     def _buildCoreInfo(self):
@@ -195,7 +267,30 @@ class CharacterEditorWidget(QWidget):
 
         box.setLayout(grid)
         return box
-    
+    def loadModifiers(self, modifiers: dict):
+        """
+        Load ability modifiers into UI inputs.
+
+        Expected format:
+        {
+            "str": int,
+            "dex": int,
+            "con": int,
+            "int": int,
+            "wis": int,
+            "cha": int
+        }
+        """
+
+        if not modifiers:
+            modifiers = {}
+
+        for key, spinbox in self.mods.items():
+            value = modifiers.get(key, 0)
+            spinbox.blockSignals(True)
+            spinbox.setValue(value)
+            spinbox.blockSignals(False)
+
     def _buildAbilityScores(self):
         box = QGroupBox("Ability Modifiers")
         grid = QGridLayout()
@@ -293,6 +388,24 @@ class CharacterEditorWidget(QWidget):
             px = QPixmap(path).scaled(100, 100, Qt.KeepAspectRatio)
             self.image_label.setPixmap(px)
 
+    def getWeapons(self):
+        data = {"weapons": []}
+        for w in self.weapon_widgets:
+            data["weapons"].append({
+                "name": w["name"].text(),
+                "type": w["type"].currentText(),
+                "range": w["range"].value(),
+                "attack_mod": w["attack_mod"].value(),
+                "dice_count": w["dice_count"].value(),
+                "dice_type": w["dice_type"].currentText(),
+                "damage_mod": w["damage_mod"].value()
+            })
+        return data
+    
+    def refreshCharacters(self):
+        self.store.load()
+        self._loadCharacterList()
+
 
     def saveCharacter(self):
         name = self.name_input.text().strip()
@@ -340,9 +453,3 @@ class CharacterEditorWidget(QWidget):
 
 
 
-app = QApplication([])
-
-window = CharacterEditorWidget()
-window.show()
-
-app.exec()

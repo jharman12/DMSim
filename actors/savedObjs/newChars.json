@@ -1,0 +1,31 @@
+{
+    "characters": {
+        "Cobo": {
+            "name": "Cobo",
+            "class": "Sorcerer",
+            "level": 5,
+            "ac": 18,
+            "hp": 36,
+            "image": null,
+            "mods": {
+                "str": 13,
+                "dex": 13,
+                "con": 14,
+                "int": 19,
+                "wis": 11,
+                "cha": 20
+            },
+            "weapons": [
+                {
+                    "name": "Hours Edge",
+                    "type": "Melee",
+                    "range": 5,
+                    "attack_mod": 9,
+                    "dice_count": 1,
+                    "dice_type": "d10",
+                    "damage_mod": 9
+                }
+            ]
+        }
+    }
+}
