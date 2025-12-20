@@ -30,29 +30,30 @@ class MonsterStore:
             with open(self.file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
 
-            # Expecting { "monsters": {name: data, ...} } or list
-            if isinstance(data, dict) and "monsters" in data:
-                val = data["monsters"]
-                if isinstance(val, dict):
-                    self.monsters = val
-                elif isinstance(val, list):
-                    # convert list to dict keyed by name
-                    self.monsters = {m.get("name", f"monster_{i}"): m for i, m in enumerate(val)}
+            if isinstance(data, dict):
+                if "monsters" in data:
+                    val = data["monsters"]
+                    if isinstance(val, dict):
+                        self.monsters = val
+                    elif isinstance(val, list):
+                        # convert list to dict keyed by name
+                        self.monsters = {m.get("name", f"monster_{i}"): m for i, m in enumerate(val)}
+                    else:
+                        self.monsters = {}
                 else:
-                    self.monsters = {}
+                    # assume direct dict of monsters
+                    self.monsters = data
+            elif isinstance(data, list):
+                self.monsters = {m.get("name", f"monster_{i}"): m for i, m in enumerate(data)}
             else:
-                # try list-of-monsters
-                if isinstance(data, list):
-                    self.monsters = {m.get("name", f"monster_{i}"): m for i, m in enumerate(data)}
-                else:
-                    self.monsters = {}
+                self.monsters = {}
         else:
             self.monsters = {}
 
     def save(self):
         self.file_path.parent.mkdir(parents=True, exist_ok=True)
         with open(self.file_path, "w", encoding="utf-8") as f:
-            json.dump({"monsters": self.monsters}, f, indent=2)
+            json.dump(self.monsters, f, indent=2)
 
     def get_names(self):
         return sorted(self.monsters.keys())
@@ -106,14 +107,11 @@ class MonsterEditor(QWidget):
         self.list_widget.currentTextChanged.connect(self.load_monster)
 
         btn_col = QVBoxLayout()
-        load_btn = QPushButton("Load JSON")
-        load_btn.clicked.connect(self.load_json_file)
         refresh_btn = QPushButton("Refresh")
         refresh_btn.clicked.connect(self.refresh)
         del_btn = QPushButton("Delete")
         del_btn.clicked.connect(self.delete_selected)
 
-        btn_col.addWidget(load_btn)
         btn_col.addWidget(refresh_btn)
         btn_col.addWidget(del_btn)
         btn_col.addStretch()
@@ -224,22 +222,38 @@ class MonsterEditor(QWidget):
 
         # Legendary Resistance and Actions
         leg_box = QGroupBox("Legendary")
-        leg_layout = QHBoxLayout()
+        leg_layout = QVBoxLayout()
+
+        # Top row: Leg Res, Leg Actions, Leg Action Weapon label
+        top_layout = QHBoxLayout()
         self.leg_res_input = QSpinBox()
         self.leg_res_input.setRange(0, 10)
         self.leg_actions_input = QSpinBox()
         self.leg_actions_input.setRange(0, 10)
-        self.leg_action_weapon_input = QLineEdit()
-        leg_layout.addWidget(QLabel("Leg Res"))
-        leg_layout.addWidget(self.leg_res_input)
-        leg_layout.addWidget(QLabel("Leg Actions"))
-        leg_layout.addWidget(self.leg_actions_input)
-        leg_layout.addWidget(QLabel("Leg Action Weapon"))
-        leg_layout.addWidget(self.leg_action_weapon_input)
+        top_layout.addWidget(QLabel("Leg Res"))
+        top_layout.addWidget(self.leg_res_input)
+        top_layout.addWidget(QLabel("Leg Actions"))
+        top_layout.addWidget(self.leg_actions_input)
+        top_layout.addStretch()
+        leg_layout.addLayout(top_layout)
+
+        # Leg Action Weapons container
+        self.leg_weapon_container = QVBoxLayout()
+        leg_layout.addLayout(self.leg_weapon_container)
+
+        # Add button
+        add_leg_weapon_btn = QPushButton("+ Add Legendary Weapon")
+        add_leg_weapon_btn.clicked.connect(self.add_leg_action_weapon)
+        leg_layout.addWidget(add_leg_weapon_btn)
+
         leg_box.setLayout(leg_layout)
         main.addWidget(leg_box)
 
-        # Spells and MultiAttack as JSON text
+        self.leg_action_weapon_inputs = []
+
+        self.update_leg_weapon_combo()
+
+        self.update_leg_weapon_combo()
         spells_box = QGroupBox("Spells (JSON)")
         spells_layout = QVBoxLayout()
         self.spells_text = QTextEdit()
@@ -256,7 +270,24 @@ class MonsterEditor(QWidget):
         multi_box.setLayout(multi_layout)
         main.addWidget(multi_box)
 
-        self.current_monster = None
+        # image picker
+        image_box = QGroupBox("Monster Image")
+        image_layout = QHBoxLayout()
+        self.image_label = QLabel("No Image")
+        self.image_label.setFixedSize(100, 100)
+        self.image_label.setAlignment(Qt.AlignCenter)
+        self.image_label.setStyleSheet("border: 1px solid #666;")
+        img_btn = QPushButton("Choose Image")
+        img_btn.clicked.connect(self.pick_image)
+        image_layout.addWidget(self.image_label)
+        image_layout.addWidget(img_btn)
+        image_box.setLayout(image_layout)
+        main.addWidget(image_box)
+
+        # save button
+        save_btn = QPushButton("Save Monster")
+        save_btn.clicked.connect(self.save_monster)
+        main.addWidget(save_btn)
 
         self.refresh()
 
@@ -265,6 +296,16 @@ class MonsterEditor(QWidget):
 
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(self.scroll_area)
+
+    def update_leg_weapon_combo(self):
+        for item in self.leg_action_weapon_inputs:
+            combo = item["combo"]
+            combo.clear()
+            combo.addItem("None")
+            for w in self.weapon_widgets:
+                name = w["name"].text().strip()
+                if name:
+                    combo.addItem(name)
 
     def add_weapon(self):
         row = QHBoxLayout()
@@ -310,6 +351,8 @@ class MonsterEditor(QWidget):
             "layout": row
         })
 
+        self.update_leg_weapon_combo()
+
     def delete_weapon(self, layout):
         # Find the index of the layout in weapon_container
         for i in range(self.weapon_container.count()):
@@ -326,6 +369,50 @@ class MonsterEditor(QWidget):
                         break
                 break
 
+        self.update_leg_weapon_combo()
+
+    def add_leg_action_weapon(self):
+        row = QHBoxLayout()
+
+        combo = QComboBox()
+        del_btn = QPushButton("Delete")
+        del_btn.clicked.connect(lambda: self.delete_leg_action_weapon(row))
+
+        row.addWidget(QLabel("Leg Action Weapon"))
+        row.addWidget(combo)
+        row.addWidget(del_btn)
+
+        self.leg_weapon_container.addLayout(row)
+
+        self.leg_action_weapon_inputs.append({
+            "combo": combo,
+            "layout": row,
+            "delete_btn": del_btn
+        })
+
+        self.update_leg_weapon_combo()
+
+    def delete_leg_action_weapon(self, layout):
+        # Find and remove
+        for i, item in enumerate(self.leg_action_weapon_inputs):
+            if item["layout"] == layout:
+                # Remove from container
+                for j in range(self.leg_weapon_container.count()):
+                    if self.leg_weapon_container.itemAt(j).layout() == layout:
+                        self.leg_weapon_container.takeAt(j)
+                        break
+                # Delete widgets
+                self._clear_layout(layout)
+                del self.leg_action_weapon_inputs[i]
+                break
+
+    def clear_leg_action_weapons(self):
+        while self.leg_weapon_container.count():
+            item = self.leg_weapon_container.takeAt(0)
+            if item.layout():
+                self._clear_layout(item.layout())
+        self.leg_action_weapon_inputs.clear()
+
     def clear_weapons(self):
         while self.weapon_container.count():
             item = self.weapon_container.takeAt(0)
@@ -334,6 +421,7 @@ class MonsterEditor(QWidget):
             elif item.layout():
                 self._clear_layout(item.layout())
         self.weapon_widgets.clear()
+        self.update_leg_weapon_combo()
 
     def _clear_layout(self, layout):
         while layout.count():
@@ -382,6 +470,17 @@ class MonsterEditor(QWidget):
                     except Exception:
                         pass
 
+        # leg action weapon combos
+        for item in self.leg_action_weapon_inputs:
+            try:
+                set_font(item["combo"], base)
+            except Exception:
+                pass
+            try:
+                set_font(item["delete_btn"], base)
+            except Exception:
+                pass
+
     def refresh(self):
         self.store.load()
         self.list_widget.blockSignals(True)
@@ -426,7 +525,7 @@ class MonsterEditor(QWidget):
         m = self.store.get(name)
         if not m:
             return
-
+        img = m.get("image")
         self.current_monster = name
         self.name_input.setText(m.get("name", name))
         self.cr_input.setText(str(m.get("cr", "")))
@@ -446,7 +545,7 @@ class MonsterEditor(QWidget):
         self.spell_mod_input.setValue(int(m.get("spellAttackMod", 0)))
         self.leg_res_input.setValue(int(m.get("legRes", 0)))
         self.leg_actions_input.setValue(int(m.get("legActions", [0, []])[0]))
-        self.leg_action_weapon_input.setText(str(m.get("legActions", [0, []])[1]))
+        # self.leg_action_weapon_input.setText(str(m.get("legActions", [0, []])[1]))  # old line, removed
 
         # spells
         spells = m.get("spells", {})
@@ -464,13 +563,27 @@ class MonsterEditor(QWidget):
             w = self.weapon_widgets[-1]
             w["name"].setText(weap.get("name", ""))
             w["type"].setCurrentText(weap.get("attackType", "Melee"))
-            w["range"].setValue(weap.get("range", 5))
-            w["attack_mod"].setValue(weap.get("attackMod", 0))
-            w["dice_count"].setValue(weap.get("diceCount", [1])[0])
-            w["dice_type"].setCurrentText(weap.get("diceType", ["d6"])[0])
-            w["damage_mod"].setValue(weap.get("dmgMod", 0))
+            w["range"].setValue(int(weap.get("range", 5)))
+            w["attack_mod"].setValue(int(weap.get("attackMod", 0)))
+            w["dice_count"].setValue(int(weap.get("diceCount", [1])[0]))
+            w["dice_type"].setCurrentText(str(weap.get("diceType", [0])[0]))
+            w["damage_mod"].setValue(int(weap.get("dmgMod", 0)))
 
-        img = m.get("image") or m.get("Image")
+        # leg action weapons
+        self.clear_leg_action_weapons()
+        leg_weapons = m.get("legActions", [0, []])[1]
+        if isinstance(leg_weapons, list):
+            for weapon_name in leg_weapons:
+                self.add_leg_action_weapon()
+                combo = self.leg_action_weapon_inputs[-1]["combo"]
+                combo.setCurrentText(weapon_name if weapon_name else "None")
+        elif isinstance(leg_weapons, str) and leg_weapons:
+            self.add_leg_action_weapon()
+            combo = self.leg_action_weapon_inputs[-1]["combo"]
+            combo.setCurrentText(leg_weapons)
+        else:
+            # add one empty
+            self.add_leg_action_weapon()
         if img:
             px = QPixmap(img).scaled(100, 100, Qt.KeepAspectRatio)
             self.image_label.setPixmap(px)
@@ -510,7 +623,7 @@ class MonsterEditor(QWidget):
                 "diceCount": [w["dice_count"].value()],
                 "dmgMod": w["damage_mod"].value()
             })
-        leg_action = [self.leg_actions_input.value(), self.leg_action_weapon_input.text()]
+        leg_action = [self.leg_actions_input.value(), [combo["combo"].currentText() for combo in self.leg_action_weapon_inputs if combo["combo"].currentText() != "None"]]
 
         data = {
             "name": name,
