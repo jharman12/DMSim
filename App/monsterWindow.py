@@ -253,14 +253,22 @@ class MonsterEditor(QWidget):
 
         self.update_leg_weapon_combo()
 
-        self.update_leg_weapon_combo()
-        spells_box = QGroupBox("Spells (JSON)")
+        # Load spell names
+        spell_file = Path(__file__).parent.parent / "spells" / "spellList.json"
+        with open(spell_file, "r", encoding="utf-8") as f:
+            self.spell_names = sorted(json.load(f).keys())
+
+        spells_box = QGroupBox("Spells")
         spells_layout = QVBoxLayout()
-        self.spells_text = QTextEdit()
-        self.spells_text.setPlaceholderText('{"spell_name": [count, {...}]}')
-        spells_layout.addWidget(self.spells_text)
+        self.spell_container = QVBoxLayout()
+        spells_layout.addLayout(self.spell_container)
+        add_spell_btn = QPushButton("+ Add Spell")
+        add_spell_btn.clicked.connect(self.add_spell)
+        spells_layout.addWidget(add_spell_btn)
         spells_box.setLayout(spells_layout)
         main.addWidget(spells_box)
+
+        self.spell_entries = []
 
         multi_box = QGroupBox("MultiAttack (JSON)")
         multi_layout = QVBoxLayout()
@@ -413,6 +421,55 @@ class MonsterEditor(QWidget):
                 self._clear_layout(item.layout())
         self.leg_action_weapon_inputs.clear()
 
+    def add_spell(self):
+        row = QHBoxLayout()
+
+        combo = QComboBox()
+        combo.setEditable(True)
+        combo.addItems(self.spell_names)
+
+        count_spin = QSpinBox()
+        count_spin.setRange(0, 100)
+
+        del_btn = QPushButton("Delete")
+        del_btn.clicked.connect(lambda: self.delete_spell(row))
+
+        row.addWidget(combo)
+        row.addWidget(count_spin)
+        row.addWidget(del_btn)
+
+        self.spell_container.addLayout(row)
+
+        self.spell_entries.append({
+            "combo": combo,
+            "count": count_spin,
+            "layout": row,
+            "delete_btn": del_btn
+        })
+
+    def delete_spell(self, layout):
+        for i, entry in enumerate(self.spell_entries):
+            if entry["layout"] == layout:
+                for j in range(self.spell_container.count()):
+                    if self.spell_container.itemAt(j).layout() == layout:
+                        self.spell_container.takeAt(j)
+                        break
+                self._clear_layout(layout)
+                del self.spell_entries[i]
+                break
+
+    def clear_spells(self):
+        while self.spell_container.count():
+            item = self.spell_container.takeAt(0)
+            if item.layout():
+                self._clear_layout(item.layout())
+        self.spell_entries.clear()
+        while self.leg_weapon_container.count():
+            item = self.leg_weapon_container.takeAt(0)
+            if item.layout():
+                self._clear_layout(item.layout())
+        self.leg_action_weapon_inputs.clear()
+
     def clear_weapons(self):
         while self.weapon_container.count():
             item = self.weapon_container.takeAt(0)
@@ -443,7 +500,7 @@ class MonsterEditor(QWidget):
 
         for w in (self.list_widget, self.name_input, self.cr_input, self.ac_input, self.hp_input,
                   self.speed_input, self.size_input, self.spell_mod_input, self.leg_res_input,
-                  self.leg_actions_input, self.leg_action_weapon_input, self.spells_text, self.multi_text):
+                  self.leg_actions_input, self.multi_text):
             try:
                 set_font(w, base)
             except Exception:
@@ -478,6 +535,21 @@ class MonsterEditor(QWidget):
                 pass
             try:
                 set_font(item["delete_btn"], base)
+            except Exception:
+                pass
+
+        # spell entries
+        for entry in self.spell_entries:
+            try:
+                set_font(entry["combo"], base)
+            except Exception:
+                pass
+            try:
+                set_font(entry["count"], base)
+            except Exception:
+                pass
+            try:
+                set_font(entry["delete_btn"], base)
             except Exception:
                 pass
 
@@ -548,8 +620,20 @@ class MonsterEditor(QWidget):
         # self.leg_action_weapon_input.setText(str(m.get("legActions", [0, []])[1]))  # old line, removed
 
         # spells
+        self.clear_spells()
         spells = m.get("spells", {})
-        self.spells_text.setPlainText(json.dumps(spells, indent=2))
+        if isinstance(spells, dict):
+            for spell, data in spells.items():
+                if isinstance(data, list) and len(data) > 0:
+                    count = int(data[0])
+                elif isinstance(data, int):
+                    count = data
+                else:
+                    count = 1
+                self.add_spell()
+                entry = self.spell_entries[-1]
+                entry["combo"].setCurrentText(spell)
+                entry["count"].setValue(count)
 
         # multi
         multi = m.get("multiAttack", {})
@@ -598,11 +682,12 @@ class MonsterEditor(QWidget):
             QMessageBox.warning(self, "Error", "Name required")
             return
 
-        try:
-            spells = json.loads(self.spells_text.toPlainText() or "{}")
-        except json.JSONDecodeError:
-            QMessageBox.warning(self, "Error", "Invalid Spells JSON")
-            return
+        spells = {}
+        for entry in self.spell_entries:
+            spell = entry["combo"].currentText().strip()
+            if spell:
+                count = entry["count"].value()
+                spells[spell] = count
 
         try:
             multi = json.loads(self.multi_text.toPlainText() or "{}")
