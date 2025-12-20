@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (
     QWidget, QLabel, QLineEdit, QSpinBox, QComboBox,
     QPushButton, QFileDialog, QVBoxLayout, QHBoxLayout,
     QGridLayout, QGroupBox, QListWidget, QListWidgetItem,
-    QScrollArea, QApplication, QTabWidget, QMessageBox
+    QScrollArea, QApplication, QTabWidget, QMessageBox, QScrollArea
 )
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import Qt
@@ -66,7 +66,9 @@ class CharacterEditor(QWidget):
         self.weapon_widgets = []
         self.image_path = None
 
-        main_layout = QVBoxLayout(self)
+        self.scroll_area = QScrollArea(self)
+        self.container = QWidget()
+        main_layout = QVBoxLayout(self.container)
         main_layout.setSpacing(12)
 
         main_layout.addWidget(self._buildCharacterLoader())
@@ -79,6 +81,12 @@ class CharacterEditor(QWidget):
         save_btn = QPushButton("Save Character")
         save_btn.clicked.connect(self.saveCharacter)
         main_layout.addWidget(save_btn)
+
+        self.scroll_area.setWidget(self.container)
+        self.scroll_area.setWidgetResizable(True)
+
+        self.setLayout(QVBoxLayout())
+        self.layout().addWidget(self.scroll_area)
 
         self.character_db = {}
         self.current_db_path = None
@@ -390,7 +398,10 @@ class CharacterEditor(QWidget):
         dmg_mod = QSpinBox()
         dmg_mod.setRange(-10, 20)
 
-        for w in [name, atk_type, rng, atk_mod, dice_count, dice_type, dmg_mod]:
+        del_btn = QPushButton("Delete")
+        del_btn.clicked.connect(lambda: self.delete_weapon(row))
+
+        for w in [name, atk_type, rng, atk_mod, dice_count, dice_type, dmg_mod, del_btn]:
             row.addWidget(w)
 
         self.weapon_container.addLayout(row)
@@ -402,8 +413,26 @@ class CharacterEditor(QWidget):
             "attack_mod": atk_mod,
             "dice_count": dice_count,
             "dice_type": dice_type,
-            "damage_mod": dmg_mod
+            "damage_mod": dmg_mod,
+            "delete_btn": del_btn,
+            "layout": row
         })
+
+    def delete_weapon(self, layout):
+        # Find the index of the layout in weapon_container
+        for i in range(self.weapon_container.count()):
+            item = self.weapon_container.itemAt(i)
+            if item.layout() == layout:
+                # Remove from container
+                self.weapon_container.takeAt(i)
+                # Delete the layout and its widgets
+                self._clearLayout(layout)
+                # Remove from weapon_widgets
+                for j, w in enumerate(self.weapon_widgets):
+                    if w["layout"] == layout:
+                        del self.weapon_widgets[j]
+                        break
+                break
 
     def _buildImagePicker(self):
         box = QGroupBox("Character Image")

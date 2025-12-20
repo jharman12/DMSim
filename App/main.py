@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, pyqtSignal, QEvent
 
 from newCharWindow import CharacterEditor, CharacterStore
+from monsterWindow import MonsterEditor, MonsterStore
 from TestingMap import MapWidget
 import pathlib
 dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-4]
@@ -269,12 +270,18 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.character_editor, "Characters")
         self.tabs.addTab(self.encounter_builder, "Encounter Builder")
 
+        # ---- Monsters tab ----
+        self.monster_store = MonsterStore()
+        self.monster_editor = MonsterEditor(self.monster_store)
+        self.tabs.addTab(self.monster_editor, "Monsters")
+
         # Keep reference so it doesn’t get GC’d
         self.map_window = None
 
         # signals
         self.textScaleChanged.connect(self.character_editor.applyFonts)
         self.textScaleChanged.connect(self.encounter_builder.applyFonts)
+        self.textScaleChanged.connect(self.monster_editor.applyFonts)
 
         # Install event filter so the main window can capture Ctrl+Wheel
         app = QApplication.instance()

@@ -243,7 +243,7 @@ class MonsterDump:
             with open(path + "monsters.json", "r") as file:
                 monsters = json.load(file)
         except FileNotFoundError:
-            #print('path filed to load characters')
+            print('path filed to load characters')
             pass
         #print(monsters)
         newList = []
