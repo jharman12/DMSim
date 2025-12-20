@@ -270,13 +270,17 @@ class MonsterEditor(QWidget):
 
         self.spell_entries = []
 
-        multi_box = QGroupBox("MultiAttack (JSON)")
+        multi_box = QGroupBox("MultiAttack")
         multi_layout = QVBoxLayout()
-        self.multi_text = QTextEdit()
-        self.multi_text.setPlaceholderText('{}')
-        multi_layout.addWidget(self.multi_text)
+        self.multi_container = QVBoxLayout()
+        multi_layout.addLayout(self.multi_container)
+        add_multi_btn = QPushButton("+ Add Multiattack")
+        add_multi_btn.clicked.connect(self.add_multiattack)
+        multi_layout.addWidget(add_multi_btn)
         multi_box.setLayout(multi_layout)
         main.addWidget(multi_box)
+
+        self.multi_entries = []
 
         # image picker
         image_box = QGroupBox("Monster Image")
@@ -360,6 +364,7 @@ class MonsterEditor(QWidget):
         })
 
         self.update_leg_weapon_combo()
+        self.update_multi_combos()
 
     def delete_weapon(self, layout):
         # Find the index of the layout in weapon_container
@@ -378,6 +383,7 @@ class MonsterEditor(QWidget):
                 break
 
         self.update_leg_weapon_combo()
+        self.update_multi_combos()
 
     def add_leg_action_weapon(self):
         row = QHBoxLayout()
@@ -464,6 +470,60 @@ class MonsterEditor(QWidget):
             if item.layout():
                 self._clear_layout(item.layout())
         self.spell_entries.clear()
+
+    def update_multi_combos(self):
+        weapon_names = [w["name"].text().strip() for w in self.weapon_widgets if w["name"].text().strip()]
+        for entry in self.multi_entries:
+            combo = entry["combo"]
+            current = combo.currentText()
+            combo.clear()
+            combo.addItems(weapon_names)
+            if current in weapon_names:
+                combo.setCurrentText(current)
+
+    def add_multiattack(self):
+        row = QHBoxLayout()
+
+        combo = QComboBox()
+        weapon_names = [w["name"].text().strip() for w in self.weapon_widgets if w["name"].text().strip()]
+        combo.addItems(weapon_names)
+
+        count_spin = QSpinBox()
+        count_spin.setRange(1, 10)
+
+        del_btn = QPushButton("Delete")
+        del_btn.clicked.connect(lambda: self.delete_multiattack(row))
+
+        row.addWidget(combo)
+        row.addWidget(count_spin)
+        row.addWidget(del_btn)
+
+        self.multi_container.addLayout(row)
+
+        self.multi_entries.append({
+            "combo": combo,
+            "count": count_spin,
+            "layout": row,
+            "delete_btn": del_btn
+        })
+
+    def delete_multiattack(self, layout):
+        for i, entry in enumerate(self.multi_entries):
+            if entry["layout"] == layout:
+                for j in range(self.multi_container.count()):
+                    if self.multi_container.itemAt(j).layout() == layout:
+                        self.multi_container.takeAt(j)
+                        break
+                self._clear_layout(layout)
+                del self.multi_entries[i]
+                break
+
+    def clear_multiattacks(self):
+        while self.multi_container.count():
+            item = self.multi_container.takeAt(0)
+            if item.layout():
+                self._clear_layout(item.layout())
+        self.multi_entries.clear()
         while self.leg_weapon_container.count():
             item = self.leg_weapon_container.takeAt(0)
             if item.layout():
@@ -479,6 +539,7 @@ class MonsterEditor(QWidget):
                 self._clear_layout(item.layout())
         self.weapon_widgets.clear()
         self.update_leg_weapon_combo()
+        self.update_multi_combos()
 
     def _clear_layout(self, layout):
         while layout.count():
@@ -500,7 +561,7 @@ class MonsterEditor(QWidget):
 
         for w in (self.list_widget, self.name_input, self.cr_input, self.ac_input, self.hp_input,
                   self.speed_input, self.size_input, self.spell_mod_input, self.leg_res_input,
-                  self.leg_actions_input, self.multi_text):
+                  self.leg_actions_input):
             try:
                 set_font(w, base)
             except Exception:
@@ -540,6 +601,21 @@ class MonsterEditor(QWidget):
 
         # spell entries
         for entry in self.spell_entries:
+            try:
+                set_font(entry["combo"], base)
+            except Exception:
+                pass
+            try:
+                set_font(entry["count"], base)
+            except Exception:
+                pass
+            try:
+                set_font(entry["delete_btn"], base)
+            except Exception:
+                pass
+
+        # multi entries
+        for entry in self.multi_entries:
             try:
                 set_font(entry["combo"], base)
             except Exception:
@@ -636,8 +712,14 @@ class MonsterEditor(QWidget):
                 entry["count"].setValue(count)
 
         # multi
+        self.clear_multiattacks()
         multi = m.get("multiAttack", {})
-        self.multi_text.setPlainText(json.dumps(multi, indent=2))
+        if isinstance(multi, dict):
+            for weapon, count in multi.items():
+                self.add_multiattack()
+                entry = self.multi_entries[-1]
+                entry["combo"].setCurrentText(weapon)
+                entry["count"].setValue(int(count))
 
         # weapons
         self.clear_weapons()
@@ -660,7 +742,7 @@ class MonsterEditor(QWidget):
             for weapon_name in leg_weapons:
                 self.add_leg_action_weapon()
                 combo = self.leg_action_weapon_inputs[-1]["combo"]
-                combo.setCurrentText(weapon_name if weapon_name else "None")
+                combo.setCurrentText(weapon_name["name"] if weapon_name else "None")
         elif isinstance(leg_weapons, str) and leg_weapons:
             self.add_leg_action_weapon()
             combo = self.leg_action_weapon_inputs[-1]["combo"]
@@ -689,11 +771,12 @@ class MonsterEditor(QWidget):
                 count = entry["count"].value()
                 spells[spell] = count
 
-        try:
-            multi = json.loads(self.multi_text.toPlainText() or "{}")
-        except json.JSONDecodeError:
-            QMessageBox.warning(self, "Error", "Invalid MultiAttack JSON")
-            return
+        multiAttack = {}
+        for entry in self.multi_entries:
+            weapon = entry["combo"].currentText().strip()
+            if weapon:
+                count = entry["count"].value()
+                multiAttack[weapon] = count
 
         mod_dict = {k.capitalize(): v.value() for k, v in self.mods.items()}
         turn_factors = {k: v.value() for k, v in self.tf_inputs.items()}
