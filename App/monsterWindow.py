@@ -136,6 +136,7 @@ class MonsterEditor(QWidget):
     def __init__(self, store: MonsterStore = None):
         super().__init__()
         self.store = store or MonsterStore()
+        self.all_names = []
 
         self.setWindowTitle("Monster Editor")
 
@@ -145,7 +146,16 @@ class MonsterEditor(QWidget):
 
         # DB list
         db_box = QGroupBox("Monster Database")
-        db_layout = QHBoxLayout()
+        db_layout = QVBoxLayout()
+
+        # Search bar
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("Search monsters...")
+        self.search_input.textChanged.connect(self.filter_monsters)
+        db_layout.addWidget(self.search_input)
+
+        # List and buttons
+        list_layout = QHBoxLayout()
 
         self.list_widget = QListWidget()
         self.list_widget.currentTextChanged.connect(self.load_monster)
@@ -163,8 +173,9 @@ class MonsterEditor(QWidget):
         btn_col.addWidget(read_btn)
         btn_col.addStretch()
 
-        db_layout.addWidget(self.list_widget)
-        db_layout.addLayout(btn_col)
+        list_layout.addWidget(self.list_widget)
+        list_layout.addLayout(btn_col)
+        db_layout.addLayout(list_layout)
         db_box.setLayout(db_layout)
 
         main.addWidget(db_box)
@@ -678,9 +689,15 @@ class MonsterEditor(QWidget):
 
     def refresh(self):
         self.store.load()
+        self.all_names = self.store.get_names()
+        self.filter_monsters()
+
+    def filter_monsters(self):
+        search_text = self.search_input.text().lower()
+        filtered_names = [name for name in self.all_names if search_text in name.lower()]
         self.list_widget.blockSignals(True)
         self.list_widget.clear()
-        self.list_widget.addItems(self.store.get_names())
+        self.list_widget.addItems(filtered_names)
         self.list_widget.blockSignals(False)
 
     def load_json_file(self):
@@ -839,7 +856,7 @@ class MonsterEditor(QWidget):
                 "dmgMod": w["damage_mod"].value()
             })
         leg_action = [self.leg_actions_input.value(), [combo["combo"].currentText() for combo in self.leg_action_weapon_inputs if combo["combo"].currentText() != "None"]]
-
+        
         data = {
             "name": name,
             "cr": self.cr_input.text().strip(),
@@ -852,7 +869,7 @@ class MonsterEditor(QWidget):
             "size": self.size_input.value(),
             "spells": spells,
             "spellAttackMod": self.spell_mod_input.value(),
-            "multiAttack": multi,
+            "multiAttack": multiAttack,
             "legRes": self.leg_res_input.value(),
             "legActions": leg_action,
             "image": getattr(self, "image_path", None)
@@ -867,7 +884,12 @@ class MonsterEditor(QWidget):
 
         self.store.upsert(name, data)
         self.refresh()
-        self.list_widget.setCurrentText(name)
+        # Select the saved monster in the list
+        for i in range(self.list_widget.count()):
+            item = self.list_widget.item(i)
+            if item.text() == name:
+                self.list_widget.setCurrentItem(item)
+                break
 
         # Create Monster object
         try:
@@ -882,7 +904,7 @@ class MonsterEditor(QWidget):
                 size=data["size"],
                 spells=spells,
                 spellMod=data["spellAttackMod"],
-                multiAttack=multi,
+                multiAttack=multiAttack,
                 legRes=data["legRes"],
                 legAction=leg_action,
                 Image=data["image"]
