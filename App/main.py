@@ -1,6 +1,8 @@
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QTabWidget, QHBoxLayout, QTabBar,
-    QPushButton, QMessageBox, QLabel, QApplication, QAction, QActionGroup
+    QPushButton, QMessageBox, QLabel, QApplication, QAction, QActionGroup,
+    QListWidget, QDialog, QLineEdit, QSpinBox, QGroupBox, QListWidgetItem,
+    QFileDialog, QComboBox
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QEvent
 
@@ -8,10 +10,56 @@ from newCharWindow import CharacterEditor, CharacterStore
 from monsterWindow import MonsterEditor, MonsterStore
 from TestingMap import MapWidget
 import pathlib
+import json
+from pathlib import Path
+from player import createPartyList
+from monster import createMonsterList
 dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-4]
 from player import createPartyList
 from monster import createMonsterList
 from interactiveEncounter import interactiveEncounter
+
+class EncounterStore:
+    def __init__(self, file_path=None):
+        if file_path is None:
+            file_path = Path(__file__).parent.parent / "actors" / "savedObjs" / "encounters.json"
+        self.file_path = Path(file_path)
+        self.encounters = {}
+        self.load()
+
+    def load(self):
+        if self.file_path.exists():
+            with open(self.file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, dict):
+                self.encounters = data
+            elif isinstance(data, list):
+                self.encounters = {e.get("name", f"encounter_{i}"): e for i, e in enumerate(data)}
+        else:
+            self.encounters = {}
+
+    def save(self):
+        with open(self.file_path, "w", encoding="utf-8") as f:
+            json.dump(self.encounters, f, indent=4)
+
+    def add_encounter(self, name, party, npcs, enemies, numHexes, mapImage):
+        self.encounters[name] = {
+            "name": name,
+            "party": party,
+            "npcs": npcs,
+            "enemies": enemies,
+            "numHexes": numHexes,
+            "mapImage": mapImage
+        }
+        self.save()
+
+    def delete_encounter(self, name):
+        if name in self.encounters:
+            del self.encounters[name]
+            self.save()
+
+    def get_encounter(self, name):
+        return self.encounters.get(name)
 
 class TextScale:
     XS = 0
@@ -60,28 +108,253 @@ def set_font(widget, size, weight=QFont.Normal, monospace=False):
 
 class EncounterBuilderTab(QWidget):
     
-    def __init__(self, start_callback):
+    def __init__(self, start_callback, main_window, char_store, mon_store, enc_store):
         super().__init__()
 
         self.start_callback = start_callback
+        self.main_window = main_window
+        self.char_store = char_store
+        self.mon_store = mon_store
+        self.enc_store = enc_store
 
         layout = QVBoxLayout(self)
 
-        layout.addWidget(QLabel("Encounter Builder"))
+        # Encounter Management
+        enc_group = QGroupBox("Encounters")
+        enc_layout = QVBoxLayout()
+        self.enc_list = QListWidget()
+        self.update_enc_list()
+        enc_layout.addWidget(self.enc_list)
+        enc_buttons = QHBoxLayout()
+        new_enc_btn = QPushButton("New")
+        new_enc_btn.clicked.connect(self.new_encounter)
+        edit_enc_btn = QPushButton("Edit")
+        edit_enc_btn.clicked.connect(self.edit_encounter)
+        save_enc_btn = QPushButton("Save")
+        save_enc_btn.clicked.connect(self.save_encounter)
+        del_enc_btn = QPushButton("Delete")
+        del_enc_btn.clicked.connect(self.delete_encounter)
+        load_enc_btn = QPushButton("Load")
+        load_enc_btn.clicked.connect(self.load_encounter)
+        enc_buttons.addWidget(new_enc_btn)
+        enc_buttons.addWidget(edit_enc_btn)
+        enc_buttons.addWidget(save_enc_btn)
+        enc_buttons.addWidget(del_enc_btn)
+        enc_buttons.addWidget(load_enc_btn)
+        enc_layout.addLayout(enc_buttons)
+        enc_group.setLayout(enc_layout)
+        layout.addWidget(enc_group)
 
-        self.start_button = QPushButton("Start Encounter")
-        self.start_button.clicked.connect(self.start_callback)
+        # Encounter Details Group
+        details_group = QGroupBox("Encounter Details")
+        details_layout = QVBoxLayout()
 
-        layout.addWidget(self.start_button)
-        layout.addStretch()
-    def buildEncounter(self):
+        # Name
+        name_layout = QHBoxLayout()
+        name_layout.addWidget(QLabel("Name:"))
+        self.name_edit = QLineEdit()
+        name_layout.addWidget(self.name_edit)
+        details_layout.addLayout(name_layout)
+
+        # Num Hexes
+        hex_layout = QHBoxLayout()
+        hex_layout.addWidget(QLabel("Num Hexes:"))
+        self.hex_spin = QSpinBox()
+        self.hex_spin.setRange(5, 100)
+        self.hex_spin.setValue(20)
+        hex_layout.addWidget(self.hex_spin)
+        details_layout.addLayout(hex_layout)
+
+        # Map Image
+        map_layout = QHBoxLayout()
+        map_layout.addWidget(QLabel("Map Image Path:"))
+        self.map_edit = QLineEdit()
+        map_layout.addWidget(self.map_edit)
+        browse_btn = QPushButton("Browse...")
+        browse_btn.clicked.connect(self.browse_map_image)
+        map_layout.addWidget(browse_btn)
+        details_layout.addLayout(map_layout)
+
+        details_group.setLayout(details_layout)
+        layout.addWidget(details_group)
+
+        # Setup lists
+        self.setup_lists(layout)
+
+    def setup_lists(self, layout):
+        # Available characters and monsters
+        self.avail_chars = self.char_store.get_names()
+        self.avail_mons = self.mon_store.get_names()
+
+        # Create group boxes
+        party_group = QGroupBox("Party")
+        party_layout = QVBoxLayout()
+        self.party_combo = QComboBox()
+        self.party_combo.setEditable(True)
+        self.party_combo.addItems(self.avail_chars)
+        self.party_combo.setCurrentIndex(-1)  # No selection
+        party_layout.addWidget(self.party_combo)
+        self.party_list = QListWidget()
+        party_layout.addWidget(self.party_list)
+        party_buttons = QHBoxLayout()
+        add_party_btn = QPushButton("Add")
+        add_party_btn.clicked.connect(lambda: self.add_from_combo(self.party_combo, self.party_list))
+        self.party_combo.lineEdit().returnPressed.connect(lambda: self.add_from_combo(self.party_combo, self.party_list))
+        remove_party_btn = QPushButton("Remove")
+        remove_party_btn.clicked.connect(lambda: self.remove_from_list(self.party_list))
+        party_buttons.addWidget(add_party_btn)
+        party_buttons.addWidget(remove_party_btn)
+        party_layout.addLayout(party_buttons)
+        party_group.setLayout(party_layout)
+
+        npc_group = QGroupBox("NPCs")
+        npc_layout = QVBoxLayout()
+        self.npc_combo = QComboBox()
+        self.npc_combo.setEditable(True)
+        self.npc_combo.addItems(self.avail_chars)
+        self.npc_combo.setCurrentIndex(-1)
+        npc_layout.addWidget(self.npc_combo)
+        self.npc_list = QListWidget()
+        npc_layout.addWidget(self.npc_list)
+        npc_buttons = QHBoxLayout()
+        add_npc_btn = QPushButton("Add")
+        add_npc_btn.clicked.connect(lambda: self.add_from_combo(self.npc_combo, self.npc_list))
+        self.npc_combo.lineEdit().returnPressed.connect(lambda: self.add_from_combo(self.npc_combo, self.npc_list))
+        remove_npc_btn = QPushButton("Remove")
+        remove_npc_btn.clicked.connect(lambda: self.remove_from_list(self.npc_list))
+        npc_buttons.addWidget(add_npc_btn)
+        npc_buttons.addWidget(remove_npc_btn)
+        npc_layout.addLayout(npc_buttons)
+        npc_group.setLayout(npc_layout)
+
+        enemy_group = QGroupBox("Enemies")
+        enemy_layout = QVBoxLayout()
+        self.enemy_combo = QComboBox()
+        self.enemy_combo.setEditable(True)
+        self.enemy_combo.addItems(self.avail_mons)
+        self.enemy_combo.setCurrentIndex(-1)
+        enemy_layout.addWidget(self.enemy_combo)
+        self.enemy_list = QListWidget()
+        enemy_layout.addWidget(self.enemy_list)
+        enemy_buttons = QHBoxLayout()
+        add_enemy_btn = QPushButton("Add")
+        add_enemy_btn.clicked.connect(lambda: self.add_from_combo(self.enemy_combo, self.enemy_list))
+        self.enemy_combo.lineEdit().returnPressed.connect(lambda: self.add_from_combo(self.enemy_combo, self.enemy_list))
+        remove_enemy_btn = QPushButton("Remove")
+        remove_enemy_btn.clicked.connect(lambda: self.remove_from_list(self.enemy_list))
+        enemy_buttons.addWidget(add_enemy_btn)
+        enemy_buttons.addWidget(remove_enemy_btn)
+        enemy_layout.addLayout(enemy_buttons)
+        enemy_group.setLayout(enemy_layout)
+
+        lists_layout = QHBoxLayout()
+        lists_layout.addWidget(party_group)
+        lists_layout.addWidget(npc_group)
+        lists_layout.addWidget(enemy_group)
+        layout.addLayout(lists_layout)
+
+    def browse_map_image(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, "Select Map Image", "", "Image Files (*.png *.jpg *.jpeg *.bmp *.gif)")
+        if file_path:
+            self.map_edit.setText(file_path)
+
+    def add_from_combo(self, combo, list_widget):
+        text = combo.currentText().strip()
+        if text and not any(list_widget.item(i).text() == text for i in range(list_widget.count())):
+            list_widget.addItem(text)
+            combo.setCurrentIndex(-1)  # Clear selection
+
+    def add_to_list(self, list_widget, avail):
+        # Simple dialog to select from avail
+        from PyQt5.QtWidgets import QInputDialog
+        item, ok = QInputDialog.getItem(self, "Select", "Choose:", avail, 0, False)
+        if ok and item:
+            list_widget.addItem(item)
+
+    def remove_from_list(self, list_widget):
+        current = list_widget.currentItem()
+        if current:
+            list_widget.takeItem(list_widget.row(current))
+
+    def get_current_data(self):
+        party = [self.party_list.item(i).text() for i in range(self.party_list.count())]
+        npcs = [self.npc_list.item(i).text() for i in range(self.npc_list.count())]
+        enemies = [self.enemy_list.item(i).text() for i in range(self.enemy_list.count())]
+        return {
+            "name": self.name_edit.text(),
+            "party": party,
+            "npcs": npcs,
+            "enemies": enemies,
+            "numHexes": self.hex_spin.value(),
+            "mapImage": self.map_edit.text()
+        }
+
+    def set_current_data(self, data):
+        self.name_edit.setText(data.get("name", ""))
+        self.hex_spin.setValue(data.get("numHexes", 20))
+        self.map_edit.setText(data.get("mapImage", ""))
+        self.party_list.clear()
+        for name in data.get("party", []):
+            self.party_list.addItem(name)
+        self.npc_list.clear()
+        for name in data.get("npcs", []):
+            self.npc_list.addItem(name)
+        self.enemy_list.clear()
+        for name in data.get("enemies", []):
+            self.enemy_list.addItem(name)
+
+    def update_enc_list(self):
+        self.enc_list.clear()
+        for name in sorted(self.enc_store.encounters.keys()):
+            self.enc_list.addItem(name)
+
+    def new_encounter(self):
+        self.set_current_data({})
+
+    def edit_encounter(self):
+        current = self.enc_list.currentItem()
+        if not current:
+            QMessageBox.warning(self, "Warning", "Select an encounter to edit")
+            return
+        name = current.text()
+        encounter = self.enc_store.get_encounter(name)
+        self.set_current_data(encounter)
+
+    def save_encounter(self):
+        data = self.get_current_data()
+        name = data["name"]
+        if not name:
+            QMessageBox.warning(self, "Warning", "Enter a name for the encounter")
+            return
+        self.enc_store.add_encounter(name, data["party"], data["npcs"], data["enemies"], data["numHexes"], data["mapImage"])
+        self.update_enc_list()
+
+    def delete_encounter(self):
+        current = self.enc_list.currentItem()
+        if not current:
+            QMessageBox.warning(self, "Warning", "Select an encounter to delete")
+            return
+        name = current.text()
+        self.enc_store.delete_encounter(name)
+        self.update_enc_list()
+
+    def load_encounter(self):
+        current = self.enc_list.currentItem()
+        if not current:
+            QMessageBox.warning(self, "Warning", "Select an encounter to load")
+            return
+        name = current.text()
+        enc_data = self.enc_store.get_encounter(name)
         path = dmSimPath + '\\actors\\savedObjs\\'
-        myPlayers = createPartyList(['Arabella', 'Root', 'Ephraim',  'Darian'], path = path)
-        myPlayers = createPartyList(['Aldric',  'Galleus', 'Adrel', 'VV', 'Cobo'], path = path)
-        #badGuys = createMonsterList(["Quenth"] + ["Demogorgon" for i in range(1)], path = path)
-        badGuys = createMonsterList(["Myconid Sovereign" for i in range(2)] + ["Myconid Adult" for i in range(6)], path = path)
-        myEncounter = interactiveEncounter(myPlayers, [], badGuys, 20, dmSimPath + "\\App\\Maps\\maze Engine.webp")
-        return myEncounter
+        party = createPartyList(enc_data["party"], path=path)
+        npcs = createPartyList(enc_data["npcs"], path=path)
+        enemies = createMonsterList(enc_data["enemies"], path=path)
+        encounter = interactiveEncounter(party, npcs, enemies, enc_data["numHexes"], enc_data["mapImage"])
+        self.start_callback(encounter)
+
+    def buildEncounter(self):
+        # Keep for compatibility, but not used
+        pass
     
     def applyFonts(self):
         mw = self.window()
@@ -89,7 +362,9 @@ class EncounterBuilderTab(QWidget):
             return
 
         base = mw.TextScale.size(mw.text_scale)
-        set_font(self.start_button, base)
+        # Apply to buttons, etc.
+        for widget in self.findChildren(QPushButton):
+            set_font(widget, base)
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -304,16 +579,18 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.tabs)
 
         # ---- Tabs ----
-        store = CharacterStore()
-        self.character_editor = CharacterEditor(store)
-        self.encounter_builder = EncounterBuilderTab(self.startEncounter)
-
-        self.tabs.addTab(self.character_editor, "Characters")
-        self.tabs.addTab(self.encounter_builder, "Encounter Builder")
+        self.char_store = CharacterStore()
+        self.character_editor = CharacterEditor(self.char_store)
 
         # ---- Monsters tab ----
         self.monster_store = MonsterStore()
         self.monster_editor = MonsterEditor(self.monster_store)
+
+        self.encounter_store = EncounterStore()
+        self.encounter_builder = EncounterBuilderTab(self.startEncounter, self, self.char_store, self.monster_store, self.encounter_store)
+
+        self.tabs.addTab(self.character_editor, "Characters")
+        self.tabs.addTab(self.encounter_builder, "Encounter Builder")
         self.tabs.addTab(self.monster_editor, "Monsters")
 
         # Keep reference so it doesn’t get GC’d

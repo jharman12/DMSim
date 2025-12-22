@@ -241,7 +241,7 @@ class MonsterEditor(QWidget):
         mods_box = QGroupBox("Ability Modifiers")
         mods_layout = QGridLayout()
         self.mods = {}
-        abilities = ["STR", "DEX", "CON", "INT", "WIS", "CHA"]
+        abilities = ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"]
         for i, abil in enumerate(abilities):
             lbl = QLabel(abil)
             spin = QSpinBox()

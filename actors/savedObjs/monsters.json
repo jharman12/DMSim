@@ -36,12 +36,12 @@
     "legRes": "",
     "legActions": "",
     "modDict": {
-      "STR": "",
-      "DEX": "",
-      "CON": "",
-      "INT": "",
-      "WIS": "",
-      "CHA": ""
+      "Strength": "",
+      "Dexterity": "",
+      "Constitution": "",
+      "Intelligence": "",
+      "Wisdom": "",
+      "Charisma": ""
     }
   },
   "Demogorgon": {
@@ -51,12 +51,12 @@
     "hp": 0,
     "speed": 50,
     "modDict": {
-      "STR": 29,
-      "DEX": 14,
-      "CON": 26,
-      "INT": 20,
-      "WIS": 17,
-      "CHA": 25
+      "Strength": 29,
+      "Dexterity": 14,
+      "Constitution": 26,
+      "Intelligence": 20,
+      "Wisdom": 17,
+      "Charisma": 25
     },
     "turnFactors": {
       "Melee": 0.74,
@@ -120,12 +120,12 @@
     "maxHealth": 132,
     "speed": 30,
     "modDict": {
-      "STR": 10,
-      "DEX": 14,
-      "CON": 12,
-      "INT": 18,
-      "WIS": 20,
-      "CHA": 18
+      "Strength": 10,
+      "Dexterity": 14,
+      "Constitution": 12,
+      "Intelligence": 18,
+      "Wisdom": 20,
+      "Charisma": 18
     },
     "weaponList": [
       {
@@ -2206,12 +2206,12 @@
     "maxHealth": 13,
     "speed": 30,
     "modDict": {
-      "STR": 10,
-      "DEX": 14,
-      "CON": 10,
-      "INT": 11,
-      "WIS": 11,
-      "CHA": 12
+      "Strength": 10,
+      "Dexterity": 14,
+      "Constitution": 10,
+      "Intelligence": 11,
+      "Wisdom": 11,
+      "Charisma": 12
     },
     "weaponList": [
       {
@@ -2345,12 +2345,12 @@
     "maxHealth": 60,
     "speed": 30,
     "modDict": {
-      "STR": 12,
-      "DEX": 10,
-      "CON": 14,
-      "INT": 13,
-      "WIS": 15,
-      "CHA": 10
+      "Strength": 12,
+      "Dexterity": 10,
+      "Constitution": 14,
+      "Intelligence": 13,
+      "Wisdom": 15,
+      "Charisma": 10
     },
     "weaponList": [
       {
@@ -2391,12 +2391,12 @@
     "maxHealth": 22,
     "speed": 20,
     "modDict": {
-      "STR": 10,
-      "DEX": 10,
-      "CON": 12,
-      "INT": 10,
-      "WIS": 13,
-      "CHA": 7
+      "Strength": 10,
+      "Dexterity": 10,
+      "Constitution": 12,
+      "Intelligence": 10,
+      "Wisdom": 13,
+      "Charisma": 7
     },
     "weaponList": [
       {
@@ -2437,12 +2437,12 @@
     "hp": 0,
     "speed": 40,
     "modDict": {
-      "STR": 23,
-      "DEX": 10,
-      "CON": 10,
-      "INT": 10,
-      "WIS": 10,
-      "CHA": 10
+      "Strength": 23,
+      "Dexterity": 10,
+      "Constitution": 10,
+      "Intelligence": 10,
+      "Wisdom": 10,
+      "Charisma": 10
     },
     "turnFactors": {
       "Melee": 1.0,
