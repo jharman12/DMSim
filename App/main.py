@@ -138,6 +138,27 @@ class AppThemes:
         font-family: Segoe UI;
     }
 
+    QGroupBox {
+        background-color: #e8e8e8;
+        border: 1px solid #bbb;
+        border-radius: 4px;
+        margin-top: 2ex;
+        padding: 10px;
+        font-weight: bold;
+    }
+
+    QGroupBox::title {
+        subcontrol-origin: margin;
+        left: 10px;
+        padding: 0 5px 0 5px;
+        color: #111;
+    }
+
+    QLabel {
+        background-color: #e8e8e8;
+        color: #111;
+    }
+
     QLineEdit, QTextEdit, QComboBox {
         background-color: #ffffff;
         border: 1px solid #bbb;
@@ -169,6 +190,27 @@ class AppThemes:
         background-color: #1e1e1e;
         color: #ddd;
         font-family: Segoe UI;
+    }
+
+    QGroupBox {
+        background-color: #3a3a3a;
+        border: 1px solid #555;
+        border-radius: 4px;
+        margin-top: 10ex;
+        padding: 10px;
+        font-weight: bold;
+    }
+
+    QGroupBox::title {
+        subcontrol-origin: margin;
+        left: 10px;
+        padding: 0 5px 0 5px;
+        color: #ddd;
+    }
+
+    QLabel {
+        background-color: #3a3a3a;
+        color: #ddd;
     }
 
     QLineEdit, QTextEdit, QComboBox {
@@ -208,7 +250,6 @@ class MainWindow(QMainWindow):
 
         self.TextScale = TextScale()
         self.text_scale = TextScale.MD
-        self.setTextScale(self.text_scale)
 
         menubar = self.menuBar()
 
@@ -289,6 +330,8 @@ class MainWindow(QMainWindow):
             app.installEventFilter(self)
 
         self.setTheme("dark")  # default
+
+        self.setTextScale(self.text_scale)
 
     def setTextScale(self, scale):
         self.text_scale = scale

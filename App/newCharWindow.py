@@ -418,6 +418,19 @@ class CharacterEditor(QWidget):
             "layout": row
         })
 
+        # Apply current font size to new widgets
+        mw = self.window()
+        if mw is not None:
+            try:
+                base = mw.TextScale.size(mw.text_scale)
+                for widget in [name, atk_type, rng, atk_mod, dice_count, dice_type, dmg_mod, del_btn]:
+                    try:
+                        set_font(widget, base)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
     def delete_weapon(self, layout):
         # Find the index of the layout in weapon_container
         for i in range(self.weapon_container.count()):

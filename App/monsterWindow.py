@@ -246,7 +246,7 @@ class MonsterEditor(QWidget):
             lbl = QLabel(abil)
             spin = QSpinBox()
             spin.setRange(-10, 30)
-            self.mods[abil.lower()] = spin
+            self.mods[abil] = spin
             mods_layout.addWidget(lbl, 0, i)
             mods_layout.addWidget(spin, 1, i)
         mods_box.setLayout(mods_layout)
@@ -421,6 +421,19 @@ class MonsterEditor(QWidget):
             "layout": row
         })
 
+        # Apply current font size to new widgets
+        mw = self.window()
+        if mw is not None:
+            try:
+                base = mw.TextScale.size(mw.text_scale)
+                for widget in [name, atk_type, rng, atk_mod, dice_count, dice_type, dmg_mod, del_btn]:
+                    try:
+                        set_font(widget, base)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
         self.update_leg_weapon_combo()
         self.update_multi_combos()
 
@@ -461,6 +474,27 @@ class MonsterEditor(QWidget):
             "layout": row,
             "delete_btn": del_btn
         })
+
+        # Apply current font size to new widgets
+        mw = self.window()
+        if mw is not None:
+            try:
+                base = mw.TextScale.size(mw.text_scale)
+                for widget in [combo, del_btn]:
+                    try:
+                        set_font(widget, base)
+                    except Exception:
+                        pass
+                # Also apply to the QLabel in the row
+                for i in range(row.count()):
+                    item = row.itemAt(i)
+                    if item.widget() and isinstance(item.widget(), QLabel):
+                        try:
+                            set_font(item.widget(), base)
+                        except Exception:
+                            pass
+            except Exception:
+                pass
 
         self.update_leg_weapon_combo()
 
@@ -510,6 +544,19 @@ class MonsterEditor(QWidget):
             "layout": row,
             "delete_btn": del_btn
         })
+
+        # Apply current font size to new widgets
+        mw = self.window()
+        if mw is not None:
+            try:
+                base = mw.TextScale.size(mw.text_scale)
+                for widget in [combo, count_spin, del_btn]:
+                    try:
+                        set_font(widget, base)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
 
     def delete_spell(self, layout):
         for i, entry in enumerate(self.spell_entries):
@@ -564,6 +611,19 @@ class MonsterEditor(QWidget):
             "layout": row,
             "delete_btn": del_btn
         })
+
+        # Apply current font size to new widgets
+        mw = self.window()
+        if mw is not None:
+            try:
+                base = mw.TextScale.size(mw.text_scale)
+                for widget in [combo, count_spin, del_btn]:
+                    try:
+                        set_font(widget, base)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
 
     def delete_multiattack(self, layout):
         for i, entry in enumerate(self.multi_entries):
@@ -748,7 +808,8 @@ class MonsterEditor(QWidget):
 
         # mods
         for key, spin in self.mods.items():
-            spin.setValue(int(m.get("modDict", {}).get(key.capitalize(), 10)))
+            print(key, m.get("modDict", {}))
+            spin.setValue(int(m.get("modDict", {}).get(key, 10)))
 
         # turn factors
         for key, spin in self.tf_inputs.items():
@@ -842,7 +903,7 @@ class MonsterEditor(QWidget):
                 count = entry["count"].value()
                 multiAttack[weapon] = count
 
-        mod_dict = {k.capitalize(): v.value() for k, v in self.mods.items()}
+        mod_dict = {k: v.value() for k, v in self.mods.items()}
         turn_factors = {k: v.value() for k, v in self.tf_inputs.items()}
         weapon_list = []
         for w in self.weapon_widgets:

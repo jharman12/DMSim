@@ -5,14 +5,6 @@
     "AC": "",
     "HP": "",
     "Speed": "",
-    "AbilityModifiers": {
-      "Strength": "",
-      "Dexterity": "",
-      "Constitution": "",
-      "Intelligence": "",
-      "Wisdom": "",
-      "Charisma": ""
-    },
     "TurnFactors": {
       "Melee": "",
       "Ranged": "",
@@ -42,29 +34,44 @@
       "": ""
     },
     "legRes": "",
-    "legActions": ""
+    "legActions": "",
+    "modDict": {
+      "STR": "",
+      "DEX": "",
+      "CON": "",
+      "INT": "",
+      "WIS": "",
+      "CHA": ""
+    }
   },
   "Demogorgon": {
+    "name": "Demogorgon",
+    "cr": "",
     "ac": 22,
-    "health": 464,
-    "maxHealth": 464,
+    "hp": 0,
     "speed": 50,
     "modDict": {
-      "Strength": 29,
-      "Dexterity": 14,
-      "Constitution": 26,
-      "Intelligence": 20,
-      "Wisdom": 17,
-      "Charisma": 25
+      "STR": 29,
+      "DEX": 14,
+      "CON": 26,
+      "INT": 20,
+      "WIS": 17,
+      "CHA": 25
+    },
+    "turnFactors": {
+      "Melee": 0.74,
+      "Ranged": 0.09,
+      "Ranged Spell": 0.17,
+      "Spell CC": 0.0
     },
     "weaponList": [
       {
         "name": "Tentacle",
         "attackType": "Melee",
         "range": 10,
-        "attackMod": "17",
+        "attackMod": 17,
         "diceType": [
-          12
+          "d4"
         ],
         "diceCount": [
           3
@@ -75,9 +82,9 @@
         "name": "Longbow",
         "attackType": "Ranged",
         "range": 150,
-        "attackMod": "4",
+        "attackMod": 4,
         "diceType": [
-          8
+          "d4"
         ],
         "diceCount": [
           1
@@ -85,198 +92,27 @@
         "dmgMod": 2
       }
     ],
-    "turnFactors": {
-      "Melee": 0.7432432432432432,
-      "Ranged": 0.08783783783783784,
-      "Ranged Spell": 0.16891891891891891,
-      "Spell CC": 0
-    },
     "size": 225,
     "spells": {
-      "Fire Bolt": [
-        9999,
-        {
-          "lvl": 0,
-          "time": "1 Action",
-          "duration": "Instantaneous",
-          "range": "120 ft",
-          "area": "",
-          "attack": "Ranged",
-          "save": "",
-          "effect": "Fire",
-          "concentration": "",
-          "classes": "Sorcerer, Wizard",
-          "dice": [
-            "1d10"
-          ],
-          "uniqueDice": "n",
-          "combat": "y"
-        }
-      ],
-      "Detect Magic": [
-        9999,
-        {
-          "lvl": 1,
-          "time": "1 Action",
-          "duration": "10 Minutes",
-          "range": "0",
-          "area": "sphere 30 ft",
-          "attack": "",
-          "save": "",
-          "effect": "Detection",
-          "concentration": "Y",
-          "classes": "Bard, Cleric, Druid, Paladin, Ranger, Sorcerer, Wizard",
-          "dice": [
-            ""
-          ],
-          "uniqueDice": "n",
-          "combat": "n"
-        }
-      ],
-      "Major Image": [
-        9999,
-        {
-          "lvl": 3,
-          "time": "1 Action",
-          "duration": "10 Minutes",
-          "range": "120 ft",
-          "area": "square 20 ft",
-          "attack": "",
-          "save": "",
-          "effect": "Control",
-          "concentration": "Y",
-          "classes": "Bard, Sorcerer, Warlock, Wizard",
-          "dice": [
-            ""
-          ],
-          "uniqueDice": "n",
-          "combat": "n"
-        }
-      ],
-      "Dispel Magic": [
-        3,
-        {
-          "lvl": 3,
-          "time": "1 Action",
-          "duration": "Instantaneous",
-          "range": "120 ft",
-          "area": "",
-          "attack": "",
-          "save": "",
-          "effect": "Control",
-          "concentration": "",
-          "classes": "Bard, Cleric, Druid, Paladin, Sorcerer, Warlock, Wizard",
-          "dice": [
-            ""
-          ],
-          "uniqueDice": "n",
-          "combat": "n"
-        }
-      ],
-      "Fear": [
-        3,
-        {
-          "lvl": 3,
-          "time": "1 Action",
-          "duration": "1 Minute",
-          "range": "0",
-          "area": "cone 30 ft",
-          "attack": "",
-          "save": "Wisdom Save",
-          "effect": "Frightened",
-          "concentration": "Y",
-          "classes": "Bard, Sorcerer, Warlock, Wizard",
-          "dice": [
-            ""
-          ],
-          "uniqueDice": "n",
-          "combat": "y"
-        }
-      ],
-      "Telekinesis": [
-        3,
-        {
-          "lvl": 5,
-          "time": "1 Action",
-          "duration": "10 Minutes",
-          "range": "60 ft",
-          "area": "",
-          "attack": "",
-          "save": "",
-          "effect": "Control",
-          "concentration": "Y",
-          "classes": "Sorcerer, Wizard",
-          "dice": [
-            ""
-          ],
-          "uniqueDice": "n",
-          "combat": "n"
-        }
-      ],
-      "Project Image": [
-        1,
-        {
-          "lvl": 7,
-          "time": "1 Action",
-          "duration": "1 Day",
-          "range": "500 miles",
-          "area": "",
-          "attack": "",
-          "save": "",
-          "effect": "Control",
-          "concentration": "Y",
-          "classes": "Bard, Warlock, Wizard",
-          "dice": [
-            ""
-          ],
-          "uniqueDice": "n",
-          "combat": "n"
-        }
-      ],
-      "Feeblemind": [
-        1,
-        {
-          "lvl": 8,
-          "time": "1 Action",
-          "duration": "Instantaneous",
-          "range": "150 ft",
-          "area": "",
-          "attack": "",
-          "save": "Intelligence Save",
-          "effect": "Psychic",
-          "concentration": "",
-          "classes": "Bard, Druid, Warlock, Wizard",
-          "dice": [
-            "4d6"
-          ],
-          "uniqueDice": "n",
-          "combat": "y"
-        }
-      ]
+      "Fire Bolt": 100,
+      "Detect Magic": 100,
+      "Major Image": 100,
+      "Dispel Magic": 3,
+      "Fear": 3,
+      "Telekinesis": 3,
+      "Project Image": 1,
+      "Feeblemind": 1
     },
+    "spellAttackMod": 15,
     "multiAttack": {
       "Tentacle": 2
     },
-    "spellAttackMod": 15,
     "legRes": 3,
     "legActions": [
       2,
-      [
-        {
-          "name": "Tail",
-          "attackType": "Melee",
-          "range": 15,
-          "attackMod": "17",
-          "diceType": [
-            10
-          ],
-          "diceCount": [
-            4
-          ],
-          "dmgMod": 9
-        }
-      ]
-    ]
+      []
+    ],
+    "image": "A:/Code/Python/Git Repo/DMSim/App/Monsters/dem.webp"
   },
   "Quenth": {
     "ac": 21,
@@ -284,12 +120,12 @@
     "maxHealth": 132,
     "speed": 30,
     "modDict": {
-      "Strength": 10,
-      "Dexterity": 14,
-      "Constitution": 12,
-      "Intelligence": 18,
-      "Wisdom": 20,
-      "Charisma": 18
+      "STR": 10,
+      "DEX": 14,
+      "CON": 12,
+      "INT": 18,
+      "WIS": 20,
+      "CHA": 18
     },
     "weaponList": [
       {
@@ -2370,12 +2206,12 @@
     "maxHealth": 13,
     "speed": 30,
     "modDict": {
-      "Strength": 10,
-      "Dexterity": 14,
-      "Constitution": 10,
-      "Intelligence": 11,
-      "Wisdom": 11,
-      "Charisma": 12
+      "STR": 10,
+      "DEX": 14,
+      "CON": 10,
+      "INT": 11,
+      "WIS": 11,
+      "CHA": 12
     },
     "weaponList": [
       {
@@ -2509,12 +2345,12 @@
     "maxHealth": 60,
     "speed": 30,
     "modDict": {
-      "Strength": 12,
-      "Dexterity": 10,
-      "Constitution": 14,
-      "Intelligence": 13,
-      "Wisdom": 15,
-      "Charisma": 10
+      "STR": 12,
+      "DEX": 10,
+      "CON": 14,
+      "INT": 13,
+      "WIS": 15,
+      "CHA": 10
     },
     "weaponList": [
       {
@@ -2555,12 +2391,12 @@
     "maxHealth": 22,
     "speed": 20,
     "modDict": {
-      "Strength": 10,
-      "Dexterity": 10,
-      "Constitution": 12,
-      "Intelligence": 10,
-      "Wisdom": 13,
-      "Charisma": 7
+      "STR": 10,
+      "DEX": 10,
+      "CON": 12,
+      "INT": 10,
+      "WIS": 13,
+      "CHA": 7
     },
     "weaponList": [
       {
@@ -2595,27 +2431,33 @@
     "alive": 1
   },
   "Stone Giant": {
-    "Image": null,
+    "name": "Stone Giant",
+    "cr": "",
     "ac": 17,
-    "health": 126,
-    "maxHealth": 126,
+    "hp": 0,
     "speed": 40,
     "modDict": {
-      "Strength": 23,
-      "Dexterity": 15,
-      "Constitution": 20,
-      "Intelligence": 10,
-      "Wisdom": 12,
-      "Charisma": 9
+      "STR": 23,
+      "DEX": 10,
+      "CON": 10,
+      "INT": 10,
+      "WIS": 10,
+      "CHA": 10
+    },
+    "turnFactors": {
+      "Melee": 1.0,
+      "Ranged": 0.0,
+      "Ranged Spell": 0.0,
+      "Spell CC": 0.0
     },
     "weaponList": [
       {
         "name": "Greatclub",
         "attackType": "Melee",
         "range": 15,
-        "attackMod": "9",
+        "attackMod": 9,
         "diceType": [
-          8
+          "d4"
         ],
         "diceCount": [
           3
@@ -2623,21 +2465,17 @@
         "dmgMod": 6
       }
     ],
-    "turnFactors": {
-      "Melee": 1.0,
-      "Ranged": 0.0,
-      "Ranged Spell": 0.0,
-      "Spell CC": 0
-    },
     "size": 225,
-    "spells": {},
-    "multiAttack": {},
+    "spells": {
+      "Call Lightning": 0
+    },
     "spellAttackMod": 0,
+    "multiAttack": {},
     "legRes": 0,
     "legActions": [
       0,
       []
     ],
-    "alive": 1
+    "image": "A:/Code/Python/Git Repo/DMSim/App/Monsters/dem.webp"
   }
 }
