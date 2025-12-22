@@ -122,6 +122,11 @@ class EncounterBuilderTab(QWidget):
         # Encounter Management
         enc_group = QGroupBox("Encounters")
         enc_layout = QVBoxLayout()
+        # Search bar
+        self.enc_search = QLineEdit()
+        self.enc_search.setPlaceholderText("Search encounters...")
+        self.enc_search.textChanged.connect(self.filter_encounters)
+        enc_layout.addWidget(self.enc_search)
         self.enc_list = QListWidget()
         self.update_enc_list()
         enc_layout.addWidget(self.enc_list)
@@ -305,8 +310,14 @@ class EncounterBuilderTab(QWidget):
 
     def update_enc_list(self):
         self.enc_list.clear()
-        for name in sorted(self.enc_store.encounters.keys()):
+        filter_text = self.enc_search.text()
+        all_names = sorted(self.enc_store.encounters.keys())
+        filtered_names = [name for name in all_names if filter_text.lower() in name.lower()]
+        for name in filtered_names:
             self.enc_list.addItem(name)
+
+    def filter_encounters(self):
+        self.update_enc_list()
 
     def new_encounter(self):
         self.set_current_data({})
@@ -659,8 +670,9 @@ class MainWindow(QMainWindow):
         return False
 
 
-    def startEncounter(self):
-        encounter = self.encounter_builder.buildEncounter()
+    def startEncounter(self, encounter=None):
+        if encounter is None:
+            encounter = self.encounter_builder.buildEncounter()
         if not encounter:
             QMessageBox.warning(self, "Error", "Invalid encounter setup")
             return

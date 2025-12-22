@@ -71,7 +71,7 @@
         "range": 10,
         "attackMod": 17,
         "diceType": [
-          "d4"
+          4
         ],
         "diceCount": [
           3
@@ -84,7 +84,7 @@
         "range": 150,
         "attackMod": 4,
         "diceType": [
-          "d4"
+          4
         ],
         "diceCount": [
           1
@@ -2457,7 +2457,7 @@
         "range": 15,
         "attackMod": 9,
         "diceType": [
-          "d4"
+          4
         ],
         "diceCount": [
           3

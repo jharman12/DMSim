@@ -336,38 +336,42 @@ class Player:
 
 def createPartyList(nameList, path):
     '''
-    Load characters.json from charcter_widget.py and create player classes
-    from out put. 
-    nameList is a list of characters names to be matched to characters.json
+    Load newChars.json and create player classes
+    from output. 
+    nameList is a list of characters names to be matched to newChars.json
     '''
     try:
-        with open(path + "characters.json", "r") as file:
-            characters = json.load(file)
+        with open(path + "newChars.json", "r") as file:
+            data = json.load(file)
+            characters = data.get("characters", {})
     except FileNotFoundError:
-        #print('path filed to load characters')
-        pass
+        print('Failed to load characters')
+        characters = {}
     ##print(characters)
-    print(path+'character.json')
-    print("C:\\Users\\jackh\\Code\\Python\\DmSim2\\actors\\savedObjs\\characters.json")
-    print(characters['Ephraim']['Image'])
     partyList = [Player(name = name, 
-                        lvl = int(characters[name]['Level']),
-                        ac = int(characters[name]['AC']),
-                        health = int(characters[name]['HP']),
-                        modDict= characters[name]['AbilityModifiers'],
-                        turnFactors= characters[name]['TurnFactors'],
-                        weaponList= [WeaponNew(name=characters[name]['Weapons'][x][0],
-                                           attackType=characters[name]['Weapons'][x][1],
-                                           range=int(characters[name]['Weapons'][x][2]),
-                                           attackMod=int(characters[name]['Weapons'][x][3]),
-                                           diceType= characters[name]['Weapons'][x][4],
-                                           diceCount= int(characters[name]['Weapons'][x][5]),
-                                           dmgMod= int(characters[name]['Weapons'][x][6]))
+                        lvl = int(characters[name]['level']),
+                        ac = int(characters[name]['ac']),
+                        health = int(characters[name]['hp']),
+                        modDict= {  # Map abbreviations to full names
+                            'Strength': characters[name]['mods'].get('str', 10),
+                            'Dexterity': characters[name]['mods'].get('dex', 10),
+                            'Constitution': characters[name]['mods'].get('con', 10),
+                            'Intelligence': characters[name]['mods'].get('int', 10),
+                            'Wisdom': characters[name]['mods'].get('wis', 10),
+                            'Charisma': characters[name]['mods'].get('cha', 10)
+                        },
+                        turnFactors= {'Melee': 1.0, 'Ranged': 1.0, 'Ranged Spell': 1.0, 'Spell CC': 1.0},  # Default
+                        weaponList= [WeaponNew(name=weapon['name'],
+                                           attackType=weapon['type'],
+                                           range=int(weapon['range']),
+                                           attackMod=int(weapon['attack_mod']),
+                                           diceType= weapon['dice_type'],
+                                           diceCount= int(weapon['dice_count']),
+                                           dmgMod= int(weapon['damage_mod']))
                                            
-                                           for x in range(len(characters[name]['Weapons']))], 
-                        type = characters[name]['Class'],
-                        Image= characters[name]['Image'])  # need to make this a variable in the json
+                                           for weapon in characters[name]['weapons']], 
+                        type = characters[name]['class'],
+                        Image= characters[name]['image'])
                         
                         for name in nameList if name in list(characters.keys())]
-    print("in create partyList", partyList[0].Image)
     return partyList

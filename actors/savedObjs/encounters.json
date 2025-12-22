@@ -1,0 +1,14 @@
+{
+    "Test Encounter": {
+        "name": "Test Encounter",
+        "party": [
+            "Cobo"
+        ],
+        "npcs": [],
+        "enemies": [
+            "Stone Giant"
+        ],
+        "numHexes": 20,
+        "mapImage": "A:/Code/Python/Git Repo/DMSim/App/Maps/blackguardFight - Copy.jpg"
+    }
+}

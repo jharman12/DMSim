@@ -857,7 +857,12 @@ class MonsterEditor(QWidget):
             w["range"].setValue(int(weap.get("range", 5)))
             w["attack_mod"].setValue(int(weap.get("attackMod", 0)))
             w["dice_count"].setValue(int(weap.get("diceCount", [1])[0]))
-            w["dice_type"].setCurrentText(str(weap.get("diceType", [0])[0]))
+            dice_val = weap.get("diceType", [4])[0]
+            if isinstance(dice_val, int):
+                dice_str = f"d{dice_val}"
+            else:
+                dice_str = str(dice_val)
+            w["dice_type"].setCurrentText(dice_str)
             w["damage_mod"].setValue(int(weap.get("dmgMod", 0)))
 
         # leg action weapons
@@ -907,12 +912,14 @@ class MonsterEditor(QWidget):
         turn_factors = {k: v.value() for k, v in self.tf_inputs.items()}
         weapon_list = []
         for w in self.weapon_widgets:
+            dice_str = w["dice_type"].currentText()
+            dice_int = int(dice_str[1:])
             weapon_list.append({
                 "name": w["name"].text(),
                 "attackType": w["type"].currentText(),
                 "range": w["range"].value(),
                 "attackMod": w["attack_mod"].value(),
-                "diceType": [w["dice_type"].currentText()],
+                "diceType": [dice_int],
                 "diceCount": [w["dice_count"].value()],
                 "dmgMod": w["damage_mod"].value()
             })

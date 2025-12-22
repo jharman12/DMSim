@@ -29,8 +29,14 @@ class Monster:
         self.turnFactors = turnFactors
         self.initTF = self.turnFactors
         self.size = size
-        self.initSpells = spells
-        self.spells = spells
+        self.spells = {}
+        self.initSpells ={}
+        with open(dmSimPath + "\\spells\\spellList.json", "r") as file:
+            spellList = json.load(file)
+        for spell in spells.keys():
+            self.spells[spell] = [spells[spell], spellList[spell]]
+            self.initSpells[spell] = [spells[spell], spellList[spell]]
+        
         self.multiAttack = multiAttack 
         self.cc = [] # if cc'ed will be length 3 and in format ['spellLvl', 'modToRoll', dcToBeat]
         self.initMod = down_round((self.modDict['Dexterity']-10)/2)
@@ -288,7 +294,7 @@ def createMonsterList(nameList, path):
 
     monsterList = [Monster(name = name,
                            ac= monsters[name]['ac'],
-                           health=monsters[name]['health'],
+                           health=monsters[name]['hp'],
                            speed=monsters[name]['speed'],
                            modDict=monsters[name]['modDict'],
                            weaponList= [  
