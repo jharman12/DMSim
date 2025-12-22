@@ -802,7 +802,8 @@ class MonsterEditor(QWidget):
         self.name_input.setText(m.get("name", name))
         self.cr_input.setText(str(m.get("cr", "")))
         self.ac_input.setValue(int(m.get("ac", 0)))
-        self.hp_input.setValue(int(m.get("hp", 0)))
+        hp_value = m.get('hp', m.get('health', 0))
+        self.hp_input.setValue(int(hp_value))
         self.speed_input.setValue(int(m.get("speed", 30)))
         self.size_input.setValue(int(m.get("size", 25)))
 

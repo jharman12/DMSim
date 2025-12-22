@@ -20,6 +20,7 @@ class Monster:
     def __init__(self, name, ac, health, speed, modDict, turnFactors, weaponList, size, spells, spellMod, multiAttack, legRes = 0, legAction = [0, ''], Image = None):
         self.name = name
         self.Image = Image
+        print(Image)
         self.ac = ac
         self.health = health
         self.maxHealth = health
@@ -291,10 +292,10 @@ def createMonsterList(nameList, path):
     except FileNotFoundError:
         print('path failed to load characters')
         pass
-
+    
     monsterList = [Monster(name = name,
                            ac= monsters[name]['ac'],
-                           health=monsters[name]['hp'],
+                           health=monsters[name].get('hp', monsters[name].get('health', 0)),
                            speed=monsters[name]['speed'],
                            modDict=monsters[name]['modDict'],
                            weaponList= [  
@@ -327,7 +328,8 @@ def createMonsterList(nameList, path):
                                     )
                                     for x in monsters[name]['legActions'][1]
                                 ]       
-                                       ]
+                                       ],
+                            Image=monsters[name].get('image', None)
 
 
 

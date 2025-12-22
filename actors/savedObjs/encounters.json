@@ -6,9 +6,10 @@
         ],
         "npcs": [],
         "enemies": [
-            "Stone Giant"
+            "Stone Giant",
+            "Demogorgon"
         ],
         "numHexes": 20,
-        "mapImage": "A:/Code/Python/Git Repo/DMSim/App/Maps/blackguardFight - Copy.jpg"
+        "mapImage": "A:\\Code\\Python\\Git Repo\\DMSim\\App\\Maps\\maze Engine.webp"
     }
 }

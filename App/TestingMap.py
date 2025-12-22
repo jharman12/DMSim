@@ -1064,6 +1064,8 @@ class CustomGraphicsView(QGraphicsView):
                 px = QPixmap(dmSimPath + "\\App\\unknown.jpg")
             elif os.path.exists(dmSimPath + player.Image):
                 px = QPixmap(dmSimPath + player.Image)
+            elif os.path.exists(player.Image):
+                px = QPixmap(player.Image)
             else:
                 px = QPixmap(dmSimPath + "\\App\\unknown.jpg")
 
@@ -1783,6 +1785,8 @@ class MapWidget(QWidget):
                 pixmap = QPixmap(dmSimPath + "\\App\\unknown.jpg")
             elif os.path.exists(dmSimPath + player.Image):
                 pixmap = QPixmap(dmSimPath + player.Image)
+            elif os.path.exists(player.Image):
+                pixmap = QPixmap(player.Image)
             else:
                 print("path doesnt exist, trying unknown")
                 pixmap = QPixmap(dmSimPath + "\\App\\unknown.jpg")
