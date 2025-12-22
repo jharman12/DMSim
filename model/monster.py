@@ -240,10 +240,10 @@ class MonsterDump:
     def __init__(self, obj, path):
         
         try:
-            with open(path + "monsters.json", "r") as file:
+            with open(path + "\\monsters.json", "r") as file:
                 monsters = json.load(file)
         except FileNotFoundError:
-            print('path filed to load characters')
+            print('path failed to load characters')
             pass
         #print(monsters)
         newList = []
@@ -283,7 +283,7 @@ def createMonsterList(nameList, path):
         with open(path + "monsters.json", "r") as file:
             monsters = json.load(file)
     except FileNotFoundError:
-        #print('path filed to load characters')
+        print('path failed to load characters')
         pass
 
     monsterList = [Monster(name = name,

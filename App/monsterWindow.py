@@ -4,7 +4,7 @@ from pathlib import Path
 from PyQt5.QtWidgets import (
     QWidget, QLabel, QLineEdit, QSpinBox, QPushButton,
     QFileDialog, QVBoxLayout, QHBoxLayout, QGroupBox, QListWidget,
-    QMessageBox, QDoubleSpinBox, QTextEdit, QGridLayout, QComboBox, QScrollArea, QMessageBox
+    QMessageBox, QDoubleSpinBox, QTextEdit, QGridLayout, QComboBox, QScrollArea, QDialog
 )
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import Qt
@@ -13,6 +13,9 @@ dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-4]
 import sys
 sys.path.insert(1, dmSimPath + '/model/')
 from monster import Monster
+
+sys.path.insert(1, dmSimPath + '/actors/statReader')
+from textReader import buildMonsterFromString
 
 
 class MonsterStore:
@@ -70,6 +73,47 @@ class MonsterStore:
             del self.monsters[name]
             self.save()
 
+    def dump_monster(self, monster_obj):
+        """Convert a Monster object to dict and save it, similar to MonsterDump."""
+        # Convert weaponList to dicts
+        newList = []
+        for weap in monster_obj.weaponList:
+            newList.append(weap.__dict__)
+        
+        # Convert legActionWeapon to dicts
+        legList = []
+        for weap in monster_obj.legActionWeapon:
+            legList.append(weap.__dict__)
+
+        # Temporarily modify the object for serialization
+        original_weaponList = monster_obj.weaponList
+        original_legActionWeapon = monster_obj.legActionWeapon
+        monster_obj.weaponList = newList
+        monster_obj.legActionWeapon = legList
+        
+        # Serialize to dict
+        jsonObj = json.dumps(monster_obj.__dict__)
+        test = json.loads(jsonObj)
+        
+        # Remove unwanted keys
+        keys_to_delete = ["maxLegActions", "initTF", "initSpells", "cc", "initMod", "spellDC", "maxLegRes", "reaction", "optRange"]
+        for key in keys_to_delete:
+            test.pop(key, None)
+        
+        # Restructure legActions
+        test["legActions"] = [test["legActions"], test["legActionWeapon"]]
+        del test["legActionWeapon"]
+        
+        # Get name and remove from dict
+        name = test.pop('name')
+        
+        # Restore original object
+        monster_obj.weaponList = original_weaponList
+        monster_obj.legActionWeapon = original_legActionWeapon
+        
+        # Upsert to store
+        self.upsert(name, test)
+
 
 def set_font(widget, size, weight=QFont.Normal, monospace=False):
     if monospace:
@@ -111,9 +155,12 @@ class MonsterEditor(QWidget):
         refresh_btn.clicked.connect(self.refresh)
         del_btn = QPushButton("Delete")
         del_btn.clicked.connect(self.delete_selected)
+        read_btn = QPushButton("Read Monster from Text")
+        read_btn.clicked.connect(self.read_monster_from_text)
 
         btn_col.addWidget(refresh_btn)
         btn_col.addWidget(del_btn)
+        btn_col.addWidget(read_btn)
         btn_col.addStretch()
 
         db_layout.addWidget(self.list_widget)
@@ -855,3 +902,32 @@ class MonsterEditor(QWidget):
 
         self.store.delete(name)
         self.refresh()
+
+    def read_monster_from_text(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Read Monster from Text")
+        layout = QVBoxLayout()
+        text_edit = QTextEdit()
+        layout.addWidget(text_edit)
+        save_btn = QPushButton("Save")
+        save_btn.clicked.connect(lambda: self.save_monster_text(dialog, text_edit))
+        layout.addWidget(save_btn)
+        dialog.setLayout(layout)
+        dialog.exec_()
+
+    def save_monster_text(self, dialog, text_edit):
+        text = text_edit.toPlainText()
+        if not text.strip():
+            QMessageBox.warning(self, "Error", "Text is empty")
+            return
+        try:
+            print('trying to build monster from string')
+            monster_obj = buildMonsterFromString(text)
+            print('built monster from string', monster_obj.name)
+            self.store.dump_monster(monster_obj.monster)
+            print('dumped monster to store')
+            QMessageBox.information(self, "Success", f"Monster '{monster_obj.monster.name}' saved.")
+            self.refresh()
+        except Exception as e:
+            QMessageBox.warning(self, "Error", f"Failed to parse monster: {str(e)}")
+        dialog.accept()

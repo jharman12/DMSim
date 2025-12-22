@@ -19,42 +19,50 @@ from modelMethods import takeTurn, removeDeadActors, myAction
 if __name__ == "__main__":
 
     test = buildMonsterFromString('''
-Myconid Adult
-Medium Plant, Lawful Neutral
+Stone Giant
+Huge giant , neutral
 
-Armor Class 12 (natural armor)
-Hit Points 22 (4d8 + 4)
-Speed 20 ft.
+Armor Class 17 (natural armor)  
+Hit Points 126 (11d12 + 55)
+Speed 40 ft.
 
 STR
-10 (+0)
+23
+(+6)
 DEX
-10 (+0)
+15
+(+2)
 CON
-12 (+1)
+20
+(+5)
 INT
-10 (+0)
+10
+(0)
 WIS
-13 (+1)
+12
+(+1)
 CHA
-7 (-2)
+9
+(-1)
 
-Senses Darkvision 120 ft., Passive Perception 11
-Languages --
-Challenge 1/2 (100 XP)
-Proficiency Bonus +2
+Saving Throws DEX +5, CON +8, WIS +4
+Skills Athletics +12, Perception +4
+Senses Darkvision 60 ft.
+Languages Giant
+Challenge 7 (2900 XP)
+Proficiency Bonus +3
 
-Traits
-Distress Spores. When the myconid takes damage, all other myconids within 240 feet of it can sense its pain.
-
-Sun Sickness. While in sunlight, the myconid has disadvantage on ability checks, attack rolls, and saving throws. The myconid dies if it spends more than 1 hour in direct sunlight.
+Stone Camouflage. The giant has advantage on Dexterity (Stealth) checks made to hide in rocky terrain.
 
 Actions
-Fist. Melee Weapon Attack: +2 to hit, reach 5 ft., one target. Hit: 5 (2d4) bludgeoning damage plus 5 (2d4) poison damage.
+Multiattack. The giant makes two greatclub attacks.
 
-Pacifying Spores (3/Day). The myconid ejects spores at one creature it can see within 5 feet of it. The target must succeed on a DC 11 Constitution saving throw or be stunned for 1 minute. The target can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.
+Greatclub. Melee Weapon Attack: +9 to hit, reach 15 ft., one target. Hit: 19 (3d8 + 6) bludgeoning damage.
 
-Rapport Spores. A 20-foot radius of spores extends from the myconid. These spores can go around corners and affect only creatures with an Intelligence of 2 or higher that aren’t undead, constructs, or elementals. Affected creatures can communicate telepathically with one another while they are within 30 feet of each other. The effect lasts for 1 hour.
+Rock. Ranged Weapon Attack: +9 to hit, range 60/240 ft., one target. Hit: 28 (4d10 + 6) bludgeoning damage. If the target is a creature, it must succeed on a DC 17 Strength saving throw or be knocked prone.
+
+Reactions
+Rock Catching. If a rock or similar object is hurled at the giant, the giant can, with a successful DC 10 Dexterity saving throw, catch the missile and take no bludgeoning damage from it.
                                   ''')
     print(test)
     MonsterDump(test.monster, path = dmSimPath + '\\actors\\savedObjs\\')
