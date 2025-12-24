@@ -17,7 +17,7 @@ from modelMethods import down_round, weibull, cone, WeaponNew, col_round, bestSp
     rollSave, rollDeathSave
     
 class Monster:
-    def __init__(self, name, ac, health, speed, modDict, turnFactors, weaponList, size, spells, spellMod, multiAttack, legRes = 0, legAction = [0, ''], Image = None):
+    def __init__(self, name, ac, health, speed, modDict, weaponList, size, spells, spellMod, multiAttack, legRes = 0, legAction = [0, ''], Image = None):
         self.name = name
         self.Image = Image
         print(Image)
@@ -27,8 +27,6 @@ class Monster:
         self.speed = speed
         self.modDict = modDict
         self.weaponList = weaponList
-        self.turnFactors = turnFactors
-        self.initTF = self.turnFactors
         self.size = size
         self.spells = {}
         self.initSpells ={}
@@ -170,7 +168,6 @@ class Monster:
         '''
         print("Called ", self.name, " defineSpellSlots")
         self.spells = self.initSpells
-        self.turnFactors = self.initTF
         self.legActions = self.maxLegActions
         self.alive = 1
         #self.initialTotalSlots = sum(self.spellSlots.values())
@@ -308,7 +305,6 @@ def createMonsterList(nameList, path):
                                          dmgMod=x['dmgMod']
                                          )
                                for x in monsters[name]['weaponList']],
-                            turnFactors=  monsters[name]['turnFactors'],
                             size = monsters[name]['size'],
                             spells = monsters[name]['spells'],
                             multiAttack=monsters[name]['multiAttack'],
