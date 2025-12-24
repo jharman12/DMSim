@@ -536,7 +536,7 @@ class MainWindow(QMainWindow):
 
         self.TextScale = TextScale()
         self.text_scale = TextScale.MD
-
+        
         menubar = self.menuBar()
 
         view_menu = menubar.addMenu("View")
@@ -558,7 +558,7 @@ class MainWindow(QMainWindow):
         self.dark_action.triggered.connect(lambda: self.setTheme("dark"))
 
 
-        self.setWindowTitle("DnD Encounter Manager")
+        self.setWindowTitle("GM Sim")
         self.resize(1400, 900)
 
         # ---- Central widget ----
@@ -687,6 +687,7 @@ class MainWindow(QMainWindow):
 app = QApplication([])
 
 window = MainWindow()
+window.setWindowIcon(QtGui.QIcon( dmSimPath + '\\DM_Sim_Icon.png'))
 window.show()
 
 app.exec()

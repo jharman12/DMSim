@@ -21,10 +21,14 @@ class CharacterStore:
                 data = json.load(f)
 
             # 🔥 FIX HERE
-            self.characters = data.get("characters", {})
+            self.characters = data#.get("characters", {})
+            print(data)
         else:
             self.characters = {}
 
+    def upsert(self, name, data):
+        self.characters[name] = data
+        self.save()
 
     def save(self):
         self.file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -132,6 +136,7 @@ class CharacterEditor(QWidget):
         self.character_selector.blockSignals(True)
         self.character_selector.clear()
         self.character_selector.addItem("New Character")
+        print(self.store.get_names())
         self.character_selector.addItems(self.store.get_names())
         self.character_selector.blockSignals(False)
 
@@ -256,14 +261,24 @@ class CharacterEditor(QWidget):
         self.character_selector = QComboBox()
         self.character_selector.currentTextChanged.connect(self.loadCharacter)
 
-        load_btn = QPushButton("Load JSON")
-        load_btn.clicked.connect(self.loadCharacterDatabase)
-
         layout.addWidget(self.character_selector)
-        layout.addWidget(load_btn)
 
         box.setLayout(layout)
         return box
+
+    def clearForm(self):
+        self.name_input.clear()
+        self.class_input.clear()
+        self.level_input.setValue(1)
+        self.ac_input.setValue(10)
+        self.hp_input.setValue(1)
+        self.image_label.setText("No Image")
+        self.image_path = None
+
+        for spin in self.mods.values():
+            spin.setValue(0)
+
+        self.clearWeapons()
 
     def loadCharacter(self, name):
         if name == "New Character":
@@ -276,11 +291,19 @@ class CharacterEditor(QWidget):
             return
 
         self.name_input.setText(name)
+        self.class_input.setText(data["class"])
         self.level_input.setValue(data["level"])
         self.ac_input.setValue(data["ac"])
         self.hp_input.setValue(data["hp"])
 
         self.loadModifiers(data["mods"])
+        if "image" in data:
+            self.image_path = data["image"]
+            px = QPixmap(self.image_path).scaled(100, 100, Qt.KeepAspectRatio)
+            self.image_label.setPixmap(px)
+        else:
+            self.image_label.setText("No Image")
+        self.clearWeapons()
         self.addWeaponFromData(data["weapons"])
 
 
@@ -518,22 +541,24 @@ class CharacterEditor(QWidget):
                 "damage_mod": w["damage_mod"].value()
             })
 
-        self.character_db[name] = data
+        self.store.upsert(name, data)
+        self.refreshCharacters()
+        #self.character_db[name] = data
 
-        if not self.current_db_path:
-            self.current_db_path, _ = QFileDialog.getSaveFileName(
-                self, "Save Character Database", "", "JSON Files (*.json)"
-            )
-            if not self.current_db_path:
-                return
-
-        with open(self.current_db_path, "w") as f:
-            json.dump({"characters": self.character_db}, f, indent=4)
-
-        if self.character_selector.findText(name) == -1:
-            self.character_selector.addItem(name)
-
-        self.character_selector.setCurrentText(name)
+        #if not self.current_db_path:
+        #    self.current_db_path, _ = QFileDialog.getSaveFileName(
+        #        self, "Save Character Database", "", "JSON Files (*.json)"
+        #    )
+        #    if not self.current_db_path:
+        #        return
+        #
+        #with open(self.current_db_path, "w") as f:
+        #    json.dump({"characters": self.character_db}, f, indent=4)
+        #
+        #if self.character_selector.findText(name) == -1:
+        #    self.character_selector.addItem(name)
+        #
+        #self.character_selector.setCurrentText(name)
 
 
 

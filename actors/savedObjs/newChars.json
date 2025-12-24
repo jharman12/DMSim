@@ -1,31 +1,146 @@
 {
-    "characters": {
-        "Cobo": {
-            "name": "Cobo",
-            "class": "Sorcerer",
-            "level": 5,
-            "ac": 18,
-            "hp": 36,
-            "image": null,
-            "mods": {
-                "str": 13,
-                "dex": 13,
-                "con": 14,
-                "int": 19,
-                "wis": 11,
-                "cha": 20
-            },
-            "weapons": [
-                {
-                    "name": "Hours Edge",
-                    "type": "Melee",
-                    "range": 5,
-                    "attack_mod": 9,
-                    "dice_count": 1,
-                    "dice_type": "d10",
-                    "damage_mod": 9
-                }
-            ]
-        }
-    }
+  "Cobo": {
+    "name": "Cobo",
+    "class": "Sorcerer",
+    "level": 5,
+    "ac": 18,
+    "hp": 36,
+    "image": null,
+    "mods": {
+      "str": 13,
+      "dex": 13,
+      "con": 14,
+      "int": 19,
+      "wis": 11,
+      "cha": 20
+    },
+    "weapons": [
+      {
+        "name": "Hours Edge",
+        "type": "Melee",
+        "range": 5,
+        "attack_mod": 9,
+        "dice_count": 1,
+        "dice_type": "d10",
+        "damage_mod": 9
+      }
+    ]
+  },
+  "Adrel": {
+    "name": "Adrel",
+    "class": "Rogue",
+    "level": 5,
+    "ac": 15,
+    "hp": 51,
+    "image": null,
+    "mods": {
+      "str": 11,
+      "dex": 18,
+      "con": 14,
+      "int": 12,
+      "wis": 11,
+      "cha": 16
+    },
+    "weapons": [
+      {
+        "name": "Psychic Blades",
+        "type": "Melee",
+        "range": 60,
+        "attack_mod": 7,
+        "dice_count": 1,
+        "dice_type": "d6",
+        "damage_mod": 4
+      }
+    ]
+  },
+  "Aldric": {
+    "name": "Aldric",
+    "class": "Sorcerer",
+    "level": 5,
+    "ac": 20,
+    "hp": 38,
+    "image": null,
+    "mods": {
+      "str": 16,
+      "dex": 8,
+      "con": 14,
+      "int": 14,
+      "wis": 14,
+      "cha": 20
+    },
+    "weapons": [
+      {
+        "name": "Rork's Sword",
+        "type": "Melee",
+        "range": 5,
+        "attack_mod": 6,
+        "dice_count": 1,
+        "dice_type": "d8",
+        "damage_mod": 3
+      }
+    ]
+  },
+  "Galleus": {
+    "name": "Galleus",
+    "class": "Fighter",
+    "level": 5,
+    "ac": 20,
+    "hp": 71,
+    "image": null,
+    "mods": {
+      "str": 11,
+      "dex": 20,
+      "con": 18,
+      "int": 6,
+      "wis": 10,
+      "cha": 10
+    },
+    "weapons": [
+      {
+        "name": "Shortsword",
+        "type": "Melee",
+        "range": 5,
+        "attack_mod": 8,
+        "dice_count": 1,
+        "dice_type": "d6",
+        "damage_mod": 5
+      },
+      {
+        "name": "Dart",
+        "type": "Melee",
+        "range": 20,
+        "attack_mod": 8,
+        "dice_count": 1,
+        "dice_type": "d4",
+        "damage_mod": 5
+      }
+    ]
+  },
+  "VV": {
+    "name": "VV",
+    "class": "Wizard",
+    "level": 5,
+    "ac": 10,
+    "hp": 30,
+    "image": null,
+    "mods": {
+      "str": 10,
+      "dex": 11,
+      "con": 12,
+      "int": 18,
+      "wis": 16,
+      "cha": 10
+    },
+    "weapons": [
+      {
+        "name": "Quarterstaff",
+        "type": "Melee",
+        "range": 5,
+        "attack_mod": 3,
+        "dice_count": 1,
+        "dice_type": "d8",
+        "damage_mod": 0
+      }
+    ]
+  }
 }

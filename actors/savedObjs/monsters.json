@@ -1,7 +1,7 @@
 {
   "Acolyte": {
     "name": "Acolyte",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "any race",
     "alignment": "any alignment",
@@ -178,7 +178,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Air Elemental": {
     "name": "Air Elemental",
@@ -223,7 +224,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Ancient Silver Dragon": {
     "name": "Ancient Silver Dragon",
@@ -294,7 +296,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Androsphinx": {
     "name": "Androsphinx",
@@ -521,7 +524,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Ape": {
     "name": "Ape",
@@ -579,11 +583,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Archmage": {
     "name": "Archmage",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "any race",
     "alignment": "any alignment",
@@ -893,7 +898,7 @@
   },
   "Assassin": {
     "name": "Assassin",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "any race",
     "alignment": "any non-\u00ad\u2010good alignment",
@@ -996,7 +1001,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Awakened Tree": {
     "name": "Awakened Tree",
@@ -1041,7 +1047,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Axe Beak": {
     "name": "Axe Beak",
@@ -1086,7 +1093,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Baboon": {
     "name": "Baboon",
@@ -1131,7 +1139,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Badger": {
     "name": "Badger",
@@ -1176,11 +1185,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Bandit": {
     "name": "Bandit",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "any race",
     "alignment": "any non-\u00ad\u2010lawful",
@@ -1242,7 +1252,7 @@
   },
   "Bandit Captain": {
     "name": "Bandit Captain",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "any race",
     "alignment": "any non-\u00ad\u2010lawful",
@@ -1345,11 +1355,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Berserker": {
     "name": "Berserker",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "any race",
     "alignment": "any chaotic alignment",
@@ -1452,7 +1463,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Black Pudding": {
     "name": "Black Pudding",
@@ -1497,7 +1509,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Black ram": {
     "name": "Black ram",
@@ -1515,7 +1528,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Blinded": {
     "name": "Blinded",
@@ -1533,7 +1547,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Blink Dog": {
     "name": "Blink Dog",
@@ -1578,7 +1593,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Blood Hawk": {
     "name": "Blood Hawk",
@@ -1623,7 +1639,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Boar": {
     "name": "Boar",
@@ -1668,7 +1685,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Brown Bear": {
     "name": "Brown Bear",
@@ -1726,7 +1744,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Camel": {
     "name": "Camel",
@@ -1771,7 +1790,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Cat": {
     "name": "Cat",
@@ -1816,7 +1836,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Charmed": {
     "name": "Charmed",
@@ -1834,7 +1855,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Clay Golem": {
     "name": "Clay Golem",
@@ -1879,7 +1901,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Cloud Giant": {
     "name": "Cloud Giant",
@@ -1998,11 +2021,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Commoner": {
     "name": "Commoner",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "any race",
     "alignment": "any alignment",
@@ -2105,7 +2129,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Crab": {
     "name": "Crab",
@@ -2150,7 +2175,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Crocodile": {
     "name": "Crocodile",
@@ -2195,11 +2221,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Cultist": {
     "name": "Cultist",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "any race",
     "alignment": "any non-\u00ad\u2010good alignment",
@@ -2248,7 +2275,7 @@
   },
   "Cult Fanatic": {
     "name": "Cult Fanatic",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "any race",
     "alignment": "any non-\u00ad\u2010good alignment",
@@ -2419,7 +2446,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Deer": {
     "name": "Deer",
@@ -2464,7 +2492,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Dire Wolf": {
     "name": "Dire Wolf",
@@ -2509,7 +2538,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Djinni": {
     "name": "Djinni",
@@ -2595,7 +2625,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Draft Horse": {
     "name": "Draft Horse",
@@ -2640,7 +2671,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Dragon Turtle": {
     "name": "Dragon Turtle",
@@ -2711,7 +2743,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Drider": {
     "name": "Drider",
@@ -2803,11 +2836,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Druid": {
     "name": "Druid",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "any race",
     "alignment": "any alignment",
@@ -2999,11 +3033,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Duergar": {
     "name": "Duergar",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "dwarf",
     "alignment": "lawful evil",
@@ -3090,7 +3125,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Eagle": {
     "name": "Eagle",
@@ -3135,7 +3171,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Earth Elemental": {
     "name": "Earth Elemental",
@@ -3180,7 +3217,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Efreeti": {
     "name": "Efreeti",
@@ -3259,7 +3297,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Elephant": {
     "name": "Elephant",
@@ -3317,7 +3356,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Elk": {
     "name": "Elk",
@@ -3375,7 +3415,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Ettercap": {
     "name": "Ettercap",
@@ -3420,7 +3461,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Ettin": {
     "name": "Ettin",
@@ -3478,7 +3520,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Falcon": {
     "name": "Falcon",
@@ -3496,7 +3539,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Fire Elemental": {
     "name": "Fire Elemental",
@@ -3541,7 +3585,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Fire Giant": {
     "name": "Fire Giant",
@@ -3599,7 +3644,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Flame": {
     "name": "Flame",
@@ -3617,7 +3663,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Flesh Golem": {
     "name": "Flesh Golem",
@@ -3662,7 +3709,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Flying Snake": {
     "name": "Flying Snake",
@@ -3707,7 +3755,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Frightened": {
     "name": "Frightened",
@@ -3725,7 +3774,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Frog": {
     "name": "Frog",
@@ -3755,7 +3805,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Frost Giant": {
     "name": "Frost Giant",
@@ -3813,7 +3864,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Gargoyle": {
     "name": "Gargoyle",
@@ -3871,7 +3923,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Gelatinous Cube": {
     "name": "Gelatinous Cube",
@@ -3901,7 +3954,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Ghast": {
     "name": "Ghast",
@@ -3959,7 +4013,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Ghost": {
     "name": "Ghost",
@@ -4004,7 +4059,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Ghoul": {
     "name": "Ghoul",
@@ -4062,7 +4118,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Ape": {
     "name": "Giant Ape",
@@ -4120,7 +4177,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Badger": {
     "name": "Giant Badger",
@@ -4178,7 +4236,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Bat": {
     "name": "Giant Bat",
@@ -4223,7 +4282,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Boar": {
     "name": "Giant Boar",
@@ -4268,7 +4328,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Centipede": {
     "name": "Giant Centipede",
@@ -4313,7 +4374,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Constrictor Snake": {
     "name": "Giant Constrictor Snake",
@@ -4371,7 +4433,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Crab": {
     "name": "Giant Crab",
@@ -4416,7 +4479,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Crocodile": {
     "name": "Giant Crocodile",
@@ -4474,7 +4538,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Eagle": {
     "name": "Giant Eagle",
@@ -4532,7 +4597,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Elk": {
     "name": "Giant Elk",
@@ -4590,7 +4656,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Fire Beetle": {
     "name": "Giant Fire Beetle",
@@ -4635,7 +4702,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Frog": {
     "name": "Giant Frog",
@@ -4680,7 +4748,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Goat": {
     "name": "Giant Goat",
@@ -4710,7 +4779,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Hyena": {
     "name": "Giant Hyena",
@@ -4755,7 +4825,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Lizard": {
     "name": "Giant Lizard",
@@ -4800,7 +4871,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Octopus": {
     "name": "Giant Octopus",
@@ -4845,7 +4917,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Owl": {
     "name": "Giant Owl",
@@ -4890,7 +4963,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Poisonous Snake": {
     "name": "Giant Poisonous Snake",
@@ -4935,7 +5009,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Rat": {
     "name": "Giant Rat",
@@ -4980,7 +5055,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Scorpion": {
     "name": "Giant Scorpion",
@@ -5038,7 +5114,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Sea Horse": {
     "name": "Giant Sea Horse",
@@ -5083,7 +5160,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Shark": {
     "name": "Giant Shark",
@@ -5128,7 +5206,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Spider": {
     "name": "Giant Spider",
@@ -5186,7 +5265,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Toad": {
     "name": "Giant Toad",
@@ -5231,7 +5311,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Vulture": {
     "name": "Giant Vulture",
@@ -5289,7 +5370,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Wasp": {
     "name": "Giant Wasp",
@@ -5334,7 +5416,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Weasel": {
     "name": "Giant Weasel",
@@ -5379,7 +5462,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Giant Wolf Spider": {
     "name": "Giant Wolf Spider",
@@ -5424,7 +5508,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Gibbering Mouther": {
     "name": "Gibbering Mouther",
@@ -5453,11 +5538,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Gladiator": {
     "name": "Gladiator",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "any race",
     "alignment": "any alignment",
@@ -5519,7 +5605,7 @@
   },
   "Gnoll": {
     "name": "Gnoll",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "gnoll",
     "alignment": "chaotic evil",
@@ -5646,11 +5732,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Goblin": {
     "name": "Goblin",
-    "size": "Small",
+    "size": 25,
     "type": "humanoid",
     "subtype": "goblinoid",
     "alignment": "neutral evil",
@@ -5737,7 +5824,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Grappled": {
     "name": "Grappled",
@@ -5755,7 +5843,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Gray Ooze": {
     "name": "Gray Ooze",
@@ -5800,7 +5889,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Green Hag": {
     "name": "Green Hag",
@@ -5886,7 +5976,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Grick": {
     "name": "Grick",
@@ -5944,7 +6035,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Griffon": {
     "name": "Griffon",
@@ -6002,11 +6094,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Grimlock": {
     "name": "Grimlock",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "grimlock",
     "alignment": "neutral evil",
@@ -6039,7 +6132,7 @@
   },
   "Guard": {
     "name": "Guard",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "any race",
     "alignment": "any alignment",
@@ -6344,7 +6437,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Gynosphinx": {
     "name": "Gynosphinx",
@@ -6610,7 +6704,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Harpy": {
     "name": "Harpy",
@@ -6668,7 +6763,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Hawk": {
     "name": "Hawk",
@@ -6713,7 +6809,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Hell Hound": {
     "name": "Hell Hound",
@@ -6758,7 +6855,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Hill Giant": {
     "name": "Hill Giant",
@@ -6816,7 +6914,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Hippogriff": {
     "name": "Hippogriff",
@@ -6874,11 +6973,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Hobgoblin": {
     "name": "Hobgoblin",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "goblinoid",
     "alignment": "lawful evil",
@@ -6981,7 +7081,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Hunter Shark": {
     "name": "Hunter Shark",
@@ -7026,7 +7127,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Hydra": {
     "name": "Hydra",
@@ -7071,7 +7173,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Hyena": {
     "name": "Hyena",
@@ -7116,7 +7219,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Ice Mephit": {
     "name": "Ice Mephit",
@@ -7145,7 +7249,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Invisible Stalker": {
     "name": "Invisible Stalker",
@@ -7190,7 +7295,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Iron Golem": {
     "name": "Iron Golem",
@@ -7248,7 +7354,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Jackal": {
     "name": "Jackal",
@@ -7293,7 +7400,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Killer Whale": {
     "name": "Killer Whale",
@@ -7338,11 +7446,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Knight": {
     "name": "Knight",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "any race",
     "alignment": "any alignment",
@@ -7404,7 +7513,7 @@
   },
   "Kobold": {
     "name": "Kobold",
-    "size": "Small",
+    "size": 25,
     "type": "humanoid",
     "subtype": "kobold",
     "alignment": "lawful evil",
@@ -7466,7 +7575,7 @@
   },
   "Kraken": {
     "name": "Kraken",
-    "size": "Gargantuan",
+    "size": 25,
     "type": "monstrosity",
     "subtype": "titan",
     "alignment": "chaotic evil",
@@ -7616,7 +7725,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Lich": {
     "name": "Lich",
@@ -7885,7 +7995,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Lion": {
     "name": "Lion",
@@ -7943,7 +8054,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Lizard": {
     "name": "Lizard",
@@ -7988,11 +8100,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Lizardfolk": {
     "name": "Lizardfolk",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "lizardfolk",
     "alignment": "neutral",
@@ -8094,11 +8207,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Mage": {
     "name": "Mage",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "any race",
     "alignment": "any alignment",
@@ -8354,7 +8468,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Magmin": {
     "name": "Magmin",
@@ -8399,7 +8514,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Mammoth": {
     "name": "Mammoth",
@@ -8457,7 +8573,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Manticore": {
     "name": "Manticore",
@@ -8528,7 +8645,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Mastiff": {
     "name": "Mastiff",
@@ -8573,7 +8691,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Medusa": {
     "name": "Medusa",
@@ -8603,11 +8722,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Merfolk": {
     "name": "Merfolk",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "merfolk",
     "alignment": "neutral",
@@ -8723,11 +8843,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Mimic": {
     "name": "Mimic",
-    "size": "25",
+    "size": 25,
     "type": "monstrosity",
     "subtype": "shapechanger",
     "alignment": "neutral",
@@ -8814,7 +8935,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Minotaur Skeleton": {
     "name": "Minotaur Skeleton",
@@ -8872,7 +8994,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Mule": {
     "name": "Mule",
@@ -8902,7 +9025,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Mummy": {
     "name": "Mummy",
@@ -8947,7 +9071,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Mummy Lord": {
     "name": "Mummy Lord",
@@ -9193,7 +9318,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Nature Summer oak tree": {
     "name": "Nature Summer oak tree",
@@ -9211,7 +9337,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Nightmare": {
     "name": "Nightmare",
@@ -9256,7 +9383,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Night Hag": {
     "name": "Night Hag",
@@ -9285,11 +9413,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Noble": {
     "name": "Noble",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "any race",
     "alignment": "any alignment",
@@ -9379,7 +9508,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Octopus": {
     "name": "Octopus",
@@ -9424,7 +9554,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Ogre": {
     "name": "Ogre",
@@ -9482,7 +9613,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Ogre Zombie": {
     "name": "Ogre Zombie",
@@ -9511,7 +9643,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Oni": {
     "name": "Oni",
@@ -9610,11 +9743,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Orc": {
     "name": "Orc",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "orc",
     "alignment": "chaotic evil",
@@ -9730,7 +9864,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Owl": {
     "name": "Owl",
@@ -9775,7 +9910,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Owlbear": {
     "name": "Owlbear",
@@ -9833,7 +9969,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Panther": {
     "name": "Panther",
@@ -9891,7 +10028,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Pegasus": {
     "name": "Pegasus",
@@ -9936,7 +10074,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Phase Spider": {
     "name": "Phase Spider",
@@ -9981,7 +10120,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Poisonous Snake": {
     "name": "Poisonous Snake",
@@ -10026,7 +10166,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Polar Bear": {
     "name": "Polar Bear",
@@ -10084,7 +10225,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Pony": {
     "name": "Pony",
@@ -10129,11 +10271,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Priest": {
     "name": "Priest",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "any race",
     "alignment": "any alignment",
@@ -10337,7 +10480,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Pseudodragon": {
     "name": "Pseudodragon",
@@ -10395,7 +10539,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Purple Worm": {
     "name": "Purple Worm",
@@ -10453,7 +10598,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Quipper": {
     "name": "Quipper",
@@ -10498,7 +10644,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Rakshasa": {
     "name": "Rakshasa",
@@ -10584,7 +10731,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Rat": {
     "name": "Rat",
@@ -10629,7 +10777,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Raven": {
     "name": "Raven",
@@ -10674,7 +10823,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Reef Shark": {
     "name": "Reef Shark",
@@ -10719,7 +10869,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Remorhaz": {
     "name": "Remorhaz",
@@ -10764,7 +10915,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Rhinoceros": {
     "name": "Rhinoceros",
@@ -10809,7 +10961,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Riding Horse": {
     "name": "Riding Horse",
@@ -10880,7 +11033,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Roc": {
     "name": "Roc",
@@ -10938,7 +11092,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Roper": {
     "name": "Roper",
@@ -10996,7 +11151,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Rust Monster": {
     "name": "Rust Monster",
@@ -11041,11 +11197,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Sahuagin": {
     "name": "Sahuagin",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "sahuagin",
     "alignment": "lawful evil",
@@ -11174,7 +11331,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Satyr": {
     "name": "Satyr",
@@ -11245,7 +11403,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Scorpion": {
     "name": "Scorpion",
@@ -11290,11 +11449,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Scout": {
     "name": "Scout",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "any race",
     "alignment": "any alignment",
@@ -11382,7 +11542,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Sea Horse": {
     "name": "Sea Horse",
@@ -11412,7 +11573,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Shadow": {
     "name": "Shadow",
@@ -11457,7 +11619,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Shambling Mound": {
     "name": "Shambling Mound",
@@ -11502,7 +11665,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Shield Guardian": {
     "name": "Shield Guardian",
@@ -11547,7 +11711,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Shrieker": {
     "name": "Shrieker",
@@ -11577,7 +11742,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Silver Dragon Wyrmling": {
     "name": "Silver Dragon Wyrmling",
@@ -11622,7 +11788,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Skeleton": {
     "name": "Skeleton",
@@ -11680,7 +11847,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Specter": {
     "name": "Specter",
@@ -11725,7 +11893,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Spider": {
     "name": "Spider",
@@ -11770,7 +11939,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Spirit Naga": {
     "name": "Spirit Naga",
@@ -12016,7 +12186,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Sprite": {
     "name": "Sprite",
@@ -12074,11 +12245,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Spy": {
     "name": "Spy",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "any race",
     "alignment": "any alignment",
@@ -12165,7 +12337,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Stirge": {
     "name": "Stirge",
@@ -12223,7 +12396,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Stone Giant": {
     "name": "Stone Giant",
@@ -12281,7 +12455,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Stone Golem": {
     "name": "Stone Golem",
@@ -12326,7 +12501,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Storm Giant": {
     "name": "Storm Giant",
@@ -12465,7 +12641,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Stunned": {
     "name": "Stunned",
@@ -12483,7 +12660,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Swarm of Bats": {
     "name": "Swarm of Bats",
@@ -12528,7 +12706,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Swarm of Insects": {
     "name": "Swarm of Insects",
@@ -12573,7 +12752,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Swarm of Poisonous Snakes": {
     "name": "Swarm of Poisonous Snakes",
@@ -12618,7 +12798,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Swarm of Quippers": {
     "name": "Swarm of Quippers",
@@ -12663,7 +12844,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Swarm of Rats": {
     "name": "Swarm of Rats",
@@ -12708,7 +12890,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Swarm of Ravens": {
     "name": "Swarm of Ravens",
@@ -12753,11 +12936,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Tarrasque": {
     "name": "Tarrasque",
-    "size": "Gargantuan",
+    "size": 25,
     "type": "monstrosity",
     "subtype": "titan",
     "alignment": "unaligned",
@@ -12845,7 +13029,7 @@
   },
   "Thug": {
     "name": "Thug",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "any race",
     "alignment": "any non-\u00ad\u2010good alignment",
@@ -12961,7 +13145,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Treant": {
     "name": "Treant",
@@ -13019,11 +13204,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Tribal Warrior": {
     "name": "Tribal Warrior",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "any race",
     "alignment": "any alignment",
@@ -13126,7 +13312,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Unicorn": {
     "name": "Unicorn",
@@ -13225,11 +13412,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Vampire": {
     "name": "Vampire",
-    "size": "25",
+    "size": 25,
     "type": "undead",
     "subtype": "shapechanger",
     "alignment": "lawful evil",
@@ -13318,11 +13506,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Veteran": {
     "name": "Veteran",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "any race",
     "alignment": "any alignment",
@@ -13438,7 +13627,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Vulture": {
     "name": "Vulture",
@@ -13483,7 +13673,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Warhorse": {
     "name": "Warhorse",
@@ -13528,7 +13719,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Warhorse Skeleton": {
     "name": "Warhorse Skeleton",
@@ -13573,7 +13765,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "War Hammer": {
     "name": "War Hammer",
@@ -13591,7 +13784,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Water Elemental": {
     "name": "Water Elemental",
@@ -13636,7 +13830,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Weasel": {
     "name": "Weasel",
@@ -13681,11 +13876,12 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Werebear": {
     "name": "Werebear",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "human, shapechanger",
     "alignment": "neutral",
@@ -13734,7 +13930,7 @@
   },
   "Wereboar": {
     "name": "Wereboar",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "human, shapechanger",
     "alignment": "neutral evil",
@@ -13783,7 +13979,7 @@
   },
   "Wererat": {
     "name": "Wererat",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "human, shapechanger",
     "alignment": "lawful evil",
@@ -13858,7 +14054,7 @@
   },
   "Weretiger": {
     "name": "Weretiger",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "human, shapechanger",
     "alignment": "neutral",
@@ -13920,7 +14116,7 @@
   },
   "Werewolf": {
     "name": "Werewolf",
-    "size": "25",
+    "size": 25,
     "type": "humanoid",
     "subtype": "human, shapechanger",
     "alignment": "chaotic",
@@ -14023,7 +14219,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Winged woman": {
     "name": "Winged woman",
@@ -14041,7 +14238,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Winter Wolf": {
     "name": "Winter Wolf",
@@ -14086,7 +14284,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Wolf": {
     "name": "Wolf",
@@ -14131,7 +14330,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Worg": {
     "name": "Worg",
@@ -14176,7 +14376,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Wraith": {
     "name": "Wraith",
@@ -14221,7 +14422,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Wyvern": {
     "name": "Wyvern",
@@ -14292,7 +14494,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Xorn": {
     "name": "Xorn",
@@ -14350,7 +14553,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Young Silver Dragon": {
     "name": "Young Silver Dragon",
@@ -14408,7 +14612,8 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   },
   "Zombie": {
     "name": "Zombie",
@@ -14437,6 +14642,7 @@
       0,
       []
     ],
-    "image": null
+    "image": null,
+    "size": 25
   }
 }

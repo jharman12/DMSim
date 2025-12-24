@@ -1,1 +1,22 @@
-{}
+{
+    "Test": {
+        "name": "Test",
+        "party": [
+            "Adrel",
+            "Aldric",
+            "Cobo",
+            "Galleus",
+            "VV"
+        ],
+        "npcs": [],
+        "enemies": [
+            "Dryad",
+            "Cultist",
+            "Deer",
+            "Draft Horse",
+            "Dire Wolf"
+        ],
+        "numHexes": 20,
+        "mapImage": "A:\\Code\\Python\\Git Repo\\DMSim\\App\\Maps\\maze Engine.webp"
+    }
+}

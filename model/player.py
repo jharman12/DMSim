@@ -343,11 +343,11 @@ def createPartyList(nameList, path):
     try:
         with open(path + "newChars.json", "r") as file:
             data = json.load(file)
-            characters = data.get("characters", {})
+            characters = data#.get("characters", {})
     except FileNotFoundError:
         print('Failed to load characters')
         characters = {}
-    ##print(characters)
+    
     partyList = [Player(name = name, 
                         lvl = int(characters[name]['level']),
                         ac = int(characters[name]['ac']),
