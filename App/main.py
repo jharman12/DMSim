@@ -19,6 +19,13 @@ from player import createPartyList
 from monster import createMonsterList
 from interactiveEncounter import interactiveEncounter
 
+
+'''
+Need to allow encounters to have more than one enemy of the same name
+Add CR difficulty to encounters
+fix model to run to grade combat through model interactions
+add spell creation window
+'''
 class EncounterStore:
     def __init__(self, file_path=None):
         if file_path is None:
