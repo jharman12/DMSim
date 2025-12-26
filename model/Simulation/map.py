@@ -87,9 +87,10 @@ class Map:
         if mover == target:
             #self.printCurrMap()
             return
+        print(mover, target)
         moverLoc = [i for i in self.arrayCenters if self.arrayCenters[i] == mover][0]
         
-        Arabella = [i for i in self.arrayCenters if self.arrayCenters[i] ==target][0]
+        Arabella = target
         #print(moverLoc)
         #print(Arabella)
         moverIndex = list(self.arrayCenters).index(moverLoc)

@@ -21,6 +21,15 @@ def singleton(cls):
 
     return get_instance
 
+def safe_log(message, map_obj=None):
+    """
+    Safely log a message if combatLog exists on the map object.
+    Works for both interactive encounters (with GUI log) and simulated encounters (no log).
+    """
+    if map_obj and hasattr(map_obj, 'combatLog') and callable(map_obj.combatLog):
+        map_obj.combatLog(message)
+    # For simulated encounters, silently skip logging
+
 
 def removeDeadActors(map, sortedInitList):
     totalList = map.party + map.enemy
@@ -44,8 +53,7 @@ def takeTurn(actor, m, interactive = False, gViewer = None):
     
     loops through every weapon and spell and decides best movement/castcoord to do the most damage
     '''
-    global map, log
-    log = m.combatLog
+    global map
     print(gViewer)
     map = m
     player = 1
@@ -60,7 +68,7 @@ def takeTurn(actor, m, interactive = False, gViewer = None):
             # skip your turn if youre still in death saves or succeeded but still unconscious
             if 'deathSaves' in actor.status or 'unconscious' in actor.status: 
                 print(actor.name, 'turn is skipped, in deathSaves or unconscious', actor.status)
-                log('\t' + actor.name + ' turn is skipped, in deathSaves or unconscious ' + str(actor.status))
+                safe_log('\t' + actor.name + ' turn is skipped, in deathSaves or unconscious ' + str(actor.status), map)
                 return
             # if you get passed the above check, you should have rolled a nat 20
         if 'unconscious' in actor.status: # skip turn
@@ -618,7 +626,7 @@ def doAction(actor, map, turnChoice):
     
     # need closestGuy, closestCoord, minDIst
 
-    map.combatLog('\tAction: ' + turnChoice.name)
+    safe_log('\tAction: ' + turnChoice.name, map)
 
     if turnChoice.type == 'dash':
         map.dashActor(actor, turnChoice.moveCoord)
@@ -629,9 +637,9 @@ def doAction(actor, map, turnChoice):
     if turnChoice.type == 'Wdmg':
         weaponChoice = [x for x in actor.weaponList if x.name == turnChoice.name][0]
         if map.arrayCenters[ turnChoice.moveCoord] != '' and map.arrayCenters[ turnChoice.moveCoord] != actor:
-        
-            newCoord = map.moveToNearest(actor,  turnChoice.moveCoord)
-            #map.moveActor(actor, newCoord)
+            actorCoord = [x for x in map.arrayCenters.keys() if map.arrayCenters[x] == actor][0]
+            newCoord = map.moveToNearest(actor,  turnChoice.moveCoord) # coordWithinReach(actorCoord, turnChoice.moveCoord, weaponChoice.range, map)#
+            map.moveActor(actor, newCoord)
         elif map.arrayCenters[ turnChoice.moveCoord] != actor:
             
             map.moveActor(actor,  turnChoice.moveCoord)
@@ -686,7 +694,7 @@ def healSpellTurn(actor, turnChoice, map):
 
 def takeHealing(actor, people, dmg, map):
     print(actor.name, 'is healing', people.name, 'for',dmg)
-    log('\t' + actor.name +  ' is healing ' + people.name + ' for ' + str(dmg))
+    safe_log('\t' + actor.name +  ' is healing ' + people.name + ' for ' + str(dmg), map)
     player = 1
     if str(type(people)) == "<class 'monster.Monster'>":
         print('I am a monster')
@@ -773,7 +781,7 @@ def weaponAttack(actor, target, weap, map):
         
         if targDistance > weap.range/5:
             print(actor.name,'out of range to hit',target.name,'with',weap.name,'...',targDistance,'..',weap.range/5)
-            log('\t' + actor.name + ' out of range to hit ' + target.name + ' with ' + weap.name + ' ... '+ str(targDistance) + ' .. ' + str(weap.range/5))
+            safe_log('\t' + actor.name + ' out of range to hit ' + target.name + ' with ' + weap.name + ' ... '+ str(targDistance) + ' .. ' + str(weap.range/5), map)
             # jth figure out a return value for this so that it doesnt just crash and insteads sends a warning 
             raise SystemExit('Crashed in weaponAttack')
         
@@ -792,9 +800,9 @@ def weaponAttack(actor, target, weap, map):
         rollToHit = [x + int(weap.attackMod) + int(prof) for x in rollDice(numAttack, 20) ]
         hits = []
         for roll in rollToHit:
-            map.combatLog('\tRolling to Hit against '+ target.name + '\n\t\tRoll: ' + str(roll - int(weap.attackMod) - int(prof)) + ' + ' + str(int(weap.attackMod) + (prof)))
+            safe_log('\tRolling to Hit against '+ target.name + '\n\t\tRoll: ' + str(roll - int(weap.attackMod) - int(prof)) + ' + ' + str(int(weap.attackMod) + (prof)), map)
             if roll >= int(target.ac):
-                map.combatLog('\t\t' + str(roll) + ' hits against ' + str(target.ac))
+                safe_log('\t\t' + str(roll) + ' hits against ' + str(target.ac), map)
                 if roll == 20 + int(prof) + int(weap.attackMod):
                     hits.append(2)
                 else:
@@ -1506,7 +1514,7 @@ def rollDice(n, diceType):
         string += str(roll) + ', '
         
     string = string[:-2]
-    log(string)
+    safe_log(string, map)
     return rolls
 
 def rollSave(actor, abilityType, dc):
@@ -1517,19 +1525,19 @@ def rollSave(actor, abilityType, dc):
     '''
     roll = r.randint(1,20) # initial roll
     mod = down_round((actor.modDict[abilityType]- 10)/2) 
-    log('\t' + actor.name + ' ' + abilityType + ' save: \n\t\t' + str(roll) + ' + ' + str(mod) + ' = ' + str(roll + mod))
+    safe_log('\t' + actor.name + ' ' + abilityType + ' save: \n\t\t' + str(roll) + ' + ' + str(mod) + ' = ' + str(roll + mod), map)
     roll += mod 
 
     return roll < dc
 def printDeathSaves(deathSaves):
     passes = deathSaves['pass']
     fails = deathSaves['fail']
-    log('\t\tPasses: ' + str(passes))
-    log('\t\tFails: ' + str(fails))
+    safe_log('\t\tPasses: ' + str(passes), map)
+    safe_log('\t\tFails: ' + str(fails), map)
 
 def takeDmg(actor, target, dmg, map):
     print(actor.name, 'is doing ', dmg, 'to', target.name)
-    map.combatLog('\t' + actor.name + ' is doing ' + str(dmg) + ' to ' + target.name)
+    safe_log('\t' + actor.name + ' is doing ' + str(dmg) + ' to ' + target.name, map)
     if str(type(target)) == "<class 'monster.Monster'>":
         target.health -= dmg
         if target.health <= 0:
@@ -1538,7 +1546,7 @@ def takeDmg(actor, target, dmg, map):
         if 'deathSaves' in target.status:
             target.deathSaves['fail'].append(1)
             print(target.deathSaves)
-            map.combatLog('\t\tActor: ' + target.name + ' is in deathSaves')
+            safe_log('\t\tActor: ' + target.name + ' is in deathSaves', map)
             printDeathSaves(target.deathSaves)
             if sum(target.deathSaves['fail']) >= 3:
                 target.alive = 0
@@ -1615,7 +1623,7 @@ def takeReaction(actor, m, target):
     ##print(hits)
     #dmg = sum(rollDice(hits*int(weap.diceCount), int(weap.diceType))) 
     dmg = 0
-    log('\t' + actor.name + ' is taking a reaction against ' + target.name)
+    safe_log('\t' + actor.name + ' is taking a reaction against ' + target.name, map)
     for hit in hits:
         if not player:
             dmg = sum([rollDice(int(attackWith.diceCount[i]), int(attackWith.diceType[i])) for i in range(len(attackWith.diceType))][0]) + int(attackWith.dmgMod)
@@ -1637,11 +1645,11 @@ def takeReaction(actor, m, target):
 
 def rollDeathSave(actor):
     print(actor.name, ' is rolling death saves')
-    log('\t' +actor.name + ' is rolling death saves!')
+    safe_log('\t' + actor.name + ' is rolling death saves!', map)
     roll = rollDice(1, 20)[0]
     if roll <= 10:
         print(actor.name, 'failed death save with ', roll)
-        log('\t' + actor.name +' failed death save with ' + str(roll))
+        safe_log('\t' + actor.name + ' failed death save with ' + str(roll), map)
         if roll == 1:
             actor.deathSaves['fail'].append(2)    
         else:
@@ -1649,7 +1657,7 @@ def rollDeathSave(actor):
     else:
         if roll == 20:
             print(actor.name, 'is getting up with a Natural 20!')
-            log(actor.name + ' is getting up with a Natural 20!')
+            safe_log(actor.name + ' is getting up with a Natural 20!', map)
             actor.deathSaves['pass'].append(3)    
             actor.health = 1
             actor.status.remove('deathSaves')
@@ -1658,7 +1666,7 @@ def rollDeathSave(actor):
             return
         actor.deathSaves['pass'].append(1)
         print(actor.name, 'passed death save with ', roll)
-        log(actor.name+  ' passed death save with ' + str(roll))
+        safe_log(actor.name + ' passed death save with ' + str(roll), map)
     
     # scores
     fails = sum(actor.deathSaves['fail'])
@@ -1673,8 +1681,8 @@ def rollDeathSave(actor):
         actor.status.remove('deathSaves')
         del actor.deathSaves
         actor.deathSaves = {'pass': [], 'fail': []}
-        #print(actor.name, 'passed death saves')
-        log('\t' + actor.name + ' has passed death saves')
+        print(actor.name, 'passed death saves')
+        safe_log('\t' + actor.name + ' has passed death saves', map)
     printDeathSaves(actor.deathSaves)
     #print(actor.deathSaves)
 

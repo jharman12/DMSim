@@ -22,6 +22,7 @@ class Encounter:
         startTime = time.time()
         self.winners = []
         self.partyState = []
+        self.combatStats = []  # Track detailed stats for each combat
         sims = n
         
         for i in range(sims):
@@ -37,10 +38,10 @@ class Encounter:
         turns = sum([x[1] for x in self.winners])/sims
         print('Party Wins:', partyWinners,' vs Enemy Wins: ', enemyWinners, ' Average Turns: ', turns)
         endTime = time.time()
-        #print(endTime - startTime, 'seconds')
+        print(f'Simulation took {endTime - startTime:.2f} seconds')
         output.close()
        
-        #self.runStats(n)
+        self.printEncounterStats(partyList, npcList)
     
     def preCombat(self, partyList, npcList, enemyList):
         enemy2List = [enemy for enemy in enemyList]
@@ -52,7 +53,42 @@ class Encounter:
             actor.legRes = actor.maxLegRes
             actor.legActions = actor.maxLegActions
             actor.cc = []
-        self.winners.append(self.combat2(enemyList=enemy2List, partyList=party2List))
+        
+        # Run combat and get results
+        survivors, turns, winner = self.combat2(enemyList=enemy2List, partyList=party2List)
+        self.winners.append((survivors, turns, winner))
+        
+        # Track detailed stats for each party member
+        combatStat = {
+            'winner': winner,
+            'turns': turns,
+            'party_stats': [],
+            'any_deaths': False
+        }
+        
+        for actor in partyList + npcList:
+            is_alive = actor in party2List and actor.health > 0
+            spell_slots_used = {}
+            for level, max_slots in actor.maxSpellSlots.items():
+                current_slots = actor.spellSlots.get(level, 0)
+                spell_slots_used[level] = max_slots - current_slots
+            
+            combatStat['party_stats'].append({
+                'name': actor.name,
+                'final_health': max(0, actor.health),
+                'max_health': actor.maxHealth,
+                'health_percent': (max(0, actor.health) / actor.maxHealth * 100) if actor.maxHealth > 0 else 0,
+                'is_alive': is_alive,
+                'spell_slots_used': spell_slots_used,
+                'spell_slots_remaining': dict(actor.spellSlots)
+            })
+            
+            if not is_alive:
+                combatStat['any_deaths'] = True
+        
+        self.combatStats.append(combatStat)
+        
+        # Keep legacy tracking for compatibility
         stateHealth = [[x.name, x.health, x.maxHealth, x.spellSlots] for x in partyList] + [[x.name, x.health, x.maxHealth, x.spellSlots] for x in npcList]
         for state in stateHealth:
             if state[1] < 0:
@@ -106,7 +142,7 @@ class Encounter:
                 else: # if not on enemy list your enemy is enemyList
                     if len(map.enemy) == 0: # if enemies already down... skip turn
                         continue
-                    takeTurn(actor, map, interactive=True)
+                    takeTurn(actor, map, interactive=False)
                     removeDeadActors(map, sortedInitList)
 
                     for enemy in map.enemy:
@@ -125,6 +161,74 @@ class Encounter:
             winner = 'Enemy'
         print('Winner: ' + winner+ '. Turns: '+ str(turn) + '. Survivors: ' + str(survivors) + '\n')
         return survivors, turn, winner
+    
+    def printEncounterStats(self, partyList, npcList):
+        """Print detailed statistics about the simulated encounters."""
+        if not self.combatStats:
+            return
+        
+        n_sims = len(self.combatStats)
+        party_wins = sum(1 for stat in self.combatStats if stat['winner'] == 'Party')
+        enemy_wins = sum(1 for stat in self.combatStats if stat['winner'] == 'Enemy')
+        
+        print("\n" + "="*60)
+        print("ENCOUNTER ANALYSIS")
+        print("="*60)
+        
+        # Win rate
+        print(f"\nWin Rate:")
+        print(f"  Party Wins: {party_wins}/{n_sims} ({party_wins/n_sims*100:.1f}%)")
+        print(f"  Enemy Wins: {enemy_wins}/{n_sims} ({enemy_wins/n_sims*100:.1f}%)")
+        
+        # Combat length
+        avg_turns = sum(stat['turns'] for stat in self.combatStats) / n_sims
+        min_turns = min(stat['turns'] for stat in self.combatStats)
+        max_turns = max(stat['turns'] for stat in self.combatStats)
+        print(f"\nCombat Duration:")
+        print(f"  Average Rounds: {avg_turns:.1f}")
+        print(f"  Min Rounds: {min_turns}")
+        print(f"  Max Rounds: {max_turns}")
+        
+        # Death statistics
+        combats_with_deaths = sum(1 for stat in self.combatStats if stat['any_deaths'])
+        print(f"\nParty Deaths:")
+        print(f"  Combats with deaths: {combats_with_deaths}/{n_sims} ({combats_with_deaths/n_sims*100:.1f}%)")
+        
+        # Per-character statistics
+        all_characters = partyList + npcList
+        print(f"\nPer-Character Statistics:")
+        
+        for character in all_characters:
+            char_stats = []
+            for combat in self.combatStats:
+                char_stat = next((s for s in combat['party_stats'] if s['name'] == character.name), None)
+                if char_stat:
+                    char_stats.append(char_stat)
+            
+            if not char_stats:
+                continue
+            
+            deaths = sum(1 for s in char_stats if not s['is_alive'])
+            avg_health_percent = sum(s['health_percent'] for s in char_stats) / len(char_stats)
+            avg_final_health = sum(s['final_health'] for s in char_stats) / len(char_stats)
+            
+            print(f"\n  {character.name}:")
+            print(f"    Death Rate: {deaths}/{n_sims} ({deaths/n_sims*100:.1f}%)")
+            print(f"    Avg Final Health: {avg_final_health:.1f}/{character.maxHealth} ({avg_health_percent:.1f}%)")
+            
+            # Spell slot usage
+            if character.maxSpellSlots:
+                print(f"    Avg Spell Slots Used:")
+                for level in sorted(character.maxSpellSlots.keys()):
+                    if level == '0' or character.maxSpellSlots[level] == 0:
+                        continue
+                    total_used = sum(s['spell_slots_used'].get(level, 0) for s in char_stats)
+                    avg_used = total_used / len(char_stats)
+                    max_slots = character.maxSpellSlots[level]
+                    print(f"      Level {level}: {avg_used:.1f}/{max_slots}")
+        
+        print("\n" + "="*60)
+    
     def combat(self, enemyList, partyList):
         global map
         map = Map(15, partyList, enemyList)

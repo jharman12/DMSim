@@ -152,7 +152,7 @@ class interactiveMap:
             return
         moverLoc = [i for i in self.arrayCenters if self.arrayCenters[i] == mover][0]
         
-        Arabella = [i for i in self.arrayCenters if self.arrayCenters[i] ==target][0]
+        Arabella = target # [i for i in self.arrayCenters if self.arrayCenters[i] ==target][0]
         #print(moverLoc)
         #print(Arabella)
         moverIndex = list(self.arrayCenters).index(moverLoc)

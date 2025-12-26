@@ -18,5 +18,32 @@
         ],
         "numHexes": 20,
         "mapImage": "A:\\Code\\Python\\Git Repo\\DMSim\\App\\Maps\\maze Engine.webp"
+    },
+    "Dryads": {
+        "name": "Dryads",
+        "party": [
+            "Adrel",
+            "Aldric",
+            "Cobo",
+            "Galleus",
+            "VV"
+        ],
+        "npcs": [],
+        "enemies": [
+            "Dryad",
+            "Dryad",
+            "Dryad",
+            "Dryad",
+            "Dryad",
+            "Dryad",
+            "Dryad",
+            "Dryad",
+            "Dryad",
+            "Dryad",
+            "Dryad",
+            "Dryad"
+        ],
+        "numHexes": 20,
+        "mapImage": "A:\\Code\\Python\\Git Repo\\DMSim\\App\\Maps\\maze Engine.webp"
     }
 }

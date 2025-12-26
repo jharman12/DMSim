@@ -94,7 +94,7 @@ import os
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QTextEdit, QCheckBox, QMenuBar, QMenu, QAction,
-    QLabel, QPushButton, QLineEdit, QScrollArea, QFrame, QProgressBar, QComboBox, QSplitter, QSplitterHandle
+    QLabel, QPushButton, QLineEdit, QScrollArea, QFrame, QProgressBar, QComboBox, QSplitter, QSplitterHandle, QGroupBox
 )
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QFont
 
@@ -118,10 +118,11 @@ dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-4]
 print(dmSimPath)
 sys.path.insert(1, dmSimPath + '\\model')
 #from interactiveMap import interactiveMap
-from interactiveEncounter import interactiveEncounter
 from player import createPartyList
 from monster import createMonsterList, Monster
 from modelMethods import myAction, doAction, drawLine, calcMoveHexes
+sys.path.insert(1, dmSimPath + '\\model\\Interactive')
+from interactiveEncounter import interactiveEncounter
 
 
 #class Player:
@@ -1139,10 +1140,12 @@ class GroupedComboBox(QComboBox):
 class TurnOrderWidget(QWidget):
     def __init__(self):
         super().__init__()
-
+        mainLayout = QHBoxLayout()
+        self.box = QGroupBox("Turn Order")
+        mainLayout.addWidget(self.box)
         layout = QHBoxLayout()
         layout.setSpacing(10)
-
+        self.box.setLayout(layout)
         # Placeholder icons
         placeholder_pix = QPixmap(50, 50)
         placeholder_pix.fill(Qt.darkGray)
@@ -1167,7 +1170,11 @@ class TurnOrderWidget(QWidget):
             self.next_icons.append(lbl)
 
         layout.addStretch()
-        self.setLayout(layout)
+        self.setLayout(mainLayout)
+    
+    def applyFonts(self, textScale):
+        """Apply font scaling from textScale object."""
+        set_font(self.box, textScale.size(textScale.MD), QFont.Bold)
     
     
 
@@ -1176,9 +1183,12 @@ class TurnActionPanel(QWidget):
     def __init__(self):
         super().__init__()
         self._textScale = None
+        box = QGroupBox("Turn Actions")
+        final_layout = QVBoxLayout()
+        final_layout.addWidget(box)
         main_layout = QVBoxLayout()
         main_layout.setSpacing(10)
-
+        box.setLayout(main_layout)
         # -------------------------------
         # TURN INDICATOR
         # -------------------------------
@@ -1237,9 +1247,13 @@ class TurnActionPanel(QWidget):
         # -------------------------------
         # Targets input
         # -------------------------------
-        self.targets_input = QLineEdit()
-        self.targets_input.setPlaceholderText("Targets")
-        main_layout.addWidget(self.targets_input)
+        targets_layout = QHBoxLayout()
+        self.targets_title_label = QLabel("Targets:")
+        targets_layout.addWidget(self.targets_title_label)
+        self.targets_label = QLabel("")
+        self.targets_label.setWordWrap(True)
+        targets_layout.addWidget(self.targets_label)
+        main_layout.addLayout(targets_layout)
 
         # -------------------------------
         # Move coords input
@@ -1285,7 +1299,7 @@ class TurnActionPanel(QWidget):
 
 
         #main_layout.addStretch(1)
-        self.setLayout(main_layout)
+        self.setLayout(final_layout)
 
     def applyFonts(self, textScale):
         self._textScale = textScale
@@ -1296,7 +1310,8 @@ class TurnActionPanel(QWidget):
         
         set_font(self.actionLbl, textScale.size(textScale.SM))
         set_font(self.action_dropdown, textScale.size(textScale.SM))
-        set_font(self.targets_input, textScale.size(textScale.SM))
+        set_font(self.targets_title_label, textScale.size(textScale.SM))
+        set_font(self.targets_label, textScale.size(textScale.SM))
 
         
         set_font(self.endTurnButton, textScale.size(textScale.SM))
@@ -1309,6 +1324,9 @@ class TurnActionPanel(QWidget):
             textScale.size(textScale.MD),
             monospace=True
         )
+        # Apply font to grouped boxes and their title
+        for child in self.findChildren(QGroupBox):
+            set_font(child, textScale.size(textScale.MD), QFont.Bold)
     
     def clearLayout(self, layout):
         while layout.count():
@@ -1465,8 +1483,8 @@ class TurnActionPanel(QWidget):
         targets = ''
         for target in turnChoice.targets:
             targets += ' ' + str(target) + ','
-        targets = targets[:-1]
-        self.targets_input.setText(targets)
+        targets = targets[:-1] if targets else ""
+        self.targets_label.setText(targets)
 
         # Update move coords input
         move_coords = str(turnChoice.moveCoord)
@@ -1751,15 +1769,15 @@ class MapWidget(QWidget):
         return super().eventFilter(obj, event)
 
     def applyTextScale(self):
+        # Turn order widget
+        self.turn_order_widget.applyFonts(self.TextScale)
+        
         # Turn action panel
         self.turn_action_panel.applyFonts(self.TextScale)
 
         # Rebuild dynamic widgets
         if self.actor:
             self.turn_action_panel.buildSpellSlots(self.actor)
-
-        # Turn order widget
-        #self.turn_order_widget.applyFonts(self.TextScale)
 
         # Buttons above map
         
@@ -1768,6 +1786,7 @@ class MapWidget(QWidget):
         set_font(self.spell_button, self.TextScale.size(self.TextScale.SM))
 
     def setAllFonts(self):
+        self.turn_order_widget.applyFonts(self.TextScale)
         self.turn_action_panel.applyFonts(self.TextScale)
 
         
@@ -1822,10 +1841,9 @@ class MapWidget(QWidget):
         targetNames = [self.myEncounter.map.arrayCenters[coord].name for coord in targetsHit]
         targetString = ''
         for target in targetNames:
-
             targetString += ' ' + target + ','
-        targetString = targetString[:-1]
-        self.turn_action_panel.targets_input.setText(targetString)
+        targetString = targetString[:-1] if targetString else ""
+        self.turn_action_panel.targets_label.setText(targetString)
 
     def actionChanged(self):
         self.spellButton_pressed()

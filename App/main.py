@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QTabWidget, QHBoxLayout, QTabBar,
     QPushButton, QMessageBox, QLabel, QApplication, QAction, QActionGroup,
     QListWidget, QDialog, QLineEdit, QSpinBox, QGroupBox, QListWidgetItem,
-    QFileDialog, QComboBox
+    QFileDialog, QComboBox, QTextEdit, QProgressDialog
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QEvent
 
@@ -11,13 +11,18 @@ from monsterWindow import MonsterEditor, MonsterStore
 from TestingMap import MapWidget
 import pathlib
 import json
+import sys
 from pathlib import Path
 from player import createPartyList
 from monster import createMonsterList
 dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-4]
+sys.path.insert(1, dmSimPath + '\\model')
 from player import createPartyList
 from monster import createMonsterList
+sys.path.insert(1, dmSimPath + '\\model\\Interactive')
 from interactiveEncounter import interactiveEncounter
+sys.path.insert(1, dmSimPath + '\\model\\Simulation')
+from encounterSim import Encounter
 
 
 '''
@@ -25,6 +30,11 @@ Need to allow encounters to have more than one enemy of the same name
 Add CR difficulty to encounters
 fix model to run to grade combat through model interactions
 add spell creation window
+add default map image if none is provided
+add testing map window groups to unify layout
+move spell area button next to targets input
+change target input to label of 
+Add auto generate encounter by difficulty
 '''
 class EncounterStore:
     def __init__(self, file_path=None):
@@ -135,6 +145,7 @@ class EncounterBuilderTab(QWidget):
         self.enc_search.textChanged.connect(self.filter_encounters)
         enc_layout.addWidget(self.enc_search)
         self.enc_list = QListWidget()
+        self.enc_list.setMinimumHeight(200)
         self.update_enc_list()
         enc_layout.addWidget(self.enc_list)
         enc_buttons = QHBoxLayout()
@@ -192,6 +203,45 @@ class EncounterBuilderTab(QWidget):
 
         # Setup lists
         self.setup_lists(layout)
+        
+        # Encounter Difficulty Group
+        self.setup_difficulty_group(layout)
+
+    def setup_difficulty_group(self, layout):
+        difficulty_group = QGroupBox("Encounter Difficulty")
+        difficulty_layout = QVBoxLayout()
+        
+        # Party info layout
+        party_info_layout = QHBoxLayout()
+        party_info_layout.addWidget(QLabel("Party Size:"))
+        self.party_size_label = QLabel("0")
+        party_info_layout.addWidget(self.party_size_label)
+        
+        party_info_layout.addWidget(QLabel("Party Level:"))
+        self.party_level_label = QLabel("—")
+        party_info_layout.addWidget(self.party_level_label)
+        party_info_layout.addStretch()
+        difficulty_layout.addLayout(party_info_layout)
+        
+        # Difficulty info layout
+        difficulty_info_layout = QHBoxLayout()
+        difficulty_info_layout.addWidget(QLabel("Total Enemy CR:"))
+        self.total_cr_label = QLabel("0")
+        difficulty_info_layout.addWidget(self.total_cr_label)
+        
+        difficulty_info_layout.addWidget(QLabel("Difficulty:"))
+        self.difficulty_label = QLabel("—")
+        difficulty_info_layout.addWidget(self.difficulty_label)
+        difficulty_info_layout.addStretch()
+        difficulty_layout.addLayout(difficulty_info_layout)
+        
+        # Simulate button
+        simulate_btn = QPushButton("Simulate Encounter")
+        simulate_btn.clicked.connect(self.simulate_encounter)
+        difficulty_layout.addWidget(simulate_btn)
+        
+        difficulty_group.setLayout(difficulty_layout)
+        layout.addWidget(difficulty_group)
 
     def setup_lists(self, layout):
         # Available characters and monsters
@@ -207,6 +257,7 @@ class EncounterBuilderTab(QWidget):
         self.party_combo.setCurrentIndex(-1)  # No selection
         party_layout.addWidget(self.party_combo)
         self.party_list = QListWidget()
+        self.party_list.setMinimumHeight(150)
         party_layout.addWidget(self.party_list)
         party_buttons = QHBoxLayout()
         add_party_btn = QPushButton("Add")
@@ -227,6 +278,7 @@ class EncounterBuilderTab(QWidget):
         self.npc_combo.setCurrentIndex(-1)
         npc_layout.addWidget(self.npc_combo)
         self.npc_list = QListWidget()
+        self.npc_list.setMinimumHeight(150)
         npc_layout.addWidget(self.npc_list)
         npc_buttons = QHBoxLayout()
         add_npc_btn = QPushButton("Add")
@@ -241,17 +293,26 @@ class EncounterBuilderTab(QWidget):
 
         enemy_group = QGroupBox("Enemies")
         enemy_layout = QVBoxLayout()
+        enemy_combo_layout = QHBoxLayout()
         self.enemy_combo = QComboBox()
         self.enemy_combo.setEditable(True)
         self.enemy_combo.addItems(self.avail_mons)
         self.enemy_combo.setCurrentIndex(-1)
-        enemy_layout.addWidget(self.enemy_combo)
+        enemy_combo_layout.addWidget(self.enemy_combo)
+        enemy_combo_layout.addWidget(QLabel("Qty:"))
+        self.enemy_qty_spin = QSpinBox()
+        self.enemy_qty_spin.setRange(1, 100)
+        self.enemy_qty_spin.setValue(1)
+        self.enemy_qty_spin.setMaximumWidth(60)
+        enemy_combo_layout.addWidget(self.enemy_qty_spin)
+        enemy_layout.addLayout(enemy_combo_layout)
         self.enemy_list = QListWidget()
+        self.enemy_list.setMinimumHeight(150)
         enemy_layout.addWidget(self.enemy_list)
         enemy_buttons = QHBoxLayout()
         add_enemy_btn = QPushButton("Add")
-        add_enemy_btn.clicked.connect(lambda: self.add_from_combo(self.enemy_combo, self.enemy_list))
-        self.enemy_combo.lineEdit().returnPressed.connect(lambda: self.add_from_combo(self.enemy_combo, self.enemy_list))
+        add_enemy_btn.clicked.connect(self.add_multiple_enemies)
+        self.enemy_combo.lineEdit().returnPressed.connect(self.add_multiple_enemies)
         remove_enemy_btn = QPushButton("Remove")
         remove_enemy_btn.clicked.connect(lambda: self.remove_from_list(self.enemy_list))
         enemy_buttons.addWidget(add_enemy_btn)
@@ -275,6 +336,19 @@ class EncounterBuilderTab(QWidget):
         if text and not any(list_widget.item(i).text() == text for i in range(list_widget.count())):
             list_widget.addItem(text)
             combo.setCurrentIndex(-1)  # Clear selection
+            # Update difficulty if adding to party or enemies
+            if list_widget == self.party_list or list_widget == self.enemy_list:
+                self.update_difficulty()
+
+    def add_multiple_enemies(self):
+        """Add multiple instances of the selected enemy."""
+        text = self.enemy_combo.currentText().strip()
+        quantity = self.enemy_qty_spin.value()
+        if text:
+            for _ in range(quantity):
+                self.enemy_list.addItem(text)
+            self.enemy_combo.setCurrentIndex(-1)  # Clear selection
+            self.update_difficulty()
 
     def add_to_list(self, list_widget, avail):
         # Simple dialog to select from avail
@@ -287,6 +361,9 @@ class EncounterBuilderTab(QWidget):
         current = list_widget.currentItem()
         if current:
             list_widget.takeItem(list_widget.row(current))
+            # Update difficulty if removing from party or enemies
+            if list_widget == self.party_list or list_widget == self.enemy_list:
+                self.update_difficulty()
 
     def get_current_data(self):
         party = [self.party_list.item(i).text() for i in range(self.party_list.count())]
@@ -314,6 +391,7 @@ class EncounterBuilderTab(QWidget):
         self.enemy_list.clear()
         for name in data.get("enemies", []):
             self.enemy_list.addItem(name)
+        self.update_difficulty()
 
     def update_enc_list(self):
         self.enc_list.clear()
@@ -373,6 +451,247 @@ class EncounterBuilderTab(QWidget):
     def buildEncounter(self):
         # Keep for compatibility, but not used
         pass
+
+    def update_difficulty(self):
+        """Update the encounter difficulty display based on party and enemies using D&D 5e rules."""
+        # Update party size
+        party_size = self.party_list.count()
+        self.party_size_label.setText(str(party_size))
+        
+        # Calculate average party level from selected characters
+        party_level = 1
+        if party_size > 0:
+            total_level = 0
+            valid_count = 0
+            for i in range(party_size):
+                char_name = self.party_list.item(i).text()
+                char_data = self.char_store.get(char_name)
+                if char_data:
+                    level = char_data.get("level", 1)
+                    try:
+                        total_level += int(level)
+                        valid_count += 1
+                    except (ValueError, TypeError):
+                        pass
+            if valid_count > 0:
+                party_level = total_level // valid_count
+            else:
+                party_level = 1
+        
+        self.party_level_label.setText(str(party_level))
+        
+        # Calculate total enemy CR
+        total_cr = 0.0
+        enemy_count = self.enemy_list.count()
+        for i in range(enemy_count):
+            enemy_name = self.enemy_list.item(i).text()
+            monster_data = self.mon_store.get(enemy_name)
+            if monster_data:
+                cr_str = monster_data.get("cr", "0")
+                # Handle fractional CRs like "1/8", "1/4", "1/2"
+                if "/" in str(cr_str):
+                    parts = str(cr_str).split("/")
+                    try:
+                        total_cr += float(parts[0]) / float(parts[1])
+                    except (ValueError, ZeroDivisionError):
+                        pass
+                else:
+                    try:
+                        total_cr += float(cr_str)
+                    except ValueError:
+                        pass
+        
+        self.total_cr_label.setText(f"{total_cr:.1f}")
+        
+        # Calculate difficulty using D&D 5e scaling rules
+        if party_size == 0:
+            difficulty = "—"
+        else:
+            # D&D 5e XP thresholds per character by level
+            easy_xp = 25 * party_level
+            medium_xp = 50 * party_level
+            hard_xp = 100 * party_level
+            deadly_xp = 150 * party_level
+            
+            # Total party thresholds
+            easy_total = easy_xp * party_size
+            medium_total = medium_xp * party_size
+            hard_total = hard_xp * party_size
+            deadly_total = deadly_xp * party_size
+            
+            if enemy_count == 0:
+                difficulty = "None"
+            else:
+                # Multiplier for action economy (multiple monsters gain advantage)
+                if enemy_count <= 2:
+                    multiplier = 1.0
+                elif enemy_count <= 6:
+                    multiplier = 1.5
+                elif enemy_count <= 10:
+                    multiplier = 2.0
+                elif enemy_count <= 14:
+                    multiplier = 2.5
+                else:
+                    multiplier = 3.0
+                
+                encounter_xp = total_cr * multiplier
+                
+                # Determine difficulty tier
+                if encounter_xp >= deadly_total:
+                    difficulty = "Deadly"
+                elif encounter_xp >= hard_total:
+                    difficulty = "Hard"
+                elif encounter_xp >= medium_total:
+                    difficulty = "Medium"
+                elif encounter_xp >= easy_total:
+                    difficulty = "Easy"
+                else:
+                    difficulty = "Trivial"
+        
+        self.difficulty_label.setText(difficulty)
+
+    def simulate_encounter(self):
+        """Run encounter simulation and show results in a popup."""
+        # Get current encounter data
+        data = self.get_current_data()
+        
+        # Validate we have party and enemies
+        if not data["party"]:
+            QMessageBox.warning(self, "Warning", "Add at least one party member to simulate")
+            return
+        
+        if not data["enemies"]:
+            QMessageBox.warning(self, "Warning", "Add at least one enemy to simulate")
+            return
+        
+        # Create progress dialog
+        progress = QProgressDialog("Running encounter simulations...", "Cancel", 0, 100, self)
+        progress.setWindowModality(Qt.WindowModal)
+        progress.setMinimumDuration(0)
+        progress.setValue(0)
+        QApplication.processEvents()
+        
+        try:
+            # Load party, npcs, and enemies
+            path = dmSimPath + '\\actors\\savedObjs\\'
+            party = createPartyList(data["party"], path=path)
+            npcs = createPartyList(data["npcs"], path=path)
+            enemies = createMonsterList(data["enemies"], path=path)
+            
+            progress.setValue(10)
+            QApplication.processEvents()
+            
+            # Run simulation
+            num_sims = 10
+            encounter_sim = Encounter(party, npcs, enemies, num_sims)
+            
+            progress.setValue(90)
+            QApplication.processEvents()
+            
+            # Show results in dialog
+            self.show_simulation_results(encounter_sim)
+            
+            progress.setValue(100)
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Simulation failed: {str(e)}")
+            import traceback
+            traceback.print_exc()
+        finally:
+            progress.close()
+    
+    def show_simulation_results(self, encounter_sim):
+        """Display simulation results in a dialog window."""
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Encounter Simulation Results")
+        dialog.resize(700, 600)
+        
+        layout = QVBoxLayout(dialog)
+        
+        # Create text display
+        results_text = QTextEdit()
+        results_text.setReadOnly(True)
+        results_text.setStyleSheet("font-family: Consolas, monospace;")
+        
+        # Build results text
+        text = ""
+        n_sims = len(encounter_sim.combatStats)
+        party_wins = sum(1 for stat in encounter_sim.combatStats if stat['winner'] == 'Party')
+        enemy_wins = sum(1 for stat in encounter_sim.combatStats if stat['winner'] == 'Enemy')
+        
+        text += "=" * 60 + "\n"
+        text += "ENCOUNTER SIMULATION RESULTS\n"
+        text += "=" * 60 + "\n\n"
+        
+        # Win rate
+        text += "Win Rate:\n"
+        text += f"  Party Wins: {party_wins}/{n_sims} ({party_wins/n_sims*100:.1f}%)\n"
+        text += f"  Enemy Wins: {enemy_wins}/{n_sims} ({enemy_wins/n_sims*100:.1f}%)\n\n"
+        
+        # Combat length
+        avg_turns = sum(stat['turns'] for stat in encounter_sim.combatStats) / n_sims
+        min_turns = min(stat['turns'] for stat in encounter_sim.combatStats)
+        max_turns = max(stat['turns'] for stat in encounter_sim.combatStats)
+        text += "Combat Duration:\n"
+        text += f"  Average Rounds: {avg_turns:.1f}\n"
+        text += f"  Min Rounds: {min_turns}\n"
+        text += f"  Max Rounds: {max_turns}\n\n"
+        
+        # Death statistics
+        combats_with_deaths = sum(1 for stat in encounter_sim.combatStats if stat['any_deaths'])
+        text += "Party Deaths:\n"
+        text += f"  Combats with deaths: {combats_with_deaths}/{n_sims} ({combats_with_deaths/n_sims*100:.1f}%)\n\n"
+        
+        # Per-character statistics
+        if encounter_sim.combatStats and encounter_sim.combatStats[0]['party_stats']:
+            text += "Per-Character Statistics:\n"
+            text += "-" * 60 + "\n"
+            
+            # Get unique character names
+            char_names = list(set(s['name'] for combat in encounter_sim.combatStats for s in combat['party_stats']))
+            
+            for char_name in sorted(char_names):
+                char_stats = []
+                for combat in encounter_sim.combatStats:
+                    char_stat = next((s for s in combat['party_stats'] if s['name'] == char_name), None)
+                    if char_stat:
+                        char_stats.append(char_stat)
+                
+                if not char_stats:
+                    continue
+                
+                deaths = sum(1 for s in char_stats if not s['is_alive'])
+                avg_health_percent = sum(s['health_percent'] for s in char_stats) / len(char_stats)
+                avg_final_health = sum(s['final_health'] for s in char_stats) / len(char_stats)
+                max_health = char_stats[0]['max_health']
+                
+                text += f"\n{char_name}:\n"
+                text += f"  Death Rate: {deaths}/{n_sims} ({deaths/n_sims*100:.1f}%)\n"
+                text += f"  Avg Final Health: {avg_final_health:.1f}/{max_health} ({avg_health_percent:.1f}%)\n"
+                
+                # Spell slot usage
+                if char_stats[0]['spell_slots_used']:
+                    text += f"  Avg Spell Slots Used:\n"
+                    for level in sorted(char_stats[0]['spell_slots_used'].keys()):
+                        if level == '0':
+                            continue
+                        total_used = sum(s['spell_slots_used'].get(level, 0) for s in char_stats)
+                        avg_used = total_used / len(char_stats)
+                        max_slots = char_stats[0]['spell_slots_used'].get(level, 0) + char_stats[0]['spell_slots_remaining'].get(level, 0)
+                        if max_slots > 0:
+                            text += f"    Level {level}: {avg_used:.1f}/{max_slots}\n"
+        
+        text += "\n" + "=" * 60 + "\n"
+        
+        results_text.setPlainText(text)
+        layout.addWidget(results_text)
+        
+        # Add close button
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(dialog.accept)
+        layout.addWidget(close_btn)
+        
+        dialog.exec_()
     
     def applyFonts(self):
         mw = self.window()
@@ -691,12 +1010,14 @@ class MainWindow(QMainWindow):
         self.map_window = MapWidget(encounter)
         self.map_window.show()
 
-app = QApplication([])
 
-window = MainWindow()
-window.setWindowIcon(QtGui.QIcon( dmSimPath + '\\DM_Sim_Icon.png'))
-window.show()
+if __name__ == "__main__":
+    app = QApplication([])
 
-app.exec()
+    window = MainWindow()
+    window.setWindowIcon(QtGui.QIcon( dmSimPath + '\\DM_Sim_Icon.png'))
+    window.show()
+
+    app.exec()
 
 

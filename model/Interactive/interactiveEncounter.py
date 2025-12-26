@@ -6,7 +6,7 @@ import time
 #import pandas as pd
 import numpy as np
 import time
-from map import Map
+#from map import Map
 import sys
 from interactiveMap import interactiveMap
 from PyQt5.QtCore import QThread, pyqtSignal
