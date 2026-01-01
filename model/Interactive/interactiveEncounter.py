@@ -1,20 +1,20 @@
 from dataclasses import dataclass
 import random as r
 import numpy as np
-#import matplotlib.pyplot as plt
 import time
 #import pandas as pd
 import numpy as np
 import time
-#from map import Map
 import sys
-from interactiveMap import interactiveMap
-from PyQt5.QtCore import QThread, pyqtSignal
 import pathlib
-dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-6]
-sys.path.insert(1, dmSimPath)
+from PyQt5.QtCore import QThread, pyqtSignal
+
+# Add root directory to path for imports
+dmSimPath = str(pathlib.Path(__file__).parent.parent.parent.resolve())
+sys.path.insert(0, dmSimPath)
 print(dmSimPath)
 from modelMethods import takeTurn, removeDeadActors, rollSave
+from model.Simulation.map import Map
 
 
 class interactiveEncounter:
@@ -41,9 +41,7 @@ class interactiveEncounter:
     def preCombat(self, graphicsViewer):
         partyList = self.party2List
         enemyList = self.enemy2List
-        self.map = interactiveMap(self.numHexes, partyList, enemyList, graphicsViewer)
-        self.map.defineArrayGrid(self.numHexes)
-        self.map.populateMap(self.party2List, self.enemy2List)
+        self.map = Map(self.numHexes, partyList, enemyList, graphicsViewer=graphicsViewer)
         initList = {x:(r.randint(1,20) + x.initMod) for x in self.totalList}
         self.sortedInitList = dict(sorted(initList.items(), key = lambda x:x[1], reverse=True))
         self.curTurn = 0

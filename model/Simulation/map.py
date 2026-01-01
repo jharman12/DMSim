@@ -9,10 +9,16 @@ sys.path.insert(1, dmSimPath)
 from modelMethods import takeReaction, drawLine
 
 class Map:
-    def __init__(self, numHex, partyList, enemyList):
+    def __init__(self, numHex, partyList, enemyList, graphicsViewer=None):
         self.numHex = numHex
+        self.graphicsViewer = graphicsViewer
+        self.combatLog = None
+        
         ##print('defining array')
-        self.defineArrayGrid(numHex, 1, 0.5)
+        if graphicsViewer is not None:
+            self.defineArrayGrid(numHex)
+        else:
+            self.defineArrayGrid(numHex, 1, 0.5)
         ##print('distance')
         #self.distanceCalc(0,23)
 
@@ -61,6 +67,10 @@ class Map:
                     if actor in self.party and actor.reaction and reactDis >= 2:
                         print('youre partyList', actor.name,'and you should be able to react')
                         takeReaction(actor, self, mover)
+            # Update graphics viewer if it exists
+            if self.graphicsViewer is not None:
+                newIndex = self.convertToViewerCoords(coord)
+                self.graphicsViewer.moveActor(mover, newIndex)
     
     def dashActor(self, mover, targetCoord):
         print(mover.name, ' is taking the dash action to ', targetCoord)
@@ -105,7 +115,22 @@ class Map:
         #self.arrayCenters[moverNew] = mover
         #self.printCurrMap()
 
-    def defineArrayGrid(self, heightNumber, height, width):
+    def defineArrayGrid(self, heightNumber, height=None, width=None):
+        """
+        Initialize the hexagonal grid. 
+        If graphicsViewer is provided, uses its bounding rect; otherwise uses provided height/width.
+        """
+        if self.graphicsViewer is not None:
+            # Use graphics viewer dimensions
+            map_rect = self.graphicsViewer.map_item.boundingRect()
+            height = map_rect.height() 
+            width = map_rect.width()
+        else:
+            # Use provided dimensions or defaults
+            if height is None or width is None:
+                height = 1
+                width = 0.5
+        
         print(height, width)
         startingPoint = [0, 0]
         r = height / (2 * (1 + (heightNumber - 1) * 2 * math.cos(math.pi * 60 / 180)))
@@ -125,8 +150,6 @@ class Map:
                 y_mod =  self.radius * math.sin(a)
                 center = (self.col_round(x/x_mod), self.col_round(y/y_mod))
                 self.arrayCenters[center] = ''
-
-                
 
                 x += r * (1 + math.cos(a))
                 y += (-1) ** j * r * math.sin(a)
@@ -182,7 +205,6 @@ class Map:
             newX = 1 - 1/partyEnemyRatio
             partyX = self.col_round(newX*maxX)
 
-
         ##print(partyX)
         partySide = []
         enemySide = []
@@ -205,6 +227,10 @@ class Map:
                         #print(member.name, coord)
                     if self.arrayCenters[coord] == '':
                         self.arrayCenters[coord] = member
+                        # Update graphics viewer if it exists
+                        if self.graphicsViewer is not None:
+                            gViewerCoord = self.convertToViewerCoords(coord)
+                            self.graphicsViewer.moveActor(member, gViewerCoord)
                         saved = 1
                     else:
                         continue
@@ -237,6 +263,15 @@ class Map:
         #print("nearestFreehex", list(self.arrayCenters)[minIndex])
         return list(self.arrayCenters)[minIndex]
         #return minIndex
+    
+    def convertToMyCoords(self, index):
+        """Convert viewer index to map coordinates."""
+        centers = list(self.arrayCenters.keys())
+        return centers[index]
+    
+    def convertToViewerCoords(self, coord):
+        """Convert map coordinates to viewer index."""
+        return list(self.arrayCenters).index(coord)
     
     def printCurrMap(self):
         string = ''

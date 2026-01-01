@@ -4,16 +4,15 @@ import numpy as np
 #import matplotlib.pyplot as plt
 import time
 #import pandas as pd
-import numpy as np
-import time
-from map import Map
 import sys
-import time
-
 import pathlib
-dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-6]
-sys.path.insert(1, dmSimPath)
+
+# Add root directory to path for imports
+dmSimPath = str(pathlib.Path(__file__).parent.parent.parent.resolve())
+sys.path.insert(0, dmSimPath)
+
 from modelMethods import takeTurn, removeDeadActors, rollSave
+from model.Simulation.map import Map
 
 class Encounter:
     def __init__(self, partyList, npcList, enemyList, n):

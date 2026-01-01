@@ -1,19 +1,20 @@
 from encounterSim import Encounter
 #from playersModel import Player
-from monster import Monster, MonsterDump, createMonsterList
+
 import sys
 import json
 import pathlib
 dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-6]
 
 
-sys.path.insert(1, dmSimPath + '/actors/statReader')
-from textReader import buildMonsterFromString
+sys.path.insert(0, dmSimPath + '/actors/statReader')
+sys.path.insert(0, dmSimPath)
+from actors.statReader.textReader import buildMonsterFromString
 from player import createPartyList, Player
 import random as r 
-from map import Map
-sys.path.insert(1, dmSimPath)
+from model.Simulation.map import Map
 from modelMethods import takeTurn, removeDeadActors, myAction
+from model.monster import Monster, MonsterDump, createMonsterList
 
 
 if __name__ == "__main__":
