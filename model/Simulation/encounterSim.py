@@ -28,6 +28,7 @@ class Encounter:
             #r.seed(i+240)
             #try:
             self.preCombat(partyList,npcList,enemyList)
+            
             #except Exception as e:
             #    print('The model crashed in seed', i, 'with error\n', e)
             #    sys.exit()
@@ -41,7 +42,6 @@ class Encounter:
         output.close()
        
         self.printEncounterStats(partyList, npcList)
-    
     def preCombat(self, partyList, npcList, enemyList):
         enemy2List = [enemy for enemy in enemyList]
         party2List = [party for party in partyList] + [npc for npc in npcList]
@@ -118,6 +118,8 @@ class Encounter:
                 for healthCheck in list(sortedInitList.keys()):
                     print('\t\t', healthCheck.name, healthCheck.health)
                 if not actor in list(sortedInitList.keys()): # you've already been removed
+                    continue
+                if not actor.alive:  # Skip if already dead
                     continue
                 if actor.legRes >= 1 and len(actor.cc) > 0: # if cced and has legendary resistance... use it and continue
                     actor.legRes = actor.legRes - 1

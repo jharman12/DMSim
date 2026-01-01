@@ -59,7 +59,7 @@ def takeTurn(actor, m, interactive = False, gViewer = None):
     player = 1
     healDownedTeammate = []
     #print(actor.name, "called taketurns")
-    if str(type(actor)) == "<class 'monster.Monster'>":
+    if 'Monster' in str(type(actor)):
         player = 0
         actor.legActions = actor.maxLegActions # if monster reset legendary actions
     else:
@@ -167,7 +167,7 @@ def takeTurn(actor, m, interactive = False, gViewer = None):
                 options = [x for x in line if map.distanceCalc(list(map.arrayCenters).index(myCoord), list(map.arrayCenters).index(x)) <= actor.speed/5] # places to move on the line
                 distance = map.distanceCalc(list(map.arrayCenters).index(myCoord), list(map.arrayCenters).index(options[-1]))
                 if map.arrayCenters[options[-1]] != '' and map.arrayCenters[options[-1]] != actor:
-                    newCoord =  map.nearestFreeHex(myCoord, closestCoord) 
+                    newCoord =  map.nearestFreeHex(list(map.arrayCenters).index(myCoord), list(map.arrayCenters).index(options[-1])) 
                 else:
                     
                     newCoord = options[-1]
@@ -236,7 +236,11 @@ def takeTurn(actor, m, interactive = False, gViewer = None):
         else: # your a player
             #print("I AM A PLAYER")
             attackTimes = 1 + actor.twoAttacks
-            dice = int(re.findall(r'\d+',weap.diceType)[0])
+            # Handle diceType being either a string or a list
+            if isinstance(weap.diceType, list):
+                dice = int(re.findall(r'\d+', weap.diceType[0])[0]) if weap.diceType else 0
+            else:
+                dice = int(re.findall(r'\d+', weap.diceType)[0])
             diceCount = weap.diceCount
             
             avgDmg +=  attackTimes * (0.5 + weap.dmgMod + diceCount * dice / 2 )
@@ -638,8 +642,7 @@ def doAction(actor, map, turnChoice):
         weaponChoice = [x for x in actor.weaponList if x.name == turnChoice.name][0]
         if map.arrayCenters[ turnChoice.moveCoord] != '' and map.arrayCenters[ turnChoice.moveCoord] != actor:
             actorCoord = [x for x in map.arrayCenters.keys() if map.arrayCenters[x] == actor][0]
-            newCoord = map.moveToNearest(actor,  turnChoice.moveCoord) # coordWithinReach(actorCoord, turnChoice.moveCoord, weaponChoice.range, map)#
-            map.moveActor(actor, newCoord)
+            map.moveToNearest(actor, turnChoice.moveCoord)  # This moves the actor, doesn't return a coord
         elif map.arrayCenters[ turnChoice.moveCoord] != actor:
             
             map.moveActor(actor,  turnChoice.moveCoord)
@@ -656,7 +659,7 @@ def doAction(actor, map, turnChoice):
 def healSpellTurn(actor, turnChoice, map):
     actorCoord = [x for x in map.arrayCenters.keys() if map.arrayCenters[x] == actor][0]
     player = 1
-    if str(type(actor)) == "<class 'monster.Monster'>":
+    if 'Monster' in str(type(actor)):
         player = 0
     moveCoord = turnChoice.moveCoord
     print(moveCoord)
@@ -709,7 +712,7 @@ def takeHealing(actor, people, dmg, map):
 def castSpellTurn(actor, turnChoice, map):
     actorCoord = [x for x in map.arrayCenters.keys() if map.arrayCenters[x] == actor][0]
     player = 1
-    if str(type(actor)) == "<class 'monster.Monster'>":
+    if 'Monster' in str(type(actor)):
         print('cast spell turn: i am a monster')
         player = 0
     
@@ -772,7 +775,7 @@ def castSpellTurn(actor, turnChoice, map):
 def weaponAttack(actor, target, weap, map):
 
         player = 1
-        if str(type(actor)) == "<class 'monster.Monster'>":
+        if 'Monster' in str(type(actor)):
             player = 0
         myIndex = [list(map.arrayCenters).index(i) for i in map.arrayCenters.keys() if map.arrayCenters[i] == actor][0]
         targetIndex = [list(map.arrayCenters).index(i) for i in map.arrayCenters.keys() if map.arrayCenters[i] == target][0]
@@ -782,8 +785,8 @@ def weaponAttack(actor, target, weap, map):
         if targDistance > weap.range/5:
             print(actor.name,'out of range to hit',target.name,'with',weap.name,'...',targDistance,'..',weap.range/5)
             safe_log('\t' + actor.name + ' out of range to hit ' + target.name + ' with ' + weap.name + ' ... '+ str(targDistance) + ' .. ' + str(weap.range/5), map)
-            # jth figure out a return value for this so that it doesnt just crash and insteads sends a warning 
-            raise SystemExit('Crashed in weaponAttack')
+            # Out of range - return without doing anything
+            return
         
         
         if not player: 
@@ -1109,7 +1112,8 @@ def bestSquare(actor, map, length, reach):
         return (0,0)
     finalList = []
     for moveCoord in flat:
-        maxHit =0
+        maxHit = 0
+        totalHit = []  # Initialize totalHit to empty list
         for op in operations:
             startCoord = (op[0](moveCoord[0], op[1]), op[2](moveCoord[1], op[3]))
             squareCoords = []
@@ -1538,10 +1542,11 @@ def printDeathSaves(deathSaves):
 def takeDmg(actor, target, dmg, map):
     print(actor.name, 'is doing ', dmg, 'to', target.name)
     safe_log('\t' + actor.name + ' is doing ' + str(dmg) + ' to ' + target.name, map)
-    if str(type(target)) == "<class 'monster.Monster'>":
+    if 'Monster' in str(type(target)):
         target.health -= dmg
         if target.health <= 0:
             target.alive = 0
+            print(target.name + ' is dead')
     else: 
         if 'deathSaves' in target.status:
             target.deathSaves['fail'].append(1)
@@ -1565,7 +1570,7 @@ def takeReaction(actor, m, target):
     map = m
     
     player = 1
-    if str(type(actor)) == "<class 'monster.Monster'>":
+    if 'Monster' in str(type(actor)):
         player = 0
     myIndex = [list(map.arrayCenters).index(i) for i in map.arrayCenters.keys() if map.arrayCenters[i] == actor][0]
     targetIndex = [list(map.arrayCenters).index(i) for i in map.arrayCenters.keys() if map.arrayCenters[i] == target][0]
@@ -1598,7 +1603,11 @@ def takeReaction(actor, m, target):
             prof = 0
         else:
         
-            dice = int(re.findall(r'\d+',weap.diceType)[0])
+            # Handle diceType being either a string or a list
+            if isinstance(weap.diceType, list):
+                dice = int(re.findall(r'\d+', weap.diceType[0])[0]) if weap.diceType else 0
+            else:
+                dice = int(re.findall(r'\d+', weap.diceType)[0])
             diceCount = weap.diceCount
             avgDmg +=  attackTimes * (0.5 + weap.dmgMod + diceCount * dice / 2 )
             prof = actor.proficiency

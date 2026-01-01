@@ -45,5 +45,21 @@
         ],
         "numHexes": 20,
         "mapImage": "A:\\Code\\Python\\Git Repo\\DMSim\\App\\Maps\\maze Engine.webp"
+    },
+    "Lich": {
+        "name": "Lich",
+        "party": [
+            "Cobo",
+            "VV",
+            "Adrel",
+            "Aldric",
+            "Galleus"
+        ],
+        "npcs": [],
+        "enemies": [
+            "Lich"
+        ],
+        "numHexes": 20,
+        "mapImage": "A:\\Code\\Python\\Git Repo\\DMSim\\App\\Maps\\maze Engine.webp"
     }
 }

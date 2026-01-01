@@ -33,8 +33,15 @@ class Monster:
         with open(dmSimPath + "\\spells\\spellList.json", "r") as file:
             spellList = json.load(file)
         for spell in spells.keys():
-            self.spells[spell] = [spells[spell], spellList[spell]]
-            self.initSpells[spell] = [spells[spell], spellList[spell]]
+            # Handle both formats: {"spell": count} and {"spell": [count, dict]}
+            if isinstance(spells[spell], list):
+                # Already in [count, dict] format from JSON
+                self.spells[spell] = spells[spell]
+                self.initSpells[spell] = spells[spell]
+            else:
+                # Simple count format, need to add spell details
+                self.spells[spell] = [spells[spell], spellList[spell]]
+                self.initSpells[spell] = [spells[spell], spellList[spell]]
         
         self.multiAttack = multiAttack 
         self.cc = [] # if cc'ed will be length 3 and in format ['spellLvl', 'modToRoll', dcToBeat]
@@ -48,6 +55,9 @@ class Monster:
         self.legActionWeapon = legAction[1]
         self.reaction = 1
         self.alive = 1
+        self.status = []  # Track character status conditions (like death saves)
+        self.deathSaves = {'fail': [], 'pass': []}  # Track death saving throws
+        self.twoAttacks = 0  # Monsters don't have the Two-Weapon Fighting feature by default
         self.AvgdmgCalc()
 
     def AvgdmgCalc(self):
@@ -287,8 +297,8 @@ def createMonsterList(nameList, path):
         with open(path + "monsters.json", "r") as file:
             monsters = json.load(file)
     except FileNotFoundError:
-        print('path failed to load characters')
-        pass
+        print('path failed to load monsters')
+        return []
     
     monsterList = [Monster(name = name,
                            ac= monsters[name]['ac'],

@@ -4,7 +4,9 @@ from encounterSim import Encounter
 import sys
 import json
 import pathlib
-dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-6]
+
+# Get to DMSim root directory (up from Simulation to model to DMSim)
+dmSimPath = str(pathlib.Path(__file__).parent.parent.parent.resolve())
 
 
 sys.path.insert(0, dmSimPath + '/actors/statReader')
@@ -19,45 +21,114 @@ from model.monster import Monster, MonsterDump, createMonsterList
 
 if __name__ == "__main__":
 
-    #with open("A:\\Code\\Python\\Git Repo\\DMSim\\actors\\savedObjs\\monsters.json", "r") as f:
-    #    data = json.load(f)
-    #
-    #for monster in data.keys():
-    #    #if 'size' not in data[monster].keys():
-    #    data[monster]['size'] = 25
-    #    #print(monster, data[monster]['size'])
-    #with open("A:\\Code\\Python\\Git Repo\\DMSim\\actors\\savedObjs\\monsters.json", "w") as f:
-    #        json.dump(data, f, indent=2)
-    #print(test)
-    #MonsterDump(test.monster, path = dmSimPath + '\\actors\\savedObjs\\')
-    ##r.seed(1)
-    path = dmSimPath + '\\actors\\savedObjs\\'
-    #party = createPartyList(['Ephraim', 'Darian', 'Root','Arabella'], path = path)
-    #enemy = createPartyList(['Darian'], path = path)
-    #enemy = createMonsterList(["Quenth"] + ["Demogorgon" for i in range(1)], path = path)
-    #map = Map(10, party, enemy)
-    ##print(party[0].Image)
-    ##for spell in party[1].spells:
-    ##    print(spell)
-    ##takeTurn(party[0], map, interactive=False)
-    #states = Encounter(party, [], enemyList=enemy, n =1)
-    #takeTurn(party[2], map, True)
-    #enemy = createMonsterList(["Quenth"] + ["Drow" for i in range(10)], path = path)
-    #enemy = createMonsterList(["Quenth"] , path = path)
-    #map = Map(15, party, enemy)
-    #range = 0
-    #area = 60
-    ##print(party[2].takeTurn(map))
-    ###print(party[0].rollDeathSave())
-    ###print(party[2].name)
-    ##print(party)
-    ##enemy = createMonsterList(["Quenth"] + ["Demogorgon" for i in range(1)], path = path)
-    #enemy = createPartyList(['Root', 'Arabella'], path = path)
-    ##print(enemy)
-    #states = Encounter(party, [], enemyList=enemy, n =1)
     
-    enemy = createMonsterList(["Dryad" for i in range(10)], path = path)
-    party = createPartyList(['Cobo', 'VV', 'Galleus','Aldric', 'Adrel'], path = path)
-    print(party)
-    states = Encounter(party, [], enemyList=enemy, n =10)
+    path = dmSimPath + '\\actors\\savedObjs\\'
+    
+    print("=" * 60)
+    print("TESTING ENCOUNTER SIMULATIONS")
+    print("=" * 60)
+    
+    # Test 1: Party vs Small Group of Dryads
+    print("\n\nTEST 1: Party vs 3 Dryads")
+    print("-" * 60)
+    enemy = createMonsterList(["Merrow" for i in range(20)], path=path)
+    party = createPartyList(['Cobo', 'VV', 'Galleus','Aldric', 'Adrel'], path=path)
+    if enemy and party:
+        states = Encounter(party, [], enemyList=enemy, n=10)
+    else:
+        print("Failed to load party or enemies")
+    
+    # Test 2: Party vs Mixed Monster Group
+    print("\n\nTEST 2: Party vs Mixed Monsters (Goblins + Hobgoblin)")
+    print("-" * 60)
+    enemy = createMonsterList(["Medusa"] * 4 + ["Hobgoblin"], path=path)
+    party = createPartyList(['Cobo', 'VV', 'Galleus'], path=path)
+    if enemy and party:
+        states = Encounter(party, [], enemyList=enemy, n=10)
+    else:
+        print("Failed to load party or enemies")
+    
+    # Test 3: Smaller party vs tougher enemy
+    print("\n\nTEST 3: Small Party vs Ogre")
+    print("-" * 60)
+    enemy = createMonsterList(["Ogre"], path=path)
+    party = createPartyList(['Cobo', 'VV'], path=path)
+    if enemy and party:
+        states = Encounter(party, [], enemyList=enemy, n=10)
+    else:
+        print("Failed to load party or enemies")
+    
+    # Test 4: Party vs Spellcaster
+    print("\n\nTEST 4: Party vs Cult Fanatic (Spellcaster)")
+    print("-" * 60)
+    enemy = createMonsterList(["Cult Fanatic"], path=path)
+    party = createPartyList(['Cobo', 'VV', 'Galleus'], path=path)
+    if enemy and party:
+        states = Encounter(party, [], enemyList=enemy, n=10)
+    else:
+        print("Failed to load party or enemies")
+    
+    # Test 5: Party vs Many Weak Enemies
+    print("\n\nTEST 5: Party vs 8 Kobolds")
+    print("-" * 60)
+    enemy = createMonsterList(["Kobold"] * 8, path=path)
+    party = createPartyList(['Cobo', 'VV', 'Galleus','Aldric'], path=path)
+    if enemy and party:
+        states = Encounter(party, [], enemyList=enemy, n=10)
+    else:
+        print("Failed to load party or enemies")
+    
+    # Test 6: Difficult - Multiple High-CR Enemies (potential party loss)
+    print("\n\nTEST 6: DIFFICULT - Party vs 2 Trolls (party might lose)")
+    print("-" * 60)
+    enemy = createMonsterList(["Troll"] * 2, path=path)
+    party = createPartyList(['Cobo', 'VV', 'Galleus','Aldric'], path=path)
+    if enemy and party:
+        states = Encounter(party, [], enemyList=enemy, n=10)
+    else:
+        print("Failed to load party or enemies")
+    
+    # Test 7: Difficult - Dragons (very high CR)
+    print("\n\nTEST 7: VERY DIFFICULT - Small Party vs Young Silver Dragon")
+    print("-" * 60)
+    enemy = createMonsterList(["Young Silver Dragon"], path=path)
+    party = createPartyList(['Cobo', 'VV'], path=path)
+    if enemy and party:
+        states = Encounter(party, [], enemyList=enemy, n=10)
+    else:
+        print("Failed to load party or enemies")
+    
+    # Test 8: Difficult - Many Medium Enemies
+    print("\n\nTEST 8: DIFFICULT - Party vs 4 Duergar (melee heavy)")
+    print("-" * 60)
+    enemy = createMonsterList(["Duergar"] * 4, path=path)
+    party = createPartyList(['Cobo', 'VV', 'Galleus'], path=path)
+    if enemy and party:
+        states = Encounter(party, [], enemyList=enemy, n=10)
+    else:
+        print("Failed to load party or enemies")
+    
+    # Test 9: Moderate-Difficult - Multiple Spellcasters
+    print("\n\nTEST 9: Challenging - Party vs 3 Mages (spellcaster heavy)")
+    print("-" * 60)
+    enemy = createMonsterList(["Mage"] * 3, path=path)
+    party = createPartyList(['Cobo', 'VV', 'Galleus','Aldric'], path=path)
+    if enemy and party:
+        states = Encounter(party, [], enemyList=enemy, n=10)
+    else:
+        print("Failed to load party or enemies")
+    
+    # Test 10: Boss Fight - Single Powerful Enemy
+    print("\n\nTEST 10: Boss Fight - Full Party vs Lich")
+    print("-" * 60)
+    enemy = createMonsterList(["Lich"], path=path)
+    party = createPartyList(['Cobo', 'VV', 'Galleus','Aldric', 'Adrel'], path=path)
+    if enemy and party:
+        states = Encounter(party, [], enemyList=enemy, n=10)
+    else:
+        print("Failed to load party or enemies")
+    
+    print("\n" + "=" * 60)
+    print("ALL TESTS COMPLETE")
+    print("=" * 60)
     
