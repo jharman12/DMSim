@@ -26,14 +26,13 @@ from encounterSim import Encounter
 
 
 '''
-Need to allow encounters to have more than one enemy of the same name
-Add CR difficulty to encounters
+
 fix model to run to grade combat through model interactions
 add spell creation window
 add default map image if none is provided
-add testing map window groups to unify layout
+
 move spell area button next to targets input
-change target input to label of 
+
 Add auto generate encounter by difficulty
 '''
 class EncounterStore:
