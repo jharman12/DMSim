@@ -65,9 +65,9 @@ class CharacterEditor(QWidget):
         super().__init__()
         self.store = character_store
         
-
         self.setWindowTitle("Character Sheet")
         self.weapon_widgets = []
+        self.class_widgets = []  # Track class entries
         self.image_path = None
 
         self.scroll_area = QScrollArea(self)
@@ -78,6 +78,7 @@ class CharacterEditor(QWidget):
         main_layout.addWidget(self._buildCharacterLoader())
 
         main_layout.addWidget(self._buildCoreInfo())
+        main_layout.addWidget(self._buildClasses())
         main_layout.addWidget(self._buildAbilityScores())
         main_layout.addWidget(self._buildWeapons())
         main_layout.addWidget(self._buildImagePicker())
@@ -111,11 +112,19 @@ class CharacterEditor(QWidget):
             pass
 
         # core inputs
-        for w in (self.name_input, self.class_input, self.ac_input, self.hp_input):
+        for w in (self.name_input, self.level_input, self.ac_input, self.hp_input):
             try:
                 set_font(w, base)
             except Exception:
                 pass
+
+        # class widgets
+        for c in self.class_widgets:
+            for widget in c.values():
+                try:
+                    set_font(widget, base)
+                except Exception:
+                    pass
 
         for spin in self.mods.values():
             try:
@@ -268,12 +277,14 @@ class CharacterEditor(QWidget):
 
     def clearForm(self):
         self.name_input.clear()
-        self.class_input.clear()
         self.level_input.setValue(1)
         self.ac_input.setValue(10)
         self.hp_input.setValue(1)
         self.image_label.setText("No Image")
         self.image_path = None
+        
+        # Clear classes
+        self.clearClasses()
 
         for spin in self.mods.values():
             spin.setValue(0)
@@ -291,12 +302,23 @@ class CharacterEditor(QWidget):
             return
 
         self.name_input.setText(name)
-        self.class_input.setText(data["class"])
-        self.level_input.setValue(data["level"])
-        self.ac_input.setValue(data["ac"])
-        self.hp_input.setValue(data["hp"])
+        
+        # Handle both single-class and multiclass formats
+        class_data = data.get("class")
+        self.clearClasses()
+        if isinstance(class_data, dict):
+            # Multiclass character
+            for class_name, level in sorted(class_data.items()):
+                self.addClassFromData({"name": class_name, "level": level})
+        else:
+            # Single-class character
+            self.addClassFromData({"name": class_data, "level": data.get("level", 1)})
+        
+        self.level_input.setValue(data.get("level", 1))
+        self.ac_input.setValue(data.get("ac", 10))
+        self.hp_input.setValue(data.get("hp", 1))
 
-        self.loadModifiers(data["mods"])
+        self.loadModifiers(data.get("mods", {}))
         if "image" in data:
             self.image_path = data["image"]
             px = QPixmap(self.image_path).scaled(100, 100, Qt.KeepAspectRatio)
@@ -304,7 +326,7 @@ class CharacterEditor(QWidget):
         else:
             self.image_label.setText("No Image")
         self.clearWeapons()
-        self.addWeaponFromData(data["weapons"])
+        self.addWeaponFromData(data.get("weapons", []))
 
 
     def _buildCoreInfo(self):
@@ -312,7 +334,6 @@ class CharacterEditor(QWidget):
         grid = QGridLayout()
 
         self.name_input = QLineEdit()
-        self.class_input = QLineEdit()
 
         self.level_input = QSpinBox()
         self.level_input.setRange(1, 20)
@@ -326,9 +347,6 @@ class CharacterEditor(QWidget):
         grid.addWidget(QLabel("Name"), 0, 0)
         grid.addWidget(self.name_input, 0, 1)
 
-        grid.addWidget(QLabel("Class"), 1, 0)
-        grid.addWidget(self.class_input, 1, 1)
-
         grid.addWidget(QLabel("Level"), 0, 2)
         grid.addWidget(self.level_input, 0, 3)
 
@@ -340,6 +358,94 @@ class CharacterEditor(QWidget):
 
         box.setLayout(grid)
         return box
+
+    def _buildClasses(self):
+        """Build the classes UI similar to weapons."""
+        box = QGroupBox("Classes")
+        layout = QVBoxLayout()
+
+        self.class_container = QVBoxLayout()
+        layout.addLayout(self.class_container)
+
+        add_btn = QPushButton("+ Add Class")
+        add_btn.clicked.connect(self.addClass)
+        layout.addWidget(add_btn)
+
+        box.setLayout(layout)
+        return box
+
+    def addClass(self):
+        """Add a new class entry."""
+        row = QHBoxLayout()
+
+        class_combo = QComboBox()
+        class_combo.addItems([
+            "Barbarian", "Bard", "Cleric", "Druid", "Fighter", "Monk",
+            "Paladin", "Ranger", "Rogue", "Sorcerer", "Warlock", "Wizard", "Artificer"
+        ])
+
+        level_spin = QSpinBox()
+        level_spin.setRange(1, 20)
+        level_spin.setValue(1)
+
+        del_btn = QPushButton("Delete")
+        del_btn.clicked.connect(lambda: self.deleteClass(row))
+
+        row.addWidget(QLabel("Class:"))
+        row.addWidget(class_combo)
+        row.addWidget(QLabel("Level:"))
+        row.addWidget(level_spin)
+        row.addWidget(del_btn)
+
+        self.class_container.addLayout(row)
+
+        self.class_widgets.append({
+            "class_combo": class_combo,
+            "level_spin": level_spin,
+            "delete_btn": del_btn,
+            "layout": row
+        })
+
+        # Apply current font size to new widgets
+        mw = self.window()
+        if mw is not None:
+            try:
+                base = mw.TextScale.size(mw.text_scale)
+                for widget in [class_combo, level_spin, del_btn]:
+                    try:
+                        set_font(widget, base)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
+    def deleteClass(self, layout):
+        """Delete a class entry."""
+        for i in range(self.class_container.count()):
+            item = self.class_container.itemAt(i)
+            if item.layout() == layout:
+                self.class_container.takeAt(i)
+                self._clearLayout(layout)
+                for j, c in enumerate(self.class_widgets):
+                    if c["layout"] == layout:
+                        del self.class_widgets[j]
+                        break
+                break
+
+    def addClassFromData(self, data):
+        """Add a class entry from character data."""
+        self.addClass()
+        c = self.class_widgets[-1]
+        c["class_combo"].setCurrentText(data["name"])
+        c["level_spin"].setValue(data["level"])
+
+    def clearClasses(self):
+        """Clear all class entries."""
+        while self.class_container.count() > 0:
+            item = self.class_container.takeAt(0)
+            if item.layout():
+                self._clearLayout(item.layout())
+        self.class_widgets.clear()
     def loadModifiers(self, modifiers: dict):
         """
         Load ability modifiers into UI inputs.
@@ -517,12 +623,31 @@ class CharacterEditor(QWidget):
     def saveCharacter(self):
         name = self.name_input.text().strip()
         if not name:
+            QMessageBox.warning(self, "Warning", "Please enter a character name")
             return
+
+        # Validate we have at least one class
+        if len(self.class_widgets) == 0:
+            QMessageBox.warning(self, "Warning", "Please add at least one class")
+            return
+
+        # Build class data from class widgets
+        class_data = {}
+        total_level = 0
+        for c in self.class_widgets:
+            class_name = c["class_combo"].currentText()
+            class_level = c["level_spin"].value()
+            class_data[class_name] = class_level
+            total_level += class_level
+
+        # If only one class, save as string for backward compatibility
+        if len(class_data) == 1:
+            class_data = list(class_data.keys())[0]
 
         data = {
             "name": name,
-            "class": self.class_input.text(),
-            "level": self.level_input.value(),
+            "class": class_data,
+            "level": total_level,
             "ac": self.ac_input.value(),
             "hp": self.hp_input.value(),
             "image": self.image_path,
@@ -543,22 +668,7 @@ class CharacterEditor(QWidget):
 
         self.store.upsert(name, data)
         self.refreshCharacters()
-        #self.character_db[name] = data
-
-        #if not self.current_db_path:
-        #    self.current_db_path, _ = QFileDialog.getSaveFileName(
-        #        self, "Save Character Database", "", "JSON Files (*.json)"
-        #    )
-        #    if not self.current_db_path:
-        #        return
-        #
-        #with open(self.current_db_path, "w") as f:
-        #    json.dump({"characters": self.character_db}, f, indent=4)
-        #
-        #if self.character_selector.findText(name) == -1:
-        #    self.character_selector.addItem(name)
-        #
-        #self.character_selector.setCurrentText(name)
+        QMessageBox.information(self, "Success", f"Character '{name}' saved successfully!")
 
 
 

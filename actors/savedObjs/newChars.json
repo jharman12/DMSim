@@ -1,7 +1,10 @@
 {
   "Cobo": {
     "name": "Cobo",
-    "class": "Sorcerer",
+    "class": {
+      "Sorcerer": 4,
+      "Warlock": 1
+    },
     "level": 5,
     "ac": 18,
     "hp": 36,
@@ -55,7 +58,10 @@
   },
   "Aldric": {
     "name": "Aldric",
-    "class": "Sorcerer",
+    "class": {
+      "Sorcerer": 4,
+      "Cleric": 1
+    },
     "level": 5,
     "ac": 20,
     "hp": 38,
@@ -146,10 +152,9 @@
   "TestMulticlass": {
     "name": "TestMulticlass",
     "class": {
-      "Fighter": 5,
-      "Wizard": 3
+      "Bard": 3
     },
-    "level": 8,
+    "level": 3,
     "ac": 18,
     "hp": 64,
     "image": null,
