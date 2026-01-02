@@ -1,13 +1,26 @@
 import json
 from PyQt5.QtWidgets import (
-    QWidget, QLabel, QLineEdit, QSpinBox, QComboBox,
+    QWidget, QLabel, QLineEdit, QSpinBox, QComboBox, QCompleter,
     QPushButton, QFileDialog, QVBoxLayout, QHBoxLayout,
     QGridLayout, QGroupBox, QListWidget, QListWidgetItem,
     QScrollArea, QApplication, QTabWidget, QMessageBox, QScrollArea
 )
 from PyQt5.QtGui import QPixmap, QFont
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QEvent
 from pathlib import Path
+
+class AutocompleteLineEdit(QLineEdit):
+    """QLineEdit that accepts Tab to autocomplete with the closest match."""
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Tab:
+            completer = self.completer()
+            if completer and completer.completionCount() > 0:
+                completer.setCurrentRow(0)
+                completion = completer.currentCompletion()
+                self.setText(completion)
+            event.accept()
+            return
+        super().keyPressEvent(event)
 
 class CharacterStore:
     def __init__(self, file_path="A:\\Code\\Python\\Git Repo\\DMSim\\actors\\savedObjs\\newChars.json"):
@@ -69,6 +82,12 @@ class CharacterEditor(QWidget):
         self.weapon_widgets = []
         self.class_widgets = []  # Track class entries
         self.image_path = None
+        self.spell_list = None
+        self.spell_input = None
+        self.spell_group = None
+        self.spell_add_btn = None
+        self.spell_remove_btn = None
+        self.all_spells = self._load_spell_names()
 
         self.scroll_area = QScrollArea(self)
         self.container = QWidget()
@@ -79,6 +98,7 @@ class CharacterEditor(QWidget):
 
         main_layout.addWidget(self._buildCoreInfo())
         main_layout.addWidget(self._buildClasses())
+        main_layout.addWidget(self._buildSpells())
         main_layout.addWidget(self._buildAbilityScores())
         main_layout.addWidget(self._buildWeapons())
         main_layout.addWidget(self._buildImagePicker())
@@ -125,6 +145,15 @@ class CharacterEditor(QWidget):
                     set_font(widget, base)
                 except Exception:
                     pass
+
+        # spells widgets
+        for w in (self.spell_input, self.spell_list, getattr(self, 'spell_add_btn', None), getattr(self, 'spell_remove_btn', None)):
+            if w is None:
+                continue
+            try:
+                set_font(w, base)
+            except Exception:
+                pass
 
         for spin in self.mods.values():
             try:
@@ -187,6 +216,16 @@ class CharacterEditor(QWidget):
                 item.widget().deleteLater()
             elif item.layout():
                 self._clearLayout(item.layout())
+
+    def _load_spell_names(self):
+        """Load spell names from spellList.json for completer; fallback to empty list on error."""
+        try:
+            spell_path = Path(__file__).resolve().parent.parent / "spells" / "spellList.json"
+            with open(spell_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            return sorted(list(data.keys()))
+        except Exception:
+            return []
 
 
     def loadCharacterDatabase(self):
@@ -286,6 +325,9 @@ class CharacterEditor(QWidget):
         # Clear classes
         self.clearClasses()
 
+        # Clear spells
+        self.clearSpells()
+
         for spin in self.mods.values():
             spin.setValue(0)
 
@@ -325,6 +367,14 @@ class CharacterEditor(QWidget):
             self.image_label.setPixmap(px)
         else:
             self.image_label.setText("No Image")
+        # Spells (optional known list)
+        self.clearSpells()
+        known_spells = data.get("known_spells")
+        if known_spells:
+            self.spell_group.setChecked(True)
+            self._set_spell_widgets_enabled(True)
+            for spell in known_spells:
+                self.addSpellFromData(spell)
         self.clearWeapons()
         self.addWeaponFromData(data.get("weapons", []))
 
@@ -373,6 +423,100 @@ class CharacterEditor(QWidget):
 
         box.setLayout(layout)
         return box
+
+    def _buildSpells(self):
+        """Optional known-spells section; when unchecked, uses full spell list."""
+        box = QGroupBox("Known Spells (optional)")
+        box.setCheckable(True)
+        box.setChecked(False)
+        layout = QVBoxLayout()
+
+        # Searchable input with completer
+        input_row = QHBoxLayout()
+        self.spell_input = AutocompleteLineEdit()
+        self.spell_input.setPlaceholderText("Type to search spells (Tab to autocomplete)")
+        if self.all_spells:
+            completer = QCompleter(self.all_spells)
+            completer.setCaseSensitivity(Qt.CaseInsensitive)
+            completer.setFilterMode(Qt.MatchContains)
+            self.spell_input.setCompleter(completer)
+        self.spell_input.returnPressed.connect(self.addSpell)
+        add_btn = QPushButton("Add")
+        add_btn.clicked.connect(self.addSpell)
+        self.spell_add_btn = add_btn
+        input_row.addWidget(self.spell_input)
+        input_row.addWidget(add_btn)
+        layout.addLayout(input_row)
+
+        # List of selected spells
+        self.spell_list = QListWidget()
+        self.spell_list.setMaximumHeight(150)
+        layout.addWidget(self.spell_list)
+
+        remove_btn = QPushButton("Remove Selected")
+        remove_btn.clicked.connect(self.removeSelectedSpell)
+        self.spell_remove_btn = remove_btn
+        layout.addWidget(remove_btn)
+
+        box.setLayout(layout)
+        self.spell_group = box
+        box.toggled.connect(self._set_spell_widgets_enabled)
+        self._set_spell_widgets_enabled(False)
+        return box
+
+    def _set_spell_widgets_enabled(self, enabled):
+        if not self.spell_group:
+            return
+        for widget in (self.spell_input, self.spell_list):
+            if widget is not None:
+                widget.setEnabled(enabled)
+        # Buttons are children of layout; enable/disable by traversing
+        if self.spell_group.layout():
+            for i in range(self.spell_group.layout().count()):
+                item = self.spell_group.layout().itemAt(i)
+                w = item.widget()
+                if w is not None:
+                    w.setEnabled(enabled)
+                elif item.layout():
+                    for j in range(item.layout().count()):
+                        sub = item.layout().itemAt(j).widget()
+                        if sub is not None:
+                            sub.setEnabled(enabled)
+
+    def addSpell(self):
+        if not self.spell_group.isChecked():
+            self.spell_group.setChecked(True)
+        name = self.spell_input.text().strip()
+        if not name:
+            return
+        # Avoid duplicates
+        for i in range(self.spell_list.count()):
+            if self.spell_list.item(i).text().lower() == name.lower():
+                self.spell_input.clear()
+                return
+        self.spell_list.addItem(name)
+        self.spell_input.clear()
+
+    def removeSelectedSpell(self):
+        item = self.spell_list.currentItem()
+        if item:
+            self.spell_list.takeItem(self.spell_list.row(item))
+
+    def addSpellFromData(self, spell_name):
+        if not self.spell_group.isChecked():
+            self.spell_group.setChecked(True)
+        # Avoid duplicates
+        for i in range(self.spell_list.count()):
+            if self.spell_list.item(i).text().lower() == spell_name.lower():
+                return
+        self.spell_list.addItem(spell_name)
+
+    def clearSpells(self):
+        if self.spell_list:
+            self.spell_list.clear()
+        if self.spell_group:
+            self.spell_group.setChecked(False)
+        self._set_spell_widgets_enabled(False)
 
     def addClass(self):
         """Add a new class entry."""
@@ -654,6 +798,11 @@ class CharacterEditor(QWidget):
             "mods": {k: v.value() for k, v in self.mods.items()},
             "weapons": []
         }
+
+        # Optional known spells
+        if self.spell_group.isChecked():
+            known = [self.spell_list.item(i).text() for i in range(self.spell_list.count())]
+            data["known_spells"] = known
 
         for w in self.weapon_widgets:
             data["weapons"].append({

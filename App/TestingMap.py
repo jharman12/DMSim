@@ -1061,13 +1061,14 @@ class CustomGraphicsView(QGraphicsView):
         self.removeAllActors()
         # add the characters back
         for player in myEncounter.totalList:
-            if player.Image is None:
+            if player.Image == None:
                 px = QPixmap(dmSimPath + "\\App\\unknown.jpg")
             elif os.path.exists(dmSimPath + player.Image):
                 px = QPixmap(dmSimPath + player.Image)
             elif os.path.exists(player.Image):
                 px = QPixmap(player.Image)
             else:
+                print("path doesnt exist, trying unknown")
                 px = QPixmap(dmSimPath + "\\App\\unknown.jpg")
 
             self.addCharacterPixmap(px, player)
@@ -1630,6 +1631,8 @@ class MapWidget(QWidget):
                 px = QPixmap(dmSimPath + "\\App\\unknown.jpg")
             elif os.path.exists(dmSimPath + player.Image):
                 px = QPixmap(dmSimPath + player.Image)
+            elif os.path.exists(player.Image):
+                px = QPixmap(player.Image)
             else:
                 px = QPixmap(dmSimPath + "\\App\\unknown.jpg")
 

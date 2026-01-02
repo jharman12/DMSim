@@ -20,7 +20,7 @@ from modelMethods import down_round, weibull, cone, WeaponNew, col_round, bestSp
 
 
 class Player:
-    def __init__(self, name, lvl, ac, health, modDict, turnFactors, weaponList, type, Image = False):
+    def __init__(self, name, lvl, ac, health, modDict, turnFactors, weaponList, type, Image = False, known_spells=None):
         self.name = name
         
         # Support multiclassing: type can be either a string (single class) or dict (multiclass)
@@ -49,6 +49,8 @@ class Player:
         self.turnFactors = turnFactors
         self.size = 25
         self.defineSpellSlots()
+        # Optional known spells filter (backward compatible when None)
+        self.known_spells = set(known_spells) if known_spells else None
         self.cc = [] # if cc'ed will be length 3 and in format ['spellLvl', 'modToRoll', dcToBeat]
         self.initMod = down_round((self.modDict['Dexterity']-10)/2)
         self.legRes = 0
@@ -105,6 +107,8 @@ class Player:
         for spell in spellList:
             # Check if any of the character's classes can cast this spell
             canCast = any(className in spellList[spell]['classes'] for className in self.classes.keys())
+            if self.known_spells is not None and spell not in self.known_spells:
+                continue
             if spellList[spell]['lvl'] <= self.highestSpell and canCast:
                 self.spells[spell] = spellList[spell]
         self.possibleActions = {}
@@ -434,7 +438,8 @@ def createPartyList(nameList, path):
                                            
                                            for weapon in characters[name]['weapons']], 
                         type = characters[name]['class'],
-                        Image= characters[name]['image'])
+                        Image= characters[name]['image'],
+                        known_spells=characters[name].get('known_spells'))
                         
                         for name in nameList if name in list(characters.keys())]
     return partyList

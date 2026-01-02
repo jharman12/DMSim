@@ -8,7 +8,7 @@
     "level": 5,
     "ac": 18,
     "hp": 36,
-    "image": null,
+    "image": "A:/Code/Python/Git Repo/DMSim/App/Characters/Cobo.png",
     "mods": {
       "str": 13,
       "dex": 13,
@@ -27,6 +27,13 @@
         "dice_type": "d10",
         "damage_mod": 9
       }
+    ],
+    "known_spells": [
+      "Fire Bolt",
+      "Healing Word",
+      "Shield",
+      "Charm Person",
+      "Scorching Ray"
     ]
   },
   "Adrel": {
@@ -35,7 +42,7 @@
     "level": 5,
     "ac": 15,
     "hp": 51,
-    "image": null,
+    "image": "A:/Code/Python/Git Repo/DMSim/App/Characters/Adrel.png",
     "mods": {
       "str": 11,
       "dex": 18,
@@ -59,13 +66,13 @@
   "Aldric": {
     "name": "Aldric",
     "class": {
-      "Sorcerer": 4,
-      "Cleric": 1
+      "Cleric": 1,
+      "Sorcerer": 4
     },
     "level": 5,
     "ac": 20,
     "hp": 38,
-    "image": null,
+    "image": "A:/Code/Python/Git Repo/DMSim/App/Characters/Aldric.png",
     "mods": {
       "str": 16,
       "dex": 8,
@@ -84,6 +91,15 @@
         "dice_type": "d8",
         "damage_mod": 3
       }
+    ],
+    "known_spells": [
+      "Fire Bolt",
+      "Healing Word",
+      "Command",
+      "Guiding Bolt",
+      "Shield",
+      "Shield of Faith",
+      "Scorching Ray"
     ]
   },
   "Galleus": {
@@ -92,7 +108,7 @@
     "level": 5,
     "ac": 20,
     "hp": 71,
-    "image": null,
+    "image": "A:/Code/Python/Git Repo/DMSim/App/Characters/Galleus.png",
     "mods": {
       "str": 11,
       "dex": 20,
@@ -128,7 +144,7 @@
     "level": 5,
     "ac": 10,
     "hp": 30,
-    "image": null,
+    "image": "A:/Code/Python/Git Repo/DMSim/App/Characters/VV.png",
     "mods": {
       "str": 10,
       "dex": 11,
@@ -147,6 +163,13 @@
         "dice_type": "d8",
         "damage_mod": 0
       }
+    ],
+    "known_spells": [
+      "Fire Bolt",
+      "Magic Missile",
+      "Shield",
+      "Shatter",
+      "Fireball"
     ]
   },
   "TestMulticlass": {

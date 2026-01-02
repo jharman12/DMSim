@@ -43,7 +43,7 @@
             "Dryad",
             "Dryad"
         ],
-        "numHexes": 20,
+        "numHexes": 15,
         "mapImage": "A:\\Code\\Python\\Git Repo\\DMSim\\App\\Maps\\maze Engine.webp"
     },
     "Lich": {
