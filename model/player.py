@@ -22,7 +22,20 @@ from modelMethods import down_round, weibull, cone, WeaponNew, col_round, bestSp
 class Player:
     def __init__(self, name, lvl, ac, health, modDict, turnFactors, weaponList, type, Image = False):
         self.name = name
-        self.lvl = int(lvl)
+        
+        # Support multiclassing: type can be either a string (single class) or dict (multiclass)
+        # e.g., "Wizard" or {"Wizard": 5, "Cleric": 3}
+        if isinstance(type, dict):
+            self.classes = type  # {"ClassName": level}
+            self.lvl = sum(type.values())  # Total character level
+            # Primary class is the one with highest level (for display/compatibility)
+            self.DnDclass = max(type.items(), key=lambda x: x[1])[0]
+        else:
+            # Single class - maintain backward compatibility
+            self.classes = {type: int(lvl)}
+            self.lvl = int(lvl)
+            self.DnDclass = type
+        
         self.Image = Image
         self.ac = int(ac)
         self.health = int(health)
@@ -34,7 +47,6 @@ class Player:
         for key in list(turnFactors.keys()):
             turnFactors[key] = float(turnFactors[key])
         self.turnFactors = turnFactors
-        self.DnDclass = type
         self.size = 25
         self.defineSpellSlots()
         self.cc = [] # if cc'ed will be length 3 and in format ['spellLvl', 'modToRoll', dcToBeat]
@@ -67,21 +79,33 @@ class Player:
         intCasters = ['Wizard']
         wisCasters = ['Cleric','Druid', 'Ranger']
 
-        if self.DnDclass in charCasters:
-            self.spellAttackMod = self.proficiency + down_round((self.modDict['Charisma']-10)/2)
-            
-        if self.DnDclass in intCasters:
-            self.spellAttackMod = self.proficiency + down_round((self.modDict['Intelligence']-10)/2)
-        if self.DnDclass in wisCasters:
-            self.spellAttackMod = self.proficiency + down_round((self.modDict['Wisdom']-10)/2)
-        else:
-            self.spellAttackMod = 0
+        # Determine spellcasting ability based on highest-level caster class
+        self.spellAttackMod = 0
+        highestCasterLevel = 0
+        spellcastingAbility = None
+        
+        for className in self.classes.keys():
+            classLevel = self.classes[className]
+            if className in charCasters and classLevel > highestCasterLevel:
+                highestCasterLevel = classLevel
+                spellcastingAbility = 'Charisma'
+            elif className in intCasters and classLevel > highestCasterLevel:
+                highestCasterLevel = classLevel
+                spellcastingAbility = 'Intelligence'
+            elif className in wisCasters and classLevel > highestCasterLevel:
+                highestCasterLevel = classLevel
+                spellcastingAbility = 'Wisdom'
+        
+        if spellcastingAbility:
+            self.spellAttackMod = self.proficiency + down_round((self.modDict[spellcastingAbility]-10)/2)
         self.spellDC = 8 + self.spellAttackMod
         with open(dmSimPath + "\\spells\\spellList.json", "r") as file:
             spellList = json.load(file)
         self.spells = {}
         for spell in spellList:
-            if spellList[spell]['lvl'] <= self.highestSpell and self.DnDclass in spellList[spell]['classes']:
+            # Check if any of the character's classes can cast this spell
+            canCast = any(className in spellList[spell]['classes'] for className in self.classes.keys())
+            if spellList[spell]['lvl'] <= self.highestSpell and canCast:
                 self.spells[spell] = spellList[spell]
         self.possibleActions = {}
         dmgTypes = ['Acid', 'Bludgeoning', 'Cold', 'Fire', 'Force', 'Lightning', 'Necrotic', 'Piercing', 'Poison', 'Psychic', 'Radiant', 'Slashing', 'Thunder']
@@ -94,6 +118,14 @@ class Player:
         for weap in self.weaponList:
             self.possibleActions[weap.name] = 'Wdmg'
         self.AvgdmgCalc()
+    
+    def getClassLevel(self, className):
+        """Get the level in a specific class (0 if not that class)"""
+        return self.classes.get(className, 0)
+    
+    def hasClass(self, className):
+        """Check if character has levels in a specific class"""
+        return className in self.classes
     
     def AvgdmgCalc(self):
         dmgTypes = ['Acid', 'Bludgeoning', 'Cold', 'Fire', 'Force', 'Lightning', 'Necrotic', 'Piercing', 'Poison', 'Psychic', 'Radiant', 'Slashing', 'Thunder']
@@ -203,19 +235,36 @@ class Player:
             can be used to reset used spellslots
 
             making generic based on class
+            For multiclass: combines caster levels (full caster + half caster/2)
 
             also used in Encounter to reset fights
         '''
         fullCaster = ['Druid','Cleric','Sorcerer','Wizard', 'Bard','Warlock'] # dont know if warlock should be here
         halfCaster = ['Ranger','Paladin', 'Artificer']
+        
+        # Calculate effective caster level for multiclassing
+        casterLevel = 0
+        for className, classLevel in self.classes.items():
+            if className in fullCaster:
+                casterLevel += classLevel
+            elif className in halfCaster:
+                casterLevel += classLevel // 2  # Half casters contribute half their levels
+        
+        # Determine twoAttacks based on martial classes
         self.twoAttacks = 1
+        # Check if any martial class is level 5+
+        martialClasses = ['Fighter', 'Ranger', 'Paladin', 'Barbarian', 'Monk', 'Rogue']
+        hasExtraAttack = any(self.getClassLevel(c) >= 5 for c in martialClasses)
+        allFullCasters = all(c in fullCaster for c in self.classes.keys())
+        
+        if allFullCasters or (not hasExtraAttack and self.lvl <= 4):
+            self.twoAttacks = 0
+        
         self.deathSaves = {'pass': [], 'fail': []}
         self.alive = 1
-        
         self.status = []
-        if self.DnDclass in fullCaster or self.lvl <= 4:
-            self.twoAttacks = 0
-        lvl = self.lvl
+        
+        lvl = casterLevel  # Use caster level for spell slots
         self.spellSlots = {
             '0':99999,
             '1':0,
@@ -228,7 +277,15 @@ class Player:
             '8':0,
             '9':0
         }
-        if self.DnDclass in halfCaster:
+        
+        # Determine if character has any half-caster or full-caster levels
+        hasHalfCaster = any(c in halfCaster for c in self.classes.keys())
+        hasFullCaster = any(c in fullCaster for c in self.classes.keys())
+        
+        # If character has only half-caster levels (no full caster), use half-caster progression
+        # Otherwise, use full caster progression based on combined caster level
+        if hasHalfCaster and not hasFullCaster:
+            # Pure half-caster or multi-half-caster progression
             if lvl >= 2:
                 self.spellSlots['1'] = 2
             if lvl >= 3:
@@ -251,8 +308,8 @@ class Player:
                 self.spellSlots['5'] = 1
             if lvl >= 19:
                 self.spellSlots['5'] = 2
-
-        if self.DnDclass in fullCaster:
+        elif hasFullCaster or casterLevel > 0:
+            # Full caster progression (or mix of full and half casters)
             if lvl >= 1:
                 self.spellSlots['1'] = 2
             if lvl >= 2:
@@ -307,7 +364,9 @@ class Player:
    
     def classMeleeDmg(self, hits, dmg):
         fullCaster = ['Druid','Cleric','Sorcerer','Wizard', 'Bard','Warlock'] # dont know if warlock should be here
-        if sum(hits) == 0 or self.DnDclass in fullCaster:
+        # Check if character is ONLY full casters (no martial classes)
+        onlyFullCasters = all(c in fullCaster for c in self.classes.keys())
+        if sum(hits) == 0 or onlyFullCasters:
             return 0
         oncePerTurn = 1
         startDmg = dmg
@@ -316,14 +375,18 @@ class Player:
                 crit = 2
             else:
                 crit = 1
-            if self.DnDclass == 'Ranger' and oncePerTurn:
-                if self.lvl >= 11:
+            # Ranger Hunter's Mark - check Ranger level specifically
+            rangerLevel = self.getClassLevel('Ranger')
+            if rangerLevel > 0 and oncePerTurn:
+                if rangerLevel >= 11:
                     dmg += sum(rollDice(2*crit, 8))
-                elif self.lvl >= 3:
+                elif rangerLevel >= 3:
                     dmg += sum(rollDice(1*crit, 8))
                 oncePerTurn = 0
             
-            if self.DnDclass == 'Paladin' and self.lvl >= 2:
+            # Paladin Divine Smite - check Paladin level specifically
+            paladinLevel = self.getClassLevel('Paladin')
+            if paladinLevel >= 2:
                 highestSpell = 0
                 for index in range(len(list(self.spellSlots))):
                     if self.spellSlots[list(self.spellSlots)[index]] > 0:

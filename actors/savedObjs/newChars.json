@@ -142,5 +142,44 @@
         "damage_mod": 0
       }
     ]
+  },
+  "TestMulticlass": {
+    "name": "TestMulticlass",
+    "class": {
+      "Fighter": 5,
+      "Wizard": 3
+    },
+    "level": 8,
+    "ac": 18,
+    "hp": 64,
+    "image": null,
+    "mods": {
+      "str": 16,
+      "dex": 14,
+      "con": 15,
+      "int": 16,
+      "wis": 10,
+      "cha": 8
+    },
+    "weapons": [
+      {
+        "name": "Longsword",
+        "type": "Melee",
+        "range": 5,
+        "attack_mod": 7,
+        "dice_count": 1,
+        "dice_type": "d8",
+        "damage_mod": 3
+      },
+      {
+        "name": "Longbow",
+        "type": "Ranged",
+        "range": 150,
+        "attack_mod": 6,
+        "dice_count": 1,
+        "dice_type": "d8",
+        "damage_mod": 2
+      }
+    ]
   }
 }
