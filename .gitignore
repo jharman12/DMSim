@@ -1,10 +1,66 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
 
-__pycache__/modelMethods.cpython-312.pyc
-App/__pycache__/character_widget.cpython-312.pyc
-App/__pycache__/character_widget.cpython-312.pyc
-App/__pycache__/custom_graphics_view.cpython-312.pyc
-App/__pycache__/encounter_widget.cpython-312.pyc
-App/__pycache__/test_widget.cpython-312.pyc
-App/__pycache__/map_widget.cpython-312.pyc
-model/__pycache__/player.cpython-312.pyc
-model/__pycache__/monster.cpython-312.pyc
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
