@@ -14,6 +14,9 @@ class Map:
         self.graphicsViewer = graphicsViewer
         self.combatLog = None
         
+        # Wall tracking: {coord: {'hp': int, 'maxHp': int, 'name': str}}
+        self.walls = {}
+        
         ##print('defining array')
         if graphicsViewer is not None:
             self.defineArrayGrid(numHex)
@@ -225,7 +228,8 @@ class Map:
                     else:
                         coord = r.sample(enemySide, 1)[0]
                         #print(member.name, coord)
-                    if self.arrayCenters[coord] == '':
+                    # Check if coordinate is free and not a wall
+                    if self.arrayCenters[coord] == '' and not self.isWall(coord):
                         self.arrayCenters[coord] = member
                         # Update graphics viewer if it exists
                         if self.graphicsViewer is not None:
@@ -252,8 +256,10 @@ class Map:
         min = 999999
         minIndex = -99 # invalid index to catch if nothing is in reach
         for index in nearIndexList:
+            coord = list(self.arrayCenters)[index]
             distance = self.distanceCalc(index, startIndex)
-            if distance <= min and self.arrayCenters[list(self.arrayCenters)[index]] == '':
+            # Check if hex is free (not occupied by actor or wall)
+            if distance <= min and self.arrayCenters[coord] == '' and not self.isWall(coord):
                 min = distance
                 minIndex = index
         if minIndex == -99:
@@ -273,6 +279,95 @@ class Map:
         """Convert map coordinates to viewer index."""
         return list(self.arrayCenters).index(coord)
     
+    def addWall(self, coord, hp=20, name="Wall"):
+        """
+        Add a wall at the specified coordinate.
+        
+        Args:
+            coord: Tuple (x, y) coordinate for the wall
+            hp: Hit points of the wall (default: 20)
+            name: Name/description of the wall (default: "Wall")
+        """
+        if coord in self.arrayCenters:
+            # Clear any actor at this position
+            self.arrayCenters[coord] = 'wall'
+            self.walls[coord] = {'hp': hp, 'maxHp': hp, 'name': name}
+            print(f"Added {name} at {coord} with {hp} HP")
+            
+            # Update graphics viewer if it exists
+            if self.graphicsViewer is not None:
+                wallIndex = self.convertToViewerCoords(coord)
+                self.graphicsViewer.addWall(wallIndex)
+        else:
+            print(f"Cannot add wall: coordinate {coord} not in map")
+    
+    def removeWall(self, coord):
+        """
+        Remove a wall at the specified coordinate.
+        
+        Args:
+            coord: Tuple (x, y) coordinate of the wall to remove
+        """
+        if coord in self.walls:
+            del self.walls[coord]
+            self.arrayCenters[coord] = ''
+            print(f"Removed wall at {coord}")
+            
+            # Update graphics viewer if it exists
+            if self.graphicsViewer is not None:
+                wallIndex = self.convertToViewerCoords(coord)
+                self.graphicsViewer.removeWall(wallIndex)
+        else:
+            print(f"No wall at coordinate {coord}")
+    
+    def damageWall(self, coord, damage):
+        """
+        Deal damage to a wall. Removes the wall if HP drops to 0 or below.
+        
+        Args:
+            coord: Tuple (x, y) coordinate of the wall
+            damage: Amount of damage to deal
+            
+        Returns:
+            bool: True if wall was destroyed, False otherwise
+        """
+        if coord in self.walls:
+            self.walls[coord]['hp'] -= damage
+            print(f"Wall at {coord} took {damage} damage. HP: {self.walls[coord]['hp']}/{self.walls[coord]['maxHp']}")
+            
+            if self.walls[coord]['hp'] <= 0:
+                print(f"Wall at {coord} destroyed!")
+                self.removeWall(coord)
+                return True
+            return False
+        else:
+            print(f"No wall at coordinate {coord}")
+            return False
+    
+    def isWall(self, coord):
+        """
+        Check if a coordinate contains a wall.
+        
+        Args:
+            coord: Tuple (x, y) coordinate to check
+            
+        Returns:
+            bool: True if coordinate has a wall, False otherwise
+        """
+        return coord in self.walls
+    
+    def getWallInfo(self, coord):
+        """
+        Get information about a wall.
+        
+        Args:
+            coord: Tuple (x, y) coordinate of the wall
+            
+        Returns:
+            dict or None: Wall info dictionary or None if no wall exists
+        """
+        return self.walls.get(coord, None)
+    
     def printCurrMap(self):
         string = ''
         coordList = list(self.arrayCenters)
@@ -287,7 +382,9 @@ class Map:
                 
                 if x % 2 == 0 and y % 2 == 0:
                     coord = (x, y)
-                    if self.arrayCenters[coord] == '':
+                    if coord in self.walls:
+                        input = '#'  # Display walls as #
+                    elif self.arrayCenters[coord] == '':
                         input = '.'
                     elif self.arrayCenters[coord] == 'c': 
                         input = self.arrayCenters[coord]
@@ -296,7 +393,9 @@ class Map:
                     string += input + '\t\t'
                 elif x % 2 != 0 and y % 2 != 0:
                     coord = (x, y)
-                    if self.arrayCenters[coord] == '':
+                    if coord in self.walls:
+                        input = '#'  # Display walls as #
+                    elif self.arrayCenters[coord] == '':
                         input = '.'
                     elif self.arrayCenters[coord] == 'c': 
                         input = self.arrayCenters[coord]

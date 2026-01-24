@@ -886,7 +886,10 @@ def bestLine(actor, map, length, reach):
     ##print(reach)
     moveLimit =  reach + actor.speed/5
     myIndex = list(map.arrayCenters).index(actorCoord)
-    movementCoords = [ coord for coord in map.arrayCenters.keys() if map.distanceCalc(myIndex, list(map.arrayCenters).index(coord)) <= moveLimit and map.arrayCenters[coord] == '']
+    # Exclude walls from valid movement coordinates
+    movementCoords = [coord for coord in map.arrayCenters.keys() 
+                      if map.distanceCalc(myIndex, list(map.arrayCenters).index(coord)) <= moveLimit and 
+                      map.arrayCenters[coord] == '' and not map.isWall(coord)]
     hexLimit = int(length/5)
     
     if actor in map.enemy:
@@ -951,7 +954,10 @@ def bestLine2(actor, map, length, reach):
     actorCoord = [x for x in map.arrayCenters.keys() if map.arrayCenters[x] == actor][0]
     moveLimit =  reach + actor.speed/5
     myIndex = list(map.arrayCenters).index(actorCoord)
-    movementCoords = [ coord for coord in map.arrayCenters.keys() if map.distanceCalc(myIndex, list(map.arrayCenters).index(coord)) <= moveLimit and map.arrayCenters[coord] == '']
+    # Exclude walls from valid movement coordinates
+    movementCoords = [coord for coord in map.arrayCenters.keys() 
+                      if map.distanceCalc(myIndex, list(map.arrayCenters).index(coord)) <= moveLimit and 
+                      map.arrayCenters[coord] == '' and not map.isWall(coord)]
     hexLimit = int(length/5)
     
     if actor in map.enemy:
@@ -1043,39 +1049,46 @@ def bestLine2(actor, map, length, reach):
             
     return(0,0)        
     
-def drawLine( coord1, coord2, map):
+def drawLine(coord1, coord2, map):
 
     dist = int(map.distanceCalc(list(map.arrayCenters).index(coord1), list(map.arrayCenters).index(coord2)))
 
     x1, y1 = coord1
     x2, y2 = coord2
 
-    xDiff = x2 -x1
-    yDiff = y2-y1
-    
+    xDiff = x2 - x1
+    yDiff = y2 - y1
     
     pts = np.array(list(map.arrayCenters))
     
-    lineCoord = np.array([(0.0,0.0) for i in range(dist +1)]) 
-    for i in range(int(dist)+1):
-        lineCoord[i] = [coord1[0] + i*xDiff/dist, coord1[1] + i*yDiff/dist-0.01]
+    lineCoord = np.array([(0.0, 0.0) for i in range(dist + 1)]) 
+    for i in range(int(dist) + 1):
+        lineCoord[i] = [coord1[0] + i * xDiff / dist, coord1[1] + i * yDiff / dist - 0.01]
     snapCoord = [tuple(pts[spatial.KDTree(pts).query(coord)[1]]) for coord in lineCoord]
+    
+    # Filter out wall hexes from the path
+    snapCoord = [coord for coord in snapCoord if not map.isWall(coord)]
     
     return snapCoord
 
-def calcMoveHexes(actor, map, type= None):
+def calcMoveHexes(actor, map, type=None):
     arrayCenters = map.arrayCenters
 
     actorCoords = [coord for coord in arrayCenters if arrayCenters[coord] == actor][0]
     actorIndex = list(arrayCenters).index(actorCoords)
-    speed = int(actor.speed/5)
+    speed = int(actor.speed / 5)
     dashSpeed = speed * 2
+    
     if type == 'dash':
-        dashIndexes = [ind for ind in range(len(list(arrayCenters))) if map.distanceCalc(actorIndex, ind) <= dashSpeed and 
-                       (arrayCenters[list(arrayCenters)[ind]] == '' or arrayCenters[list(arrayCenters)[ind]] == actor)]
+        dashIndexes = [ind for ind in range(len(list(arrayCenters))) 
+                       if map.distanceCalc(actorIndex, ind) <= dashSpeed and 
+                       (arrayCenters[list(arrayCenters)[ind]] == '' or arrayCenters[list(arrayCenters)[ind]] == actor) and
+                       not map.isWall(list(arrayCenters)[ind])]
     else:
-        dashIndexes = [ind for ind in range(len(list(arrayCenters))) if map.distanceCalc(actorIndex, ind) <= speed and 
-                       (arrayCenters[list(arrayCenters)[ind]] == '' or arrayCenters[list(arrayCenters)[ind]] == actor)]
+        dashIndexes = [ind for ind in range(len(list(arrayCenters))) 
+                       if map.distanceCalc(actorIndex, ind) <= speed and 
+                       (arrayCenters[list(arrayCenters)[ind]] == '' or arrayCenters[list(arrayCenters)[ind]] == actor) and
+                       not map.isWall(list(arrayCenters)[ind])]
     return dashIndexes
 def bestSquare(actor, map, length, reach):
     setRatio = 4
@@ -1083,7 +1096,10 @@ def bestSquare(actor, map, length, reach):
     moveLimit =  reach/5 + actor.speed/5
     #print(reach)
     myIndex = list(map.arrayCenters).index(actorCoord)
-    movementCoords = [ coord for coord in map.arrayCenters.keys() if map.distanceCalc(myIndex, list(map.arrayCenters).index(coord)) <= moveLimit and map.arrayCenters[coord] == '']
+    # Exclude walls from valid movement coordinates
+    movementCoords = [coord for coord in map.arrayCenters.keys() 
+                      if map.distanceCalc(myIndex, list(map.arrayCenters).index(coord)) <= moveLimit and 
+                      map.arrayCenters[coord] == '' and not map.isWall(coord)]
     hexLimit = int(length/5)
     ##print(hexLimit)
 
@@ -1311,7 +1327,8 @@ def bestCone(actor, map, length, reach):
     arrayCenters = list(map.arrayCenters)     # ordered keys
     valueAt = map.arrayCenters                # key → value
     indexOf = {k: i for i, k in enumerate(arrayCenters)}  # fast lookup
-    empty_hexes = [k for k in arrayCenters if valueAt[k] == '']
+    # Exclude walls from empty hexes
+    empty_hexes = [k for k in arrayCenters if valueAt[k] == '' and not map.isWall(k)]
 
     # Find actor's coordinate
     for k, v in valueAt.items():
@@ -1327,7 +1344,7 @@ def bestCone(actor, map, length, reach):
     moveLimit = actor.speed / 5
     hexLimit = int(length / 5)
 
-    # movement coords (only EMPTY hexes in range)
+    # movement coords (only EMPTY hexes in range, excluding walls)
     movementCoords = []
     for k in empty_hexes:
         if map.distanceCalc(actor_index, indexOf[k]) <= moveLimit:

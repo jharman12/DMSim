@@ -195,6 +195,7 @@ class CustomGraphicsView(QGraphicsView):
         self.character_items = []
         self.character_objs = []
         self.hex_items = []  # Added hex_items attribute
+        self.wall_items = {}  # Track wall hex indices -> graphics items
         self.selected_item = None
         self.last_mouse_pos = QPointF()
         self.arrayCenters = []
@@ -215,7 +216,8 @@ class CustomGraphicsView(QGraphicsView):
         )
         self.defaultFill = QColor(0, 0, 255, 50) 
         self.moveFill =  QColor(0, 255, 0, 50) 
-        self.coneFill =  QColor(255, 0, 0, 50) 
+        self.coneFill =  QColor(255, 0, 0, 50)
+        self.wallFill =  QColor(128, 128, 128, 180)  # Gray, more opaque for walls
         self.setResizeAnchor(QGraphicsView.AnchorViewCenter)
 
         self.affected = None
@@ -506,6 +508,62 @@ class CustomGraphicsView(QGraphicsView):
                     self.selected_item.setPos(self.selected_item.pos() + delta_scene)
 
         self.last_mouse_pos = event.pos()
+    
+    def addWall(self, hexIndex):
+        """
+        Visualize a wall at the specified hex index.
+        
+        Args:
+            hexIndex: Index in the hex grid
+        """
+        if hexIndex < 0 or hexIndex >= len(self.hex_items):
+            print(f"Invalid hex index for wall: {hexIndex}")
+            return
+        
+        # Change the hex color to wall color
+        hex_item = self.hex_items[hexIndex]
+        brush = QBrush(self.wallFill)
+        outline_color = QColor(64, 64, 64, 255)  # Dark gray outline
+        pen = QPen(outline_color)
+        pen.setWidth(3)
+        
+        hex_item.setBrush(brush)
+        hex_item.setPen(pen)
+        
+        # Track this as a wall hex
+        self.wall_items[hexIndex] = hex_item
+        
+        print(f"Wall visualized at hex index {hexIndex}")
+    
+    def removeWall(self, hexIndex):
+        """
+        Remove wall visualization at the specified hex index.
+        
+        Args:
+            hexIndex: Index in the hex grid
+        """
+        if hexIndex in self.wall_items:
+            # Restore default hex appearance
+            hex_item = self.wall_items[hexIndex]
+            brush = QBrush(self.defaultFill)
+            outline_color = QColor(0, 0, 0, 255)
+            pen = QPen(outline_color)
+            pen.setWidth(2)
+            
+            hex_item.setBrush(brush)
+            hex_item.setPen(pen)
+            
+            del self.wall_items[hexIndex]
+            print(f"Wall removed from hex index {hexIndex}")
+        else:
+            print(f"No wall at hex index {hexIndex}")
+    
+    def clearWalls(self):
+        """
+        Clear all wall visualizations.
+        """
+        for hexIndex in list(self.wall_items.keys()):
+            self.removeWall(hexIndex)
     
     def moveActor(self, actor, newIndex):
         #print(actor.name, newIndex)
@@ -1059,6 +1117,9 @@ class CustomGraphicsView(QGraphicsView):
     def loadFromEncounter(self, myEncounter):
         
         self.removeAllActors()
+        # Clear existing walls
+        self.clearWalls()
+        
         # add the characters back
         for player in myEncounter.totalList:
             if player.Image == None:
@@ -1085,6 +1146,11 @@ class CustomGraphicsView(QGraphicsView):
             if map.arrayCenters[coord] != '': # youre a character
                 gvIndex = map.convertToViewerCoords(coord)
                 self.moveActor(map.arrayCenters[coord], gvIndex)
+        
+        # Load walls from the map
+        for coord in map.walls:
+            wallIndex = map.convertToViewerCoords(coord)
+            self.addWall(wallIndex)
 
 
 
