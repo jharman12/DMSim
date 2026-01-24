@@ -1,4 +1,5 @@
 import json
+import pathlib
 from PyQt5.QtWidgets import (
     QWidget, QLabel, QLineEdit, QSpinBox, QComboBox, QCompleter,
     QPushButton, QFileDialog, QVBoxLayout, QHBoxLayout,
@@ -8,6 +9,9 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import Qt, QEvent
 from pathlib import Path
+
+# Calculate dmSimPath relative to this file
+dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-4]
 
 class AutocompleteLineEdit(QLineEdit):
     """QLineEdit that accepts Tab to autocomplete with the closest match."""
@@ -23,7 +27,9 @@ class AutocompleteLineEdit(QLineEdit):
         super().keyPressEvent(event)
 
 class CharacterStore:
-    def __init__(self, file_path="A:\\Code\\Python\\Git Repo\\DMSim\\actors\\savedObjs\\newChars.json"):
+    def __init__(self, file_path=None):
+        if file_path is None:
+            file_path = dmSimPath + "\\actors\\savedObjs\\newChars.json"
         self.file_path = Path(file_path)
         self.characters = {}  # name -> data
         self.load()
