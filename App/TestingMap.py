@@ -190,6 +190,10 @@ class CustomGraphicsView(QGraphicsView):
         self.curActor = None
         self.curMoveCoords = None
 
+        # Wall creation mode
+        self.wallCreationMode = False
+        self.wallDragHexes = set()  # Track hexes being painted as walls
+
         self.info_popup = None
         self.map_item = None
         self.character_items = []
@@ -225,13 +229,28 @@ class CustomGraphicsView(QGraphicsView):
     def setCurTurn(self, actor):
         self.curActor = actor
 
+    def setWallCreationMode(self, enabled):
+        """
+        Enable or disable wall creation mode.
+        When enabled, user can click and drag to create walls.
+        """
+        self.wallCreationMode = enabled
+        if not enabled:
+            self.wallDragHexes.clear()
+        print(f"Wall creation mode: {'ENABLED' if enabled else 'DISABLED'}")
+
     def setCurMoveCoords(self, indexes):
         self.curMoveCoords = indexes
 
-        # Reset all hex colors to default
-        self.setHexColors(self.defaultFill, [i for i in range(len(self.hex_items))])
+        # Reset all hex colors to default (but skip walls)
+        all_hexes = [i for i in range(len(self.hex_items))]
+        self.setHexColors(self.defaultFill, all_hexes)
 
-        # Highlight the newly allowed movement hexes
+        # Restore wall colors that might have been affected
+        for wall_index in self.wall_items.keys():
+            self.setHexColors(self.wallFill, [wall_index])
+
+        # Highlight the newly allowed movement hexes (will skip walls)
         self.setHexColors(self.moveFill, indexes)
 
         # Rebuild the snap tree here
@@ -388,6 +407,18 @@ class CustomGraphicsView(QGraphicsView):
 
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
+        
+        # Handle wall creation mode
+        if self.wallCreationMode and event.button() == Qt.LeftButton:
+            scene_pos = self.mapToScene(event.pos())
+            hex_index = self.getHexFromPoint(scene_pos)
+            if hex_index is not None and hex_index >= 0:
+                self.wallDragHexes.add(hex_index)
+                # Visually mark this hex as a wall
+                self.setHexColors(self.wallFill, [hex_index])
+            event.accept()
+            return
+        
         if event.button() == Qt.RightButton:
             scene_pos = self.mapToScene(event.pos())
 
@@ -454,6 +485,17 @@ class CustomGraphicsView(QGraphicsView):
         
 
     def mouseMoveEvent(self, event):
+        
+        # Handle wall creation dragging
+        if self.wallCreationMode and event.buttons() == Qt.LeftButton:
+            scene_pos = self.mapToScene(event.pos())
+            hex_index = self.getHexFromPoint(scene_pos)
+            if hex_index is not None and hex_index >= 0 and hex_index not in self.wallDragHexes:
+                self.wallDragHexes.add(hex_index)
+                # Visually mark this hex as a wall
+                self.setHexColors(self.wallFill, [hex_index])
+            event.accept()
+            return
         
         if self.curActor != None:
             scene_pos = self.mapToScene(event.pos())
@@ -624,6 +666,22 @@ class CustomGraphicsView(QGraphicsView):
 
         
     def mouseReleaseEvent(self, event):
+        # Handle wall creation finalization
+        if self.wallCreationMode and event.button() == Qt.LeftButton and self.wallDragHexes:
+            # Create walls in the map for all dragged hexes
+            wall_count = 0
+            for hex_index in self.wallDragHexes:
+                coord = self.encounter.map.convertToMyCoords(hex_index)
+                # Only create wall if hex is empty
+                if self.encounter.map.arrayCenters.get(coord) == '':
+                    self.encounter.map.addWall(coord, hp=10, name="wall")
+                    self.addWall(hex_index)
+                    wall_count += 1
+            print(f"Created {wall_count} walls")
+            self.wallDragHexes.clear()
+            event.accept()
+            return
+        
         if event.button() == Qt.LeftButton:
             self.selected_item = None
 
@@ -823,6 +881,9 @@ class CustomGraphicsView(QGraphicsView):
         
         if self.affected != None:
             self.setHexColors(self.defaultFill, self.affected)
+            # Restore wall colors
+            for wall_index in self.wall_items.keys():
+                self.setHexColors(self.wallFill, [wall_index])
             self.setCurMoveCoords(self.curMoveCoords)
             self.affected = None
 
@@ -856,6 +917,9 @@ class CustomGraphicsView(QGraphicsView):
         
         if self.affected != None:
             self.setHexColors(self.defaultFill, self.affected)
+            # Restore wall colors
+            for wall_index in self.wall_items.keys():
+                self.setHexColors(self.wallFill, [wall_index])
             self.setCurMoveCoords(self.curMoveCoords)
             self.affected = None
         # Validate actor
@@ -877,6 +941,9 @@ class CustomGraphicsView(QGraphicsView):
     def getSquareHexes(self, distance_hexes, mouse_pos, spellRange):
         if self.affected != None:
             self.setHexColors(self.defaultFill, self.affected)
+            # Restore wall colors
+            for wall_index in self.wall_items.keys():
+                self.setHexColors(self.wallFill, [wall_index])
             self.setCurMoveCoords(self.curMoveCoords)
             self.affected = None
         # Validate actor
@@ -905,6 +972,9 @@ class CustomGraphicsView(QGraphicsView):
         
         if self.affected != None:
             self.setHexColors(self.defaultFill, self.affected)
+            # Restore wall colors
+            for wall_index in self.wall_items.keys():
+                self.setHexColors(self.wallFill, [wall_index])
             self.setCurMoveCoords(self.curMoveCoords)
             self.affected = None
         # Validate actor
@@ -992,6 +1062,10 @@ class CustomGraphicsView(QGraphicsView):
         allHexIndexes =  [ int(x) for x in np.linspace(0, hexLength-1, hexLength)]
         
         self.setHexColors(fill_color, allHexIndexes)
+        
+        # Restore wall colors after setting defaults
+        for wall_index in self.wall_items.keys():
+            self.setHexColors(self.wallFill, [wall_index])
 
     def setCharsToHexes(self):
         # Iterate over character items
@@ -1025,6 +1099,9 @@ class CustomGraphicsView(QGraphicsView):
         pen = QPen(outline_color)
         pen.setWidth(2)
         for ind in indexes:
+            # Skip hexes that are walls - preserve their wall coloring
+            if ind in self.wall_items:
+                continue
             hex_polygon = self.hex_items[ind]
             hex_polygon.setBrush(brush)
             hex_polygon.setPen(pen)
@@ -1657,6 +1734,11 @@ class MapWidget(QWidget):
         self.spell_button.clicked.connect(self.spellButton_pressed)
         top_button_row.addWidget(self.spell_button)
 
+        self.wall_button = QPushButton("Create Walls")
+        self.wall_button.setCheckable(True)
+        self.wall_button.clicked.connect(self.wallButton_pressed)
+        top_button_row.addWidget(self.wall_button)
+
         # ---- Stretch pushes next widget to the right ----
         top_button_row.addStretch(1)
 
@@ -1922,6 +2004,26 @@ class MapWidget(QWidget):
         else:
             self.turn_action_panel.move_input.setEnabled(True)
         #self.spell_button.setChecked(False)
+    
+    def wallButton_pressed(self):
+        """
+        Toggle wall creation mode.
+        When enabled, user can click and drag to create walls on hexes.
+        """
+        if self.wall_button.isChecked():
+            # Enable wall creation mode
+            self.map_view.setWallCreationMode(True)
+            
+            # Disable other modes
+            if self.spell_button.isChecked():
+                self.spell_button.setChecked(False)
+                self.map_view.spellAreaCheck = False
+            
+            print("Wall creation mode ENABLED - Click and drag to create walls")
+        else:
+            # Disable wall creation mode
+            self.map_view.setWallCreationMode(False)
+            print("Wall creation mode DISABLED")
     
     def spellButton_pressed(self):
         if self.map_view.curActor == None:
