@@ -6,7 +6,7 @@ import sys
 import pathlib
 dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-6]
 sys.path.insert(1, dmSimPath)
-from modelMethods import takeReaction, drawLine
+from modelMethods import takeReaction, drawLine, findPathAroundWalls, findBlockingWalls
 from wall import Wall
 
 class Map:
@@ -78,45 +78,77 @@ class Map:
     def dashActor(self, mover, targetCoord):
         print(mover.name, ' is taking the dash action to ', targetCoord)
         movement = 2*(mover.speed/5)
-        #targetCoord = [i for i in self.arrayCenters if self.arrayCenters[i] ==target][0]
         moverCoord = [i for i in self.arrayCenters if self.arrayCenters[i] ==mover][0]
 
-        line = drawLine(moverCoord, targetCoord, self)
-        #print(line)
+        # Try to find path around walls
+        line = findPathAroundWalls(moverCoord, targetCoord, self, max_distance=movement)
+        
+        if not line:
+            # No path exists - check if monster should destroy wall
+            if 'Monster' in str(type(mover)):
+                blocking_wall_coord = findBlockingWalls(moverCoord, targetCoord, self)
+                if blocking_wall_coord:
+                    print(f"{mover.name} attacks blocking wall at {blocking_wall_coord}!")
+                    wall = self.arrayCenters[blocking_wall_coord]
+                    # Import takeDmg locally to avoid circular import
+                    from modelMethods import takeDmg
+                    # Attack wall with basic damage
+                    damage = 10  # Basic wall-breaking damage
+                    takeDmg(mover, wall, damage, self)
+                    return
+            
+            # Fallback to simple line
+            line = drawLine(moverCoord, targetCoord, self)
+        
         options = [x for x in line if self.distanceCalc(list(self.arrayCenters).index(moverCoord), list(self.arrayCenters).index(x)) <= movement]
+        
+        if not options:
+            print(f"{mover.name} cannot move - no valid path")
+            return
+            
         if options[-1] == targetCoord or self.arrayCenters[options[-1]] != '':
             moverIndex = list(self.arrayCenters).index(moverCoord)
             targetIndex = list(self.arrayCenters).index(targetCoord)
             moverNew = self.nearestFreeHex(moverIndex, targetIndex)
-            #print('nearestFreeHex chose', moverNew)
             self.moveActor(mover, moverNew)
         else:
-            #print('going option[-1]', options[-1])
             self.moveActor(mover, options[-1])
         
 
     def moveToNearest(self, mover, target):
-        #print(mover.name, ' is going to ', target.name)
         if mover == target:
-            #self.printCurrMap()
             return
+        
         print(mover, target)
         moverLoc = [i for i in self.arrayCenters if self.arrayCenters[i] == mover][0]
+        targetLoc = [i for i in self.arrayCenters if self.arrayCenters[i] == target][0]
         
-        Arabella = target
-        #print(moverLoc)
-        #print(Arabella)
+        # Try to find path around walls
+        path = findPathAroundWalls(moverLoc, targetLoc, self, max_distance=mover.speed/5)
+        
+        if path and len(path) > 1:
+            # Move to next step in path
+            next_coord = path[1]  # path[0] is current position
+            self.moveActor(mover, next_coord)
+            return
+        
+        # No path exists - check if monster should destroy wall
+        if 'Monster' in str(type(mover)):
+            blocking_wall_coord = findBlockingWalls(moverLoc, targetLoc, self)
+            if blocking_wall_coord:
+                print(f"{mover.name} attacks blocking wall at {blocking_wall_coord}!")
+                wall = self.arrayCenters[blocking_wall_coord]
+                # Import takeDmg locally to avoid circular import
+                from modelMethods import takeDmg
+                damage = 10  # Basic wall-breaking damage
+                takeDmg(mover, wall, damage, self)
+                return
+        
+        # Fallback to nearest free hex
         moverIndex = list(self.arrayCenters).index(moverLoc)
-        Arabella = list(self.arrayCenters).index(Arabella)
-        
-
-        moverNew = self.nearestFreeHex(moverIndex, Arabella)
-        ##print(moverNew)
+        targetIndex = list(self.arrayCenters).index(targetLoc)
+        moverNew = self.nearestFreeHex(moverIndex, targetIndex)
         self.moveActor(mover, moverNew)
-        ##print(Ephraim)
-        #self.arrayCenters[moverLoc] = ''
-        #self.arrayCenters[moverNew] = mover
-        #self.printCurrMap()
 
     def defineArrayGrid(self, heightNumber, height=None, width=None):
         """

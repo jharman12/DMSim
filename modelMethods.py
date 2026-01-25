@@ -1048,28 +1048,154 @@ def bestLine2(actor, map, length, reach):
                 return finalCoord
             
     return(0,0)        
+
+def findPathAroundWalls(start_coord, end_coord, map, max_distance=None):
+    """
+    Find shortest path from start to end avoiding walls using Dijkstra's algorithm.
     
-def drawLine(coord1, coord2, map):
+    Args:
+        start_coord: Starting coordinate tuple
+        end_coord: Ending coordinate tuple
+        map: Map object
+        max_distance: Maximum path length to consider (None = unlimited)
+    
+    Returns:
+        List of coordinates forming path, or None if no path exists
+    """
+    import heapq
+    
+    # Quick check if direct path works
+    direct_path = drawLineSimple(start_coord, end_coord, map)
+    if direct_path and not any(map.isWall(coord) for coord in direct_path):
+        return direct_path
+    
+    # Dijkstra's algorithm
+    start_idx = list(map.arrayCenters).index(start_coord)
+    end_idx = list(map.arrayCenters).index(end_coord)
+    
+    # Priority queue: (distance, coord)
+    pq = [(0, start_coord)]
+    visited = set()
+    came_from = {}
+    cost_so_far = {start_coord: 0}
+    
+    while pq:
+        current_dist, current_coord = heapq.heappop(pq)
+        
+        if current_coord in visited:
+            continue
+        visited.add(current_coord)
+        
+        # Found the target
+        if current_coord == end_coord:
+            # Reconstruct path
+            path = []
+            coord = end_coord
+            while coord in came_from:
+                path.append(coord)
+                coord = came_from[coord]
+            path.append(start_coord)
+            return list(reversed(path))
+        
+        # Check distance limit
+        if max_distance and current_dist >= max_distance:
+            continue
+        
+        # Explore neighbors
+        current_idx = list(map.arrayCenters).index(current_coord)
+        neighbor_indices = map.neighbors(current_coord)
+        
+        for neighbor_idx in neighbor_indices:
+            neighbor_coord = list(map.arrayCenters)[neighbor_idx]
+            
+            # Skip walls and occupied hexes (but allow end coord)
+            if map.isWall(neighbor_coord):
+                continue
+            if map.arrayCenters[neighbor_coord] != '' and neighbor_coord != end_coord:
+                continue
+            
+            # Calculate new cost
+            new_cost = cost_so_far[current_coord] + 1
+            
+            if neighbor_coord not in cost_so_far or new_cost < cost_so_far[neighbor_coord]:
+                cost_so_far[neighbor_coord] = new_cost
+                priority = new_cost
+                heapq.heappush(pq, (priority, neighbor_coord))
+                came_from[neighbor_coord] = current_coord
+    
+    # No path found
+    return None
 
+def findBlockingWalls(start_coord, end_coord, map):
+    """
+    Find walls that are blocking the path to the target.
+    Returns the wall closest to the target that should be destroyed.
+    
+    Args:
+        start_coord: Starting coordinate
+        end_coord: Target coordinate  
+        map: Map object
+    
+    Returns:
+        Coordinate of wall to destroy, or None if no walls blocking
+    """
+    # Get direct line path
+    direct_path = drawLineSimple(start_coord, end_coord, map)
+    if not direct_path:
+        return None
+    
+    # Find all walls in the direct path
+    wall_coords = [coord for coord in direct_path if map.isWall(coord)]
+    
+    if not wall_coords:
+        return None
+    
+    # Return wall closest to target
+    end_idx = list(map.arrayCenters).index(end_coord)
+    closest_wall = min(wall_coords, 
+                      key=lambda w: map.distanceCalc(list(map.arrayCenters).index(w), end_idx))
+    return closest_wall
+
+def drawLineSimple(coord1, coord2, map):
+    """
+    Draw a straight line between two coordinates without filtering walls.
+    Used internally by pathfinding.
+    """
     dist = int(map.distanceCalc(list(map.arrayCenters).index(coord1), list(map.arrayCenters).index(coord2)))
-
+    
+    if dist == 0:
+        return [coord1]
+    
     x1, y1 = coord1
     x2, y2 = coord2
-
     xDiff = x2 - x1
     yDiff = y2 - y1
     
     pts = np.array(list(map.arrayCenters))
-    
     lineCoord = np.array([(0.0, 0.0) for i in range(dist + 1)]) 
     for i in range(int(dist) + 1):
         lineCoord[i] = [coord1[0] + i * xDiff / dist, coord1[1] + i * yDiff / dist - 0.01]
+    
     snapCoord = [tuple(pts[spatial.KDTree(pts).query(coord)[1]]) for coord in lineCoord]
-    
-    # Filter out wall hexes from the path
-    snapCoord = [coord for coord in snapCoord if not map.isWall(coord)]
-    
     return snapCoord
+    
+def drawLine(coord1, coord2, map):
+    """
+    Draw a path between two coordinates, routing around walls when possible.
+    If walls block the direct path, attempts to find an alternate route.
+    """
+    # Try to find path around walls
+    path = findPathAroundWalls(coord1, coord2, map)
+    
+    if path:
+        return path
+    
+    # No path exists - return direct line filtered for walls
+    # (caller will need to handle wall destruction)
+    direct_path = drawLineSimple(coord1, coord2, map)
+    # Filter out walls but keep the path
+    filtered = [coord for coord in direct_path if not map.isWall(coord)]
+    return filtered if filtered else [coord1]
 
 def calcMoveHexes(actor, map, type=None):
     arrayCenters = map.arrayCenters

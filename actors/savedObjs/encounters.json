@@ -61,5 +61,21 @@
         ],
         "numHexes": 20,
         "mapImage": "App\\Maps\\maze Engine.webp"
+    },
+    "Dragon": {
+        "name": "Dragon",
+        "party": [
+            "Adrel",
+            "Aldric",
+            "Galleus",
+            "Cobo",
+            "VV"
+        ],
+        "npcs": [],
+        "enemies": [
+            "Adult Silver Dragon"
+        ],
+        "numHexes": 20,
+        "mapImage": "App\\Maps\\maze Engine.webp"
     }
 }
