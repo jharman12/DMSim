@@ -1559,7 +1559,21 @@ def printDeathSaves(deathSaves):
 def takeDmg(actor, target, dmg, map):
     print(actor.name, 'is doing ', dmg, 'to', target.name)
     safe_log('\t' + actor.name + ' is doing ' + str(dmg) + ' to ' + target.name, map)
-    if 'Monster' in str(type(target)):
+    
+    # Check if target is a Wall
+    if hasattr(target, 'isWall') and target.isWall:
+        target.health -= dmg
+        print(f"{target.name} took {dmg} damage. HP: {target.health}/{target.maxHealth}")
+        if target.health <= 0:
+            target.alive = 0
+            print(target.name + ' is destroyed')
+            safe_log('\t' + target.name + ' is destroyed', map)
+            # Find and remove the wall from the map
+            for coord, obj in map.arrayCenters.items():
+                if obj == target:
+                    map.removeWall(coord)
+                    break
+    elif 'Monster' in str(type(target)):
         target.health -= dmg
         if target.health <= 0:
             target.alive = 0

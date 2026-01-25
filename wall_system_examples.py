@@ -25,8 +25,10 @@ for x in range(2, 8, 2):
 coord = (4, 2)
 if myMap.isWall(coord):
     print(f"There is a wall at {coord}")
-    wall_info = myMap.getWallInfo(coord)
-    print(f"Wall HP: {wall_info['hp']}/{wall_info['maxHp']}")
+    wall = myMap.getWallInfo(coord)
+    print(f"Wall: {wall.name}")
+    print(f"Wall HP: {wall.health}/{wall.maxHealth}")
+    print(f"Wall AC: {wall.ac}")
 
 
 # Example 3: Damaging and destroying walls
@@ -48,25 +50,26 @@ myMap.removeWall((6, 4))
 
 # Example 5: Integrating with attack actions
 # -------------------------------------------
-# In your combat code, you can add logic to attack walls:
+# In your combat code, you can now attack walls using takeDmg:
+
+from modelMethods import takeDmg
 
 def attack_target(attacker, target_coord, damage, map):
     """
     Attack a hex - either a character or a wall.
     """
-    # Check if target is a wall
-    if map.isWall(target_coord):
-        print(f"{attacker.name} attacks the wall!")
-        destroyed = map.damageWall(target_coord, damage)
-        if destroyed:
-            print(f"{attacker.name} destroyed the wall!")
-        return True
-    
-    # Otherwise handle normal character attack
     target = map.arrayCenters[target_coord]
-    if target and hasattr(target, 'health'):
-        target.health -= damage
-        print(f"{attacker.name} deals {damage} damage to {target.name}")
+    
+    # Check if target is a wall or character and use takeDmg
+    if target and target != '':
+        if hasattr(target, 'isWall') and target.isWall:
+            print(f"{attacker.name} attacks the wall!")
+            takeDmg(attacker, target, damage, map)
+            if target.alive == 0:
+                print(f"{attacker.name} destroyed the wall!")
+        elif hasattr(target, 'health'):
+            takeDmg(attacker, target, damage, map)
+            print(f"{attacker.name} deals {damage} damage to {target.name}")
         return True
     
     return False
@@ -109,8 +112,9 @@ def create_room(map, top_left, width, height, door_coord=None):
 # ------------------------------------------------------
 # Print all walls on the map
 print("\n=== Current Walls ===")
-for coord, wall_info in myMap.walls.items():
-    print(f"{coord}: {wall_info['name']} - HP: {wall_info['hp']}/{wall_info['maxHp']}")
+walls = [(coord, obj) for coord, obj in myMap.arrayCenters.items() if myMap.isWall(coord)]
+for coord, wall in walls:
+    print(f"{coord}: {wall.name} - HP: {wall.health}/{wall.maxHealth}, AC: {wall.ac}")
 
 
 # Example 8: Movement will automatically avoid walls

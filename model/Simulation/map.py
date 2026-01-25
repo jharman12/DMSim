@@ -7,6 +7,7 @@ import pathlib
 dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-6]
 sys.path.insert(1, dmSimPath)
 from modelMethods import takeReaction, drawLine
+from wall import Wall
 
 class Map:
     def __init__(self, numHex, partyList, enemyList, graphicsViewer=None):
@@ -14,8 +15,7 @@ class Map:
         self.graphicsViewer = graphicsViewer
         self.combatLog = None
         
-        # Wall tracking: {coord: {'hp': int, 'maxHp': int, 'name': str}}
-        self.walls = {}
+        # Walls are now stored directly in arrayCenters as Wall objects
         
         ##print('defining array')
         if graphicsViewer is not None:
@@ -279,7 +279,7 @@ class Map:
         """Convert map coordinates to viewer index."""
         return list(self.arrayCenters).index(coord)
     
-    def addWall(self, coord, hp=20, name="Wall"):
+    def addWall(self, coord, hp=20, name="Wall", ac=15):
         """
         Add a wall at the specified coordinate.
         
@@ -287,11 +287,12 @@ class Map:
             coord: Tuple (x, y) coordinate for the wall
             hp: Hit points of the wall (default: 20)
             name: Name/description of the wall (default: "Wall")
+            ac: Armor class of the wall (default: 15)
         """
         if coord in self.arrayCenters:
-            # Clear any actor at this position
-            self.arrayCenters[coord] = 'wall'
-            self.walls[coord] = {'hp': hp, 'maxHp': hp, 'name': name}
+            # Create a Wall object and place it in the map
+            wall = Wall(name=name, health=hp, ac=ac)
+            self.arrayCenters[coord] = wall
             print(f"Added {name} at {coord} with {hp} HP")
             
             # Update graphics viewer if it exists
@@ -308,8 +309,7 @@ class Map:
         Args:
             coord: Tuple (x, y) coordinate of the wall to remove
         """
-        if coord in self.walls:
-            del self.walls[coord]
+        if self.isWall(coord):
             self.arrayCenters[coord] = ''
             print(f"Removed wall at {coord}")
             
@@ -331,12 +331,11 @@ class Map:
         Returns:
             bool: True if wall was destroyed, False otherwise
         """
-        if coord in self.walls:
-            self.walls[coord]['hp'] -= damage
-            print(f"Wall at {coord} took {damage} damage. HP: {self.walls[coord]['hp']}/{self.walls[coord]['maxHp']}")
+        if self.isWall(coord):
+            wall = self.arrayCenters[coord]
+            destroyed = wall.takeDamage(damage)
             
-            if self.walls[coord]['hp'] <= 0:
-                print(f"Wall at {coord} destroyed!")
+            if destroyed:
                 self.removeWall(coord)
                 return True
             return False
@@ -354,7 +353,10 @@ class Map:
         Returns:
             bool: True if coordinate has a wall, False otherwise
         """
-        return coord in self.walls
+        if coord not in self.arrayCenters:
+            return False
+        obj = self.arrayCenters[coord]
+        return hasattr(obj, 'isWall') and obj.isWall
     
     def getWallInfo(self, coord):
         """
@@ -364,9 +366,11 @@ class Map:
             coord: Tuple (x, y) coordinate of the wall
             
         Returns:
-            dict or None: Wall info dictionary or None if no wall exists
+            Wall object or None: Wall object or None if no wall exists
         """
-        return self.walls.get(coord, None)
+        if self.isWall(coord):
+            return self.arrayCenters[coord]
+        return None
     
     def printCurrMap(self):
         string = ''
@@ -382,7 +386,7 @@ class Map:
                 
                 if x % 2 == 0 and y % 2 == 0:
                     coord = (x, y)
-                    if coord in self.walls:
+                    if self.isWall(coord):
                         input = '#'  # Display walls as #
                     elif self.arrayCenters[coord] == '':
                         input = '.'
@@ -393,7 +397,7 @@ class Map:
                     string += input + '\t\t'
                 elif x % 2 != 0 and y % 2 != 0:
                     coord = (x, y)
-                    if coord in self.walls:
+                    if self.isWall(coord):
                         input = '#'  # Display walls as #
                     elif self.arrayCenters[coord] == '':
                         input = '.'

@@ -103,18 +103,18 @@ valid_coords = [coord for coord in testMap.arrayCenters.keys() if testMap.arrayC
 testMap.addWall(valid_coords[0], hp=20, name="Test Wall 1")
 testMap.addWall(valid_coords[1], hp=30, name="Test Wall 2")  
 testMap.addWall(valid_coords[2], hp=15, name="Weak Wall")
-assert valid_coords[0] in testMap.walls, "Wall 1 not added!"
-assert valid_coords[1] in testMap.walls, "Wall 2 not added!"
-assert valid_coords[2] in testMap.walls, "Wall 3 not added!"
+assert testMap.isWall(valid_coords[0]), "Wall 1 not added!"
+assert testMap.isWall(valid_coords[1]), "Wall 2 not added!"
+assert testMap.isWall(valid_coords[2]), "Wall 3 not added!"
 print("✓ Walls added successfully")
 
 # Test 2: Check wall info
 print("\n4. Testing wall info retrieval...")
 wall_info = testMap.getWallInfo(valid_coords[0])
 assert wall_info is not None, "Wall info not found!"
-assert wall_info['hp'] == 20, f"Expected hp=20, got {wall_info['hp']}"
-assert wall_info['maxHp'] == 20, f"Expected maxHp=20, got {wall_info['maxHp']}"
-assert wall_info['name'] == "Test Wall 1", f"Expected name='Test Wall 1', got {wall_info['name']}"
+assert wall_info.health == 20, f"Expected hp=20, got {wall_info.health}"
+assert wall_info.maxHealth == 20, f"Expected maxHp=20, got {wall_info.maxHealth}"
+assert wall_info.name == "Test Wall 1", f"Expected name='Test Wall 1', got {wall_info.name}"
 print(f"✓ Wall info correct: {wall_info}")
 
 # Test 3: Check isWall
@@ -130,21 +130,21 @@ print("\n6. Testing wall damage...")
 destroyed = testMap.damageWall(valid_coords[2], 10)
 assert destroyed == False, "Wall destroyed prematurely!"
 wall_info = testMap.getWallInfo(valid_coords[2])
-assert wall_info['hp'] == 5, f"Expected hp=5 after damage, got {wall_info['hp']}"
-print(f"✓ Wall damaged correctly (HP: {wall_info['hp']}/{wall_info['maxHp']})")
+assert wall_info.health == 5, f"Expected hp=5 after damage, got {wall_info.health}"
+print(f"✓ Wall damaged correctly (HP: {wall_info.health}/{wall_info.maxHealth})")
 
 # Test 5: Destroy wall
 print("\n7. Testing wall destruction...")
 destroyed = testMap.damageWall(valid_coords[2], 10)
 assert destroyed == True, "Wall should have been destroyed!"
-assert valid_coords[2] not in testMap.walls, "Wall still in walls dict after destruction!"
+assert not testMap.isWall(valid_coords[2]), "Wall still exists after destruction!"
 assert testMap.arrayCenters[valid_coords[2]] == '', "Hex not freed after wall destruction!"
 print("✓ Wall destroyed and hex freed")
 
 # Test 6: Remove wall manually
 print("\n8. Testing manual wall removal...")
 testMap.removeWall(valid_coords[1])
-assert valid_coords[1] not in testMap.walls, "Wall not removed!"
+assert not testMap.isWall(valid_coords[1]), "Wall not removed!"
 assert testMap.arrayCenters[valid_coords[1]] == '', "Hex not freed after removal!"
 print("✓ Wall removed manually")
 
@@ -163,7 +163,9 @@ if player1 in [testMap.arrayCenters[coord] for coord in testMap.arrayCenters if 
     for hexIndex in moveHexes:
         coord = list(testMap.arrayCenters)[hexIndex]
         assert not testMap.isWall(coord), f"Movement includes wall hex at {coord}!"
-    print(f"✓ Movement calculation excludes {len(testMap.walls)} walls")
+    # Count walls in the map
+    wall_count = sum(1 for coord in testMap.arrayCenters if testMap.isWall(coord))
+    print(f"✓ Movement calculation excludes {wall_count} walls")
 else:
     print("⚠ Player not on map, skipping movement test")
 
@@ -179,9 +181,11 @@ print("\n" + "=" * 60)
 print("ALL TESTS PASSED! ✓")
 print("=" * 60)
 print(f"\nWall Summary:")
-print(f"  Total walls: {len(testMap.walls)}")
-for coord, info in testMap.walls.items():
-    print(f"  {coord}: {info['name']} - {info['hp']}/{info['maxHp']} HP")
+# Collect all walls from the map
+walls = [(coord, obj) for coord, obj in testMap.arrayCenters.items() if testMap.isWall(coord)]
+print(f"  Total walls: {len(walls)}")
+for coord, wall in walls:
+    print(f"  {coord}: {wall.name} - {wall.health}/{wall.maxHealth} HP")
 
 print("\n" + "=" * 60)
 print("Wall system is working correctly!")
