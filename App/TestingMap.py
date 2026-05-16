@@ -120,6 +120,7 @@ from model.player import createPartyList, Player
 from model.monster import createMonsterList, Monster
 from engine.targeting import drawLine, calcMoveHexes, hex_calc_line, hex_calc_hexes, hex_calc_square
 from model.Interactive.interactiveEncounter import interactiveEncounter
+from dialogs import ManualRollDialog, ManualRollersDialog
 
 
 _UNKNOWN_IMAGE = str(_root / "App" / "unknown.jpg")
@@ -1435,6 +1436,13 @@ class MapWidget(QWidget):
         self.spell_button.clicked.connect(self.spellButton_pressed)
         top_button_row.addWidget(self.spell_button)
 
+        self.manual_dice_button = QPushButton("🎲 Manual Rollers")
+        self.manual_dice_button.setToolTip(
+            "Choose which actors roll their own physical dice"
+        )
+        self.manual_dice_button.clicked.connect(self.openManualRollersDialog)
+        top_button_row.addWidget(self.manual_dice_button)
+
         # ---- Stretch pushes next widget to the right ----
         top_button_row.addStretch(1)
 
@@ -1539,6 +1547,16 @@ class MapWidget(QWidget):
         self.controller.actor_died.connect(self._on_actor_died)
         self.controller.encounter_ended.connect(self._on_encounter_ended)
 
+        # ---- Give controller access to the manual-roll dialog factory ----
+        self.controller.roll_provider_factory = self._make_roll_provider
+
+        # Default: all players roll manually so the DM doesn't need to configure this.
+        default_manual = {
+            a.name for a in self.myEncounter.totalList
+            if getattr(a, 'is_player', False)
+        }
+        self.controller.set_manual_actors(default_manual)
+
         self.testingTheory()
 
         self.TextScale = TextScale
@@ -1548,6 +1566,28 @@ class MapWidget(QWidget):
     # ------------------------------------------------------------------
     # SimController signal handlers
     # ------------------------------------------------------------------
+
+    def _make_roll_provider(self, actor_name: str):
+        """
+        Return a callable suitable for engine.dice.set_roll_provider.
+        Shows ManualRollDialog for each rollDice / rollSave call.
+        """
+        parent = self
+
+        def provider(n: int, sides: int, context: str, actor_name=actor_name):
+            dlg = ManualRollDialog(actor_name, context, n, sides, parent=parent)
+            if dlg.exec_() == ManualRollDialog.Accepted:
+                return dlg.get_rolls()
+            return None  # fallback to random if user cancels
+
+        return provider
+
+    def openManualRollersDialog(self):
+        """Open the Manual Rollers configuration dialog."""
+        all_actors = list(self.myEncounter.totalList)
+        dlg = ManualRollersDialog(all_actors, self.controller.manual_actors, parent=self)
+        if dlg.exec_() == ManualRollersDialog.Accepted:
+            self.controller.set_manual_actors(dlg.get_selected())
 
     def _on_turn_changed(self, actor):
         """Called by SimController.turn_changed signal when the active actor changes."""

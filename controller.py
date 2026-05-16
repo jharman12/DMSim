@@ -7,6 +7,7 @@ the simulation. The engine/model layer must never import Qt.
 from PyQt5.QtCore import QObject, pyqtSignal
 from engine.combat import doAction
 from engine.targeting import calcMoveHexes
+import engine.dice as _dice
 
 
 class SimController(QObject):
@@ -21,7 +22,7 @@ class SimController(QObject):
     encounter_ended : emits 'Party' or 'Enemy' depending on who won
     log_message  : emits a plain-text log string
     action_choices_ready : emits a list of myAction objects for a player's turn
-    actor_moved  : emits (actor, new_hex_index, remaining_speed) after a move
+    actor_moved  : emits (actor, hex_index, remaining_speed) after a move
     """
 
     turn_changed = pyqtSignal(object)
@@ -41,6 +42,14 @@ class SimController(QObject):
         """
         super().__init__(parent)
         self._encounter = encounter
+
+        # --- Manual dice rolling ---
+        # Names of actors whose rolls should be entered manually by the user.
+        self.manual_actors: set = set()
+
+        # Factory called with (actor_name) -> callable(n, sides, context) -> list[int]|None
+        # Set by MapWidget so the dialog is parented to the correct widget.
+        self.roll_provider_factory = None
 
     # ------------------------------------------------------------------
     # Public API used by the GUI
@@ -77,6 +86,55 @@ class SimController(QObject):
         return self._encounter.map.enemy if self._encounter.map else []
 
     # ------------------------------------------------------------------
+    # Manual dice helpers
+    # ------------------------------------------------------------------
+
+    def set_manual_actors(self, names: set):
+        """Replace the set of actor names that roll dice manually and reinstall the provider."""
+        self.manual_actors = set(names)
+        self._refresh_roll_provider()
+
+    def _refresh_roll_provider(self):
+        """Install (or clear) the global roll provider based on current manual_actors."""
+        if self.manual_actors and self.roll_provider_factory is not None:
+            controller = self
+
+            def _provider(n, sides, context, actor_name=None):
+                # Only intercept if the rolling actor is in the manual list.
+                # actor_name is None for rollDice calls where no actor is tracked
+                # (e.g. attacker's attack/damage) — treat None as the active actor.
+                if actor_name is not None and actor_name not in controller.manual_actors:
+                    return None  # let engine roll randomly
+                if actor_name is None:
+                    # rollDice without an actor_name — skip dialog (random)
+                    return None
+                return controller.roll_provider_factory(actor_name)(n, sides, context)
+
+            _dice.set_roll_provider(_provider)
+        else:
+            _dice.clear_roll_provider()
+
+    def _install_roll_provider(self, actor):
+        """Ensure the persistent provider is active when a manual actor takes a turn."""
+        if actor.name in self.manual_actors and self.roll_provider_factory is not None:
+            # Provider already installed persistently; update the active actor hint
+            # so rollDice (no actor_name) shows dialogs for the acting actor.
+            controller = self
+            acting_name = actor.name
+
+            def _provider(n, sides, context, actor_name=None):
+                name = actor_name if actor_name is not None else acting_name
+                if name not in controller.manual_actors:
+                    return None
+                return controller.roll_provider_factory(name)(n, sides, context)
+
+            _dice.set_roll_provider(_provider)
+
+    def _clear_roll_provider(self):
+        """After an action, revert to the persistent provider (or clear if none needed)."""
+        self._refresh_roll_provider()
+
+    # ------------------------------------------------------------------
     # Action methods — GUI calls these instead of touching the encounter
     # ------------------------------------------------------------------
 
@@ -106,10 +164,15 @@ class SimController(QObject):
         """
         Execute *turn_choice* for *actor*, remove any actors that died, and
         rebuild spell-slot state.  Does **not** advance the turn.
+        Manual roll provider is installed/cleared around the engine call.
         """
         map_obj = self._encounter.map
-        doAction(actor, map_obj, turn_choice)
-        self._encounter.removeDeadActors()
+        self._install_roll_provider(actor)
+        try:
+            doAction(actor, map_obj, turn_choice)
+            self._encounter.removeDeadActors()
+        finally:
+            self._clear_roll_provider()
 
     def end_turn(self, actor):
         """
@@ -120,6 +183,7 @@ class SimController(QObject):
         - emit ``turn_changed`` with the next actor
 
         Returns the raw ``calcTurn()`` tuple so the GUI can update its state.
+        Manual roll provider is installed for the current actor's legendary reactions.
         """
         map_obj = self._encounter.map
         self._encounter.removeDeadActors()
@@ -127,8 +191,12 @@ class SimController(QObject):
         for enemy in map_obj.enemy:
             if enemy.legActions >= 1 and len(map_obj.party) != 0:
                 self.log_message.emit(f'Legendary Action check by: {enemy.name}\n')
-                enemy.takeLegAction(map_obj)
-                self._encounter.removeDeadActors()
+                self._install_roll_provider(enemy)
+                try:
+                    enemy.takeLegAction(map_obj)
+                    self._encounter.removeDeadActors()
+                finally:
+                    self._clear_roll_provider()
 
         self._encounter.nextTurn()
         actor.speed = int(actor.maxSpeed)
@@ -159,3 +227,4 @@ class SimController(QObject):
 
     def _on_action_choices_ready(self, choices):
         self.action_choices_ready.emit(choices)
+
