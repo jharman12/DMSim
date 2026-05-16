@@ -94,13 +94,14 @@ import os
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QTextEdit, QCheckBox, QMenuBar, QMenu, QAction,
-    QLabel, QPushButton, QLineEdit, QScrollArea, QFrame, QProgressBar, QComboBox, QSplitter, QSplitterHandle, QGroupBox
+    QLabel, QPushButton, QLineEdit, QScrollArea, QFrame, QProgressBar, QComboBox, QSplitter, QSplitterHandle, QGroupBox,
+    QMainWindow, QDockWidget, QToolBar
 )
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QFont
 
 from PyQt5.QtGui import QPixmap, QIcon
 
-from PyQt5.QtWidgets import QApplication, QPushButton, QMainWindow, QWidget, QVBoxLayout
+from PyQt5.QtWidgets import QApplication, QPushButton, QMainWindow, QWidget, QVBoxLayout, QDockWidget, QToolBar
 from PyQt5.QtCore import QSize, Qt, QEvent
 
 from PyQt5.QtGui import QPixmap
@@ -1350,7 +1351,7 @@ class TurnActionPanel(QWidget):
 
 
 
-class MapWidget(QWidget):
+class MapWidget(QMainWindow):
     def __init__(self, controller):
         super().__init__()
         global gViewer
@@ -1368,88 +1369,30 @@ class MapWidget(QWidget):
 
         self.installEventFilter(self)
 
-        main_layout = QVBoxLayout()
-        main_layout.setSpacing(15)
-
-        # ---- Menu Bar ----
-        self.menu_bar = QMenuBar(self)
-
-        # File menu
-        file_menu = self.menu_bar.addMenu("File")
-
+        # ------------------------------------------------------------------
+        # MENU BAR  (QMainWindow provides self.menuBar() for free)
+        # ------------------------------------------------------------------
+        file_menu = self.menuBar().addMenu("File")
         save_action = QAction("Save Encounter", self)
         save_action.triggered.connect(self.saveEncounter)
         file_menu.addAction(save_action)
 
-        # Optional placeholders
-        edit_menu = self.menu_bar.addMenu("Edit")
-        view_menu = self.menu_bar.addMenu("View")
-        help_menu = self.menu_bar.addMenu("Help")
-
-        # Add menu bar to layout
-        main_layout.addWidget(self.menu_bar)
-
-        # ---- Top: Turn Order Indicator ----
-        self.turn_order_widget = TurnOrderWidget()
-        main_layout.addWidget(self.turn_order_widget)
+        self.menuBar().addMenu("Edit")
+        view_menu = self.menuBar().addMenu("View")
+        self.menuBar().addMenu("Help")
 
         # ------------------------------------------------------------------
-        # CUSTOM SPLITTER WITH HOVER-CURSOR + DOUBLE CLICK BEHAVIOR
+        # CENTRAL WIDGET: map toolbar + hex grid view
         # ------------------------------------------------------------------
-        class SmartSplitter(QSplitter):
-            def __init__(self, orientation):
-                super().__init__(orientation)
-                self.setHandleWidth(10)
-
-            def createHandle(self):
-                return SmartSplitterHandle(self.orientation(), self)
-
-        class SmartSplitterHandle(QSplitterHandle):
-            def mouseMoveEvent(self, event):
-                splitter = self.splitter()
-
-                # Mouse coordinate in global splitter space
-                pos = event.pos().x() if splitter.orientation() == Qt.Horizontal else event.pos().y()
-
-                # Set sizes based on mouse position directly
-                total = sum(splitter.sizes())
-
-                # clamp positions
-                pos = max(100, min(total - 100, pos))
-
-                # New sizes
-                if splitter.orientation() == Qt.Horizontal:
-                    sizes = [pos, total - pos]
-                else:
-                    sizes = [pos, total - pos]
-
-                splitter.setSizes(sizes)
-
-                super().mouseMoveEvent(event)
-
-            def mouseDoubleClickEvent(self, event):
-                # Keep your double-click behavior
-                splitter = self.splitter()
-                right = splitter.widget(1)
-                splitter.setSizes([2000, right.minimumWidth()])
-                super().mouseDoubleClickEvent(event)
-
-
-            self.splitter = SmartSplitter(Qt.Horizontal)
-
-        # ============================================================
-        # LEFT SIDE: MAP FRAME (buttons + graphics viewer)
-        # ============================================================
         self.map_frame = QFrame()
         map_frame_layout = QVBoxLayout(self.map_frame)
         map_frame_layout.setContentsMargins(0, 0, 0, 0)
         map_frame_layout.setSpacing(5)
 
-        # --- Buttons above the map ---
+        # ---- Buttons above the map ----
         top_button_row = QHBoxLayout()
         top_button_row.setSpacing(10)
 
-        # ---- Left buttons ----
         self.distance_button = QPushButton("Distance Calc")
         self.distance_button.setCheckable(True)
         top_button_row.addWidget(self.distance_button)
@@ -1472,10 +1415,8 @@ class MapWidget(QWidget):
         self.manual_dice_button.clicked.connect(self.openManualRollersDialog)
         top_button_row.addWidget(self.manual_dice_button)
 
-        # ---- Stretch pushes next widget to the right ----
         top_button_row.addStretch(1)
 
-        # ---- Right button ----
         self.undo_button = QPushButton("Undo Turn")
         self.undo_button.setCheckable(True)
         self.undo_button.clicked.connect(self.undoTurn)
@@ -1483,106 +1424,98 @@ class MapWidget(QWidget):
 
         map_frame_layout.addLayout(top_button_row)
 
-        # --- Map widget ---
+        # ---- Map view ----
         self.map_view = CustomGraphicsView(self.myEncounter)
         gViewer = self.map_view
         self.map_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-
         self.map_view.setFrameShape(QFrame.Box)
-        self.map_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.map_view.setMinimumWidth(300)    # use smaller minimum
-
-        map_frame_layout.addWidget(self.map_view, stretch=1) 
+        self.map_view.setMinimumWidth(300)
+        map_frame_layout.addWidget(self.map_view, stretch=1)
 
         self.map_view.affectedSaved.connect(self.updateTargets)
 
-        # Add left side to splitter
-        self.splitter.addWidget(self.map_frame)
+        # ---- Start button at bottom of central area ----
+        self.start_button = QPushButton("Start Encounter")
+        self.start_button.setFixedHeight(40)
+        self.start_button.clicked.connect(self.run_command)
+        map_frame_layout.addWidget(self.start_button)
 
-        # ============================================================
-        # SETUP MAP PIXMAP
-        # ============================================================
+        self.setCentralWidget(self.map_frame)
+
+        # ------------------------------------------------------------------
+        # SETUP MAP PIXMAP, ACTORS, HEX GRID
+        # ------------------------------------------------------------------
         pixmap = QPixmap(self.myEncounter.mapImage)
         self.map_view.setMapPixmap(pixmap)
 
-        # Add players to map
         for player in self.myEncounter.totalList:
             px = _get_actor_pixmap(player)
             self.map_view.addCharacterPixmap(px, player)
 
-        # Add hex grid
         num_vertical_grids = int(self.myEncounter.numHexes)
         map_rect = self.map_view.map_item.boundingRect()
         self.map_view.drawHexGrid(num_vertical_grids, map_rect)
 
-        self.undo_stack = deque(maxlen=20)  # cap memory
-        # ============================================================
-        # RIGHT SIDE: TURN ACTION PANEL
-        # ============================================================
+        self.undo_stack = deque(maxlen=20)
+
+        # ------------------------------------------------------------------
+        # DOCK: TURN ORDER (top)
+        # ------------------------------------------------------------------
+        self.turn_order_widget = TurnOrderWidget()
+        turn_order_dock = QDockWidget("Turn Order", self)
+        turn_order_dock.setObjectName("TurnOrderDock")
+        turn_order_dock.setWidget(self.turn_order_widget)
+        turn_order_dock.setAllowedAreas(Qt.AllDockWidgetAreas)
+        turn_order_dock.setFeatures(
+            QDockWidget.DockWidgetMovable |
+            QDockWidget.DockWidgetFloatable |
+            QDockWidget.DockWidgetClosable
+        )
+        self.addDockWidget(Qt.TopDockWidgetArea, turn_order_dock)
+
+        # ------------------------------------------------------------------
+        # DOCK: TURN ACTION PANEL (right)
+        # ------------------------------------------------------------------
         self.turn_action_panel = TurnActionPanel()
-        #self.turn_action_panel.setMinimumWidth(250)
-        #self.turn_action_panel.setMaximumWidth(500)  # optional
         self.turn_action_panel.take_turn_button.clicked.connect(self.takeTurnButton)
         self.turn_action_panel.move_input.clicked.connect(self.moveButton)
         self.turn_action_panel.endTurnButton.clicked.connect(self.endTurnButton)
         self.turn_action_panel.action_dropdown.currentTextChanged.connect(self.actionChanged)
-
         self.turn_action_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        
+
+        action_dock = QDockWidget("Turn Actions", self)
+        action_dock.setObjectName("TurnActionsDock")
+        action_dock.setWidget(self.turn_action_panel)
+        action_dock.setAllowedAreas(Qt.AllDockWidgetAreas)
+        action_dock.setFeatures(
+            QDockWidget.DockWidgetMovable |
+            QDockWidget.DockWidgetFloatable |
+            QDockWidget.DockWidgetClosable
+        )
+        action_dock.setMinimumWidth(250)
+        self.addDockWidget(Qt.RightDockWidgetArea, action_dock)
+
         self.turnChoices = None
         self.turnChoice = None
         self.actor = None
 
-        # Add right panel to splitter
-        self.splitter.addWidget(self.turn_action_panel)
+        # ------------------------------------------------------------------
+        # VIEW MENU: toggle dock visibility
+        # ------------------------------------------------------------------
+        view_menu.addAction(turn_order_dock.toggleViewAction())
+        view_menu.addAction(action_dock.toggleViewAction())
 
-        # ------------------------------------------------------------
-        # SPLITTER BEHAVIOR IMPROVEMENTS
-        # ------------------------------------------------------------
-
-        # Map gets 3x more space than action panel initially
-        self.splitter.setStretchFactor(0, 3)
-        self.splitter.setStretchFactor(1, 1)
-        self.splitter.setSizes([1100, 300])
-
-        # Double-click handle to restore action panel to minimum width
-        def resetPanels():
-            self.splitter.setSizes([2000, self.turn_action_panel.minimumWidth()])
-
-        handle = self.splitter.handle(1)
-        oldDoubleClick = handle.mouseDoubleClickEvent
-
-        def doubleClickOverride(event):
-            resetPanels()
-            oldDoubleClick(event)
-
-        handle.mouseDoubleClickEvent = doubleClickOverride
-
-        # Add splitter to layout
-        main_layout.addWidget(self.splitter, 1)
-
-        # ---- Bottom: Start Encounter Button ----
-        self.start_button = QPushButton("Start Encounter")
-        self.start_button.setFixedHeight(40)
-        self.start_button.clicked.connect(self.run_command)
-        main_layout.addWidget(self.start_button)
-
-        self.setLayout(main_layout)
-
-        # ---- Wire SimController signals ----
+        # ------------------------------------------------------------------
+        # SIGNAL WIRING
+        # ------------------------------------------------------------------
         self.controller.log_message.connect(self.turn_action_panel.log)
         self.controller.turn_changed.connect(self._on_turn_changed)
         self.controller.actor_died.connect(self._on_actor_died)
         self.controller.encounter_ended.connect(self._on_encounter_ended)
-
-        # ---- Wire wall changes from the map view to the engine map ----
         self.map_view.walls_changed.connect(self._on_walls_changed)
 
-        # ---- Give controller access to the manual-roll dialog factory ----
         self.controller.roll_provider_factory = self._make_roll_provider
 
-        # Default: all players roll manually so the DM doesn't need to configure this.
         default_manual = {
             a.name for a in self.myEncounter.totalList
             if getattr(a, 'is_player', False)
