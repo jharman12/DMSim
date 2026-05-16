@@ -121,7 +121,7 @@ from model.player import createPartyList, Player
 from model.monster import createMonsterList, Monster
 from engine.targeting import drawLine, calcMoveHexes, hex_calc_line, hex_calc_hexes, hex_calc_square
 from model.Interactive.interactiveEncounter import interactiveEncounter
-from dialogs import ManualRollDialog, ManualRollersDialog
+from dialogs import ManualRollDialog, ManualRollersDialog, ManualActionsDialog
 
 
 _UNKNOWN_IMAGE = str(_root / "App" / "unknown.jpg")
@@ -1246,67 +1246,100 @@ class TurnActionPanel(QWidget):
         if not self._textScale:
             return  # fonts not initialized yet
 
-        slot_data = actor.spellSlots
-        maxSlots = actor.maxSpellSlots
-
         # Clear existing widgets
         self.clearLayout(self.spell_slot_layout)
         self.spell_slot_widgets.clear()
 
+        if getattr(actor, 'is_player', False):
+            # --- Player: show spell slots by level ---
+            slot_data = actor.spellSlots
+            maxSlots = actor.maxSpellSlots
 
-        self.spell_slot_widgets.clear()
+            for level in sorted(slot_data.keys()):
+                if level == '0':
+                    continue
+                max_slots = maxSlots[level]
+                remaining = slot_data[level]
+                if max_slots == 0:
+                    continue
 
-        for level in sorted(slot_data.keys()):
-            if level == '0':
-                continue
+                lbl = QLabel(f"Level {level}")
+                set_font(lbl, self._textScale.size(self._textScale.SM), QFont.Bold)
+                self.spell_slot_layout.addWidget(lbl)
 
-            max_slots = maxSlots[level]
-            remaining = slot_data[level]
+                row = QHBoxLayout()
+                row.setSpacing(4)
+                self.spell_slot_widgets[level] = []
 
-            if max_slots == 0:
-                continue
+                for i in range(max_slots):
+                    slot = QCheckBox()
+                    slot.setEnabled(False)
+                    slot.setChecked(i < remaining)
+                    box_size = self._textScale.size(self._textScale.XS)
+                    slot.setFixedSize(box_size + 4, box_size + 4)
+                    slot.setStyleSheet(f"""
+                        QCheckBox::indicator {{
+                            width: {box_size}px;
+                            height: {box_size}px;
+                            border: 2px solid #999;
+                            background: #222;
+                        }}
+                        QCheckBox::indicator:checked {{
+                            background: #66ccff;
+                        }}
+                    """)
+                    row.addWidget(slot)
+                    self.spell_slot_widgets[level].append(slot)
 
-            # --- Level Label ---
-            lbl = QLabel(f"Level {level}")
-            set_font(
-                lbl,
-                self._textScale.size(self._textScale.SM),
-                QFont.Bold
-            )
-            self.spell_slot_layout.addWidget(lbl)
+                row.addStretch()
+                self.spell_slot_layout.addLayout(row)
 
-            # --- Slot Row ---
-            row = QHBoxLayout()
-            row.setSpacing(4)
+        else:
+            # --- Monster: show each spell with checkboxes for remaining uses ---
+            spells = getattr(actor, 'spells', {})
+            for spell_name, entry in spells.items():
+                # Monster spell format: [remaining_uses, spell_dict]
+                if not isinstance(entry, list) or len(entry) < 2:
+                    continue
+                remaining, spell_dict = entry[0], entry[1]
+                if spell_dict.get('combat', 'n') == 'n':
+                    continue
 
-            self.spell_slot_widgets[level] = []
+                # Derive max uses: we don't store it separately, so use remaining as
+                # a rough proxy (it only decreases, so max = remaining + used; we
+                # reconstruct on first call from the actor's initial state if available).
+                max_uses = getattr(actor, '_spell_max_uses', {}).get(spell_name, remaining)
 
-            for i in range(max_slots):
-                slot = QCheckBox()
-                slot.setEnabled(False)
-                slot.setChecked(i < remaining)
+                lbl = QLabel(spell_name)
+                set_font(lbl, self._textScale.size(self._textScale.SM), QFont.Bold)
+                self.spell_slot_layout.addWidget(lbl)
 
-                # Scale checkbox size
-                box_size = self._textScale.size(self._textScale.XS)
-                slot.setFixedSize(box_size + 4, box_size + 4)
+                row = QHBoxLayout()
+                row.setSpacing(4)
+                self.spell_slot_widgets[spell_name] = []
 
-                slot.setStyleSheet(f"""
-                    QCheckBox::indicator {{
-                        width: {box_size}px;
-                        height: {box_size}px;
-                        border: 2px solid #999;
-                        background: #222;
-                    }}
-                    QCheckBox::indicator:checked {{
-                        background: #66ccff;
-                    }}
-                """)
+                for i in range(max(max_uses, 1)):
+                    slot = QCheckBox()
+                    slot.setEnabled(False)
+                    slot.setChecked(i < remaining)
+                    box_size = self._textScale.size(self._textScale.XS)
+                    slot.setFixedSize(box_size + 4, box_size + 4)
+                    slot.setStyleSheet(f"""
+                        QCheckBox::indicator {{
+                            width: {box_size}px;
+                            height: {box_size}px;
+                            border: 2px solid #999;
+                            background: #222;
+                        }}
+                        QCheckBox::indicator:checked {{
+                            background: #66ccff;
+                        }}
+                    """)
+                    row.addWidget(slot)
+                    self.spell_slot_widgets[spell_name].append(slot)
 
-                row.addWidget(slot)
-                self.spell_slot_widgets[level].append(slot)
-
-            row.addStretch()
-            self.spell_slot_layout.addLayout(row)
+                row.addStretch()
+                self.spell_slot_layout.addLayout(row)
 
 
 
@@ -1379,11 +1412,16 @@ class TurnActionPanel(QWidget):
         self.action_dropdown.addHeader('\nSpells*******')
         # add spells to dropdown
         spells = actor.spells  # dictionary of spells
+        # Monster spells: {name: [count, spell_dict]}  Player spells: {name: spell_dict}
+        # Normalise to a plain dict for level grouping.
+        def _spell_dict(data):
+            return data[1] if isinstance(data, list) else data
+
         # Build dictionary grouping spell names by level:
         #   { 0: [...], 1: [...], ... }
         level_groups = {}
         for spell_name, data in spells.items():
-            lvl = data.get("lvl", 0)
+            lvl = _spell_dict(data).get("lvl", 0)
             level_groups.setdefault(lvl, []).append(spell_name)
 
         # Loop levels in ascending order
@@ -1396,7 +1434,7 @@ class TurnActionPanel(QWidget):
                 # Add spell items underneath
                 for spell_name in sorted(level_groups[lvl]):   # alphabetical
                     if spell_name in actions:
-                        self.action_dropdown.addItemToGroup(spell_name, data=spells[spell_name])
+                        self.action_dropdown.addItemToGroup(spell_name, data=_spell_dict(spells[spell_name]))
                         actions.remove(spell_name)
         self.action_dropdown.addHeader('\nOther*******')
         for item in actions:
@@ -1484,6 +1522,13 @@ class MapWidget(QMainWindow):
         )
         self.manual_dice_button.clicked.connect(self.openManualRollersDialog)
         top_button_row.addWidget(self.manual_dice_button)
+
+        self.manual_actions_button = QPushButton("🎮 Manual Actions")
+        self.manual_actions_button.setToolTip(
+            "Choose which actors have their actions controlled by you (vs. the AI)"
+        )
+        self.manual_actions_button.clicked.connect(self.openManualActionsDialog)
+        top_button_row.addWidget(self.manual_actions_button)
 
         top_button_row.addStretch(1)
 
@@ -1594,6 +1639,15 @@ class MapWidget(QMainWindow):
         }
         self.controller.set_manual_actors(default_manual)
 
+        # By default players are interactive (user controls actions); monsters are automated.
+        default_interactive = {
+            a.name for a in self.myEncounter.totalList
+            if getattr(a, 'is_player', False)
+        }
+        self.controller.set_interactive_actors(default_interactive)
+        # Also set on the encounter directly in case preCombat hasn't been called yet.
+        self.myEncounter.interactive_actors = default_interactive
+
         self.testingTheory()
 
         self.TextScale = TextScale
@@ -1625,6 +1679,15 @@ class MapWidget(QMainWindow):
         dlg = ManualRollersDialog(all_actors, self.controller.manual_actors, parent=self)
         if dlg.exec_() == ManualRollersDialog.Accepted:
             self.controller.set_manual_actors(dlg.get_selected())
+
+    def openManualActionsDialog(self):
+        """Open the Manual Actions configuration dialog."""
+        all_actors = list(self.myEncounter.totalList)
+        dlg = ManualActionsDialog(all_actors, self.controller.interactive_actors, parent=self)
+        if dlg.exec_() == ManualActionsDialog.Accepted:
+            new_interactive = dlg.get_selected()
+            self.controller.set_interactive_actors(new_interactive)
+            self.myEncounter.interactive_actors = new_interactive
 
     def _on_turn_changed(self, actor):
         """Called by SimController.turn_changed signal when the active actor changes."""

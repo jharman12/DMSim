@@ -14,3 +14,6 @@ Done 4.) Some spells persist on the map and create obstacles that can do various
 12.) Add a default image to the map in the encounter builder if one is not selected.
 13.) In the encounter builder add a build that autogenerates an encounter for the given party bassed off of selected difficulty. This should use the non-interactive encounter simulation and score how well the party is expected to do.
 14.) Fix actor hex icon shifting and not being centered over time. Also, the red outline indicating who's turn it is on the map will some times not disappear correctly. I believe that both issues is caused by the same problem. Can you investigate and find a solution.
+15.) Have a button to pop up secondary map display that the user could show players on secondary monitor. This display should only mimic the current map but should not be able to be interacted with.
+16.) Make it so manual roll and manual action lists you can click on the actor name to check them as well.
+17.) Dash has the actor not stop at the current hex that they are on. I believe its because its calling nearest free hex and seeing itself on the hex that it is on.

@@ -34,6 +34,16 @@ class interactiveEncounter:
             actor.cc = []
             actor.restrained = []
             actor.concentration_spell = None  # no active concentration on encounter start
+            # Ensure every actor has maxSpeed so end_turn can restore it correctly.
+            if not hasattr(actor, 'maxSpeed'):
+                actor.maxSpeed = actor.speed
+            # Snapshot monster spell use counts so the GUI can show max checkboxes correctly.
+            if not getattr(actor, 'is_player', False):
+                actor._spell_max_uses = {
+                    name: entry[0]
+                    for name, entry in getattr(actor, 'spells', {}).items()
+                    if isinstance(entry, list) and len(entry) >= 2
+                }
 
     
     def __getstate__(self):
@@ -49,6 +59,10 @@ class interactiveEncounter:
         self.sortedInitList = dict(sorted(initList.items(), key = lambda x:x[1], reverse=True))
         self.curTurn = 0
         self.graphicsViewer = graphicsViewer
+        # interactive_actors is injected by SimController.set_interactive_actors().
+        # Default: all party members are interactive, all enemies are automated.
+        if not hasattr(self, 'interactive_actors'):
+            self.interactive_actors = {a.name for a in self.party2List}
 
     def nextTurn(self):
         # Remove red outline from current actor
@@ -148,17 +162,33 @@ class interactiveEncounter:
         if actor in self.map.enemy:
             if len(self.map.party) == 0:
                 return
-            takeTurn(actor, self.map, interactive=False)
-            self.nextTurn()
-            testing = self.calcTurn()
-            return testing
+            is_interactive = actor.name in getattr(self, 'interactive_actors', set())
+            if is_interactive:
+                turn = takeTurn(actor, self.map, interactive=True)
+                if turn is None:
+                    self.nextTurn()
+                    return self.calcTurn()
+                else:
+                    return turn
+            else:
+                takeTurn(actor, self.map, interactive=False)
+                self.nextTurn()
+                testing = self.calcTurn()
+                return testing
         else:
             if len(self.map.enemy) == 0:
                 return
-            turn = takeTurn(actor, self.map, interactive=True)
-            if turn is None:
+            is_interactive = actor.name in getattr(self, 'interactive_actors', set())
+            if is_interactive:
+                turn = takeTurn(actor, self.map, interactive=True)
+                if turn is None:
+                    self.nextTurn()
+                    return self.calcTurn()
+                else:
+                    return turn
+            else:
+                # Party member set to automated (AI-controlled)
+                takeTurn(actor, self.map, interactive=False)
                 self.nextTurn()
                 return self.calcTurn()
-            else:
-                return turn
     

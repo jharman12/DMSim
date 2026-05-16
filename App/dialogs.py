@@ -161,3 +161,69 @@ class ManualRollersDialog(QDialog):
             for item in self._all_items
             if item.checkState() == Qt.Checked
         }
+
+
+class ManualActionsDialog(QDialog):
+    """
+    Dialog for selecting which actors have their action choices made by the user.
+    Actors in this list will show the interactive turn panel (move, pick action, pick target)
+    instead of having the AI engine decide automatically.
+
+    Players are checked by default; monsters are unchecked by default.
+    """
+
+    def __init__(self, all_actors: list, interactive_actors: set, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Manual Action Control")
+        self.setMinimumWidth(420)
+
+        layout = QVBoxLayout(self)
+
+        info = QLabel(
+            "Check the actors whose actions you want to control manually.\n"
+            "Checked actors will show the action panel during their turn.\n"
+            "Unchecked actors will have their actions decided by the AI."
+        )
+        info.setWordWrap(True)
+        layout.addWidget(info)
+
+        players  = [a for a in all_actors if getattr(a, 'is_player', False)]
+        monsters = [a for a in all_actors if not getattr(a, 'is_player', False)]
+
+        self._all_items = []
+
+        outer = QHBoxLayout()
+
+        def _make_group(title: str, actors: list) -> QGroupBox:
+            box = QGroupBox(title)
+            box_layout = QVBoxLayout(box)
+            lst = QListWidget()
+            for actor in actors:
+                item = QListWidgetItem(actor.name)
+                item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+                item.setCheckState(
+                    Qt.Checked if actor.name in interactive_actors else Qt.Unchecked
+                )
+                lst.addItem(item)
+                self._all_items.append(item)
+            box_layout.addWidget(lst)
+            return box
+
+        if players:
+            outer.addWidget(_make_group("Players", players))
+        if monsters:
+            outer.addWidget(_make_group("Monsters / NPCs", monsters))
+        layout.addLayout(outer)
+
+        btn_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        btn_box.accepted.connect(self.accept)
+        btn_box.rejected.connect(self.reject)
+        layout.addWidget(btn_box)
+
+    def get_selected(self) -> set:
+        """Return set of actor names whose actions should be user-controlled."""
+        return {
+            item.text()
+            for item in self._all_items
+            if item.checkState() == Qt.Checked
+        }

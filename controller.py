@@ -49,6 +49,12 @@ class SimController(QObject):
         # Names of actors whose rolls should be entered manually by the user.
         self.manual_actors: set = set()
 
+        # --- Interactive action selection ---
+        # Names of actors whose action choices are made by the user via the GUI
+        # (rather than decided by the AI engine).  Players are interactive by default;
+        # monsters are automated by default but can be added here.
+        self.interactive_actors: set = set()
+
         # Factory called with (actor_name) -> callable(n, sides, context) -> list[int]|None
         # Set by MapWidget so the dialog is parented to the correct widget.
         self.roll_provider_factory = None
@@ -95,6 +101,13 @@ class SimController(QObject):
         """Replace the set of actor names that roll dice manually and reinstall the provider."""
         self.manual_actors = set(names)
         self._refresh_roll_provider()
+
+    def set_interactive_actors(self, names: set):
+        """Replace the set of actor names whose action choices are made by the user."""
+        self.interactive_actors = set(names)
+        # Propagate to the encounter so calcTurn knows which actors are interactive.
+        if hasattr(self._encounter, 'interactive_actors'):
+            self._encounter.interactive_actors = self.interactive_actors
 
     def _refresh_roll_provider(self):
         """Install (or clear) the global roll provider based on current manual_actors."""
