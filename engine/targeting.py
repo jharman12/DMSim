@@ -28,16 +28,53 @@ def drawLine(coord1, coord2, map_obj):
 
 
 def calcMoveHexes(actor, map_obj, type=None):
+    """Return list of hex indices the actor can reach, routing around walls.
+
+    Uses BFS (breadth-first search) so walls act as true blockers — the actor
+    cannot pass through a wall hex to reach hexes on the other side.
+    """
+    from collections import deque
+
     arrayCenters = map_obj.arrayCenters
-    actorCoords = [coord for coord in arrayCenters if arrayCenters[coord] == actor][0]
-    actorIndex = list(arrayCenters).index(actorCoords)
+    coords = list(arrayCenters)
+    n = len(coords)
+    walls = getattr(map_obj, 'walls', set())
+
+    actor_coord = next(c for c in arrayCenters if arrayCenters[c] == actor)
+    start = coords.index(actor_coord)
+
     speed = int(actor.speed / 5)
-    dashSpeed = speed * 2
-    limit = dashSpeed if type == 'dash' else speed
+    limit = speed * 2 if type == 'dash' else speed
+
+    # Precompute neighbours once using the same doubled-height metric as the map.
+    # Two hexes are adjacent if their distance is exactly 1.
+    def _hex_dist(a, b):
+        drow = abs(a[1] - b[1])
+        dcol = abs(a[0] - b[0])
+        return dcol + max(0, (drow - dcol) / 2)
+
+    neighbors = [
+        [j for j in range(n) if i != j and _hex_dist(coords[i], coords[j]) == 1]
+        for i in range(n)
+    ]
+
+    # BFS — cost is number of hexes moved
+    cost = {start: 0}
+    queue = deque([start])
+
+    while queue:
+        cur = queue.popleft()
+        if cost[cur] >= limit:
+            continue
+        for nb in neighbors[cur]:
+            if nb not in cost and nb not in walls:
+                cost[nb] = cost[cur] + 1
+                queue.append(nb)
+
+    # Only return hexes the actor can actually stand on (empty or self)
     return [
-        ind for ind in range(len(list(arrayCenters)))
-        if map_obj.distanceCalc(actorIndex, ind) <= limit
-        and (arrayCenters[list(arrayCenters)[ind]] == '' or arrayCenters[list(arrayCenters)[ind]] == actor)
+        i for i in cost
+        if arrayCenters[coords[i]] == '' or arrayCenters[coords[i]] == actor
     ]
 
 

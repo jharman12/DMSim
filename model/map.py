@@ -26,6 +26,7 @@ class Map:
 
         self.party = partyList
         self.enemy = enemyList
+        self.walls: set = set()   # hex indices that are impassable walls
         self.populateMap(self.party, self.enemy)
         
         #print('spawns as')

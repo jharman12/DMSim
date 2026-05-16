@@ -181,6 +181,8 @@ def set_font(widget, size, weight=QFont.Normal, monospace=False):
 
 class CustomGraphicsView(QGraphicsView):
     affectedSaved = pyqtSignal(list)
+    walls_changed = pyqtSignal(set)   # emitted with the new wall index set
+
     def __init__(self, encounter):
         super().__init__()
 
@@ -194,6 +196,9 @@ class CustomGraphicsView(QGraphicsView):
         self.encounter = encounter
         self.curActor = None
         self.curMoveCoords = None
+
+        self.wall_mode = False
+        self._wall_indices: set = set()
 
         self.info_popup = None
         self.map_item = None
@@ -218,9 +223,10 @@ class CustomGraphicsView(QGraphicsView):
             QPainter.Antialiasing
             | QPainter.SmoothPixmapTransform
         )
-        self.defaultFill = QColor(0, 0, 255, 50) 
-        self.moveFill =  QColor(0, 255, 0, 50) 
-        self.coneFill =  QColor(255, 0, 0, 50) 
+        self.defaultFill = QColor(0, 0, 255, 50)
+        self.moveFill = QColor(0, 255, 0, 50)
+        self.coneFill = QColor(255, 0, 0, 50)
+        self.wallFill = QColor(80, 50, 20, 220)   # dark brown — always on top
         self.setResizeAnchor(QGraphicsView.AnchorViewCenter)
 
         self.affected = None
@@ -236,6 +242,10 @@ class CustomGraphicsView(QGraphicsView):
 
         # Highlight the newly allowed movement hexes
         self.setHexColors(self.moveFill, indexes)
+
+        # Walls always render on top of movement highlights
+        if self._wall_indices:
+            self.setHexColors(self.wallFill, list(self._wall_indices))
 
         # Rebuild the snap tree here
         self.build_snap_tree(indexes)
@@ -411,7 +421,20 @@ class CustomGraphicsView(QGraphicsView):
         if event.button() == Qt.LeftButton:
             self.last_mouse_pos = event.pos()
             item = self.itemAt(event.pos())
-            self.selected_item = None # gpt added
+            self.selected_item = None
+
+            # Wall-placement mode: toggle the clicked hex as a wall
+            if self.wall_mode and item in self.hex_items:
+                idx = self.hex_items.index(item)
+                if idx in self._wall_indices:
+                    self._wall_indices.discard(idx)
+                    self.setHexColors(self.defaultFill, [idx])
+                else:
+                    self._wall_indices.add(idx)
+                    self.setHexColors(self.wallFill, [idx])
+                self.walls_changed.emit(set(self._wall_indices))
+                return
+
             if self.spellAreaCheck != None and self.affected != None:
                 self.affectedSaved.emit(self.affected)
                 self.spellAreaCheck = None
@@ -1436,6 +1459,12 @@ class MapWidget(QWidget):
         self.spell_button.clicked.connect(self.spellButton_pressed)
         top_button_row.addWidget(self.spell_button)
 
+        self.wall_button = QPushButton("🧱 Walls")
+        self.wall_button.setCheckable(True)
+        self.wall_button.setToolTip("Click hexes to mark them as impassable walls")
+        self.wall_button.clicked.connect(self._toggle_wall_mode)
+        top_button_row.addWidget(self.wall_button)
+
         self.manual_dice_button = QPushButton("🎲 Manual Rollers")
         self.manual_dice_button.setToolTip(
             "Choose which actors roll their own physical dice"
@@ -1547,6 +1576,9 @@ class MapWidget(QWidget):
         self.controller.actor_died.connect(self._on_actor_died)
         self.controller.encounter_ended.connect(self._on_encounter_ended)
 
+        # ---- Wire wall changes from the map view to the engine map ----
+        self.map_view.walls_changed.connect(self._on_walls_changed)
+
         # ---- Give controller access to the manual-roll dialog factory ----
         self.controller.roll_provider_factory = self._make_roll_provider
 
@@ -1602,6 +1634,20 @@ class MapWidget(QWidget):
         """Called by SimController.encounter_ended signal."""
         self.turn_action_panel.log(f'--- Encounter over! {winner} wins! ---')
         self.start_button.setEnabled(False)
+
+    def _toggle_wall_mode(self, checked: bool):
+        """Enable or disable wall-placement mode on the map view."""
+        self.map_view.wall_mode = checked
+        # Visual cue: change cursor so the user knows they're placing walls
+        if checked:
+            self.map_view.setCursor(Qt.CrossCursor)
+        else:
+            self.map_view.unsetCursor()
+
+    def _on_walls_changed(self, wall_indices: set):
+        """Sync wall indices from the view into the engine map."""
+        if self.myEncounter.map is not None:
+            self.myEncounter.map.walls = wall_indices
 
     # ------------------------------------------------------------------
 
