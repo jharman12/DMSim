@@ -9,6 +9,7 @@ sys.path.insert(1, str(_root))
 
 from engine.combat import takeReaction
 from engine.targeting import drawLine
+from engine.utils import dprint
 
 class Map:
     def __init__(self, numHex, partyList, enemyList, graphicsViewer=None):
@@ -16,12 +17,12 @@ class Map:
         self.graphicsViewer = graphicsViewer
         self.combatLog = None
         
-        ##print('defining array')
+        ##dprint('defining array')
         if graphicsViewer is not None:
             self.defineArrayGrid(numHex)
         else:
             self.defineArrayGrid(numHex, 1, 0.5)
-        ##print('distance')
+        ##dprint('distance')
         #self.distanceCalc(0,23)
 
         self.party = partyList
@@ -30,7 +31,7 @@ class Map:
         self.persistent_spells: list = [] # active PersistentSpell zones
         self.populateMap(self.party, self.enemy)
         
-        #print('spawns as')
+        #dprint('spawns as')
         self.printCurrMap()
         #self.moveToNearest(Ephraim, Arabella)
         
@@ -40,14 +41,14 @@ class Map:
         moverIndex = list(self.arrayCenters).index(moverCoord)
         coordIndex = list(self.arrayCenters).index(coord)
         neighbors = self.neighbors(moverCoord)
-        print(neighbors)
+        dprint(neighbors)
         
                 
         distance = self.distanceCalc(list(self.arrayCenters).index(moverCoord), list(self.arrayCenters).index(coord))
-        print('\t\t',mover.name,'is going from', moverCoord, 'to', coord,'which is a distance of', distance)
+        dprint('\t\t',mover.name,'is going from', moverCoord, 'to', coord,'which is a distance of', distance)
         curframe = inspect.currentframe()
         calframe = inspect.getouterframes(curframe, 2)
-        #print(calframe[1][3])
+        #dprint(calframe[1][3])
         if distance > mover.speed/5 and calframe[1][3] != 'dashActor':
             
             raise SystemExit('Crashed in map moveActor')
@@ -59,17 +60,17 @@ class Map:
                 for neig in neighbors:
                     actor = self.arrayCenters[list(self.arrayCenters)[neig]]
                     reactDis = self.distanceCalc(neig, coordIndex)
-                    #print(actor)
+                    #dprint(actor)
                     if actor in self.enemy and actor.reaction and reactDis >= 2: 
-                        print('youre enemyList', actor.name,'and you should be able to react')
+                        dprint('youre enemyList', actor.name,'and you should be able to react')
                         takeReaction(actor, self, mover)
             if mover in self.enemy:
                 for neig in neighbors:
                     actor = self.arrayCenters[list(self.arrayCenters)[neig]]
                     reactDis = self.distanceCalc(neig, coordIndex)
-                    #print(actor)
+                    #dprint(actor)
                     if actor in self.party and actor.reaction and reactDis >= 2:
-                        print('youre partyList', actor.name,'and you should be able to react')
+                        dprint('youre partyList', actor.name,'and you should be able to react')
                         takeReaction(actor, self, mover)
             # Update graphics viewer if it exists
             if self.graphicsViewer is not None:
@@ -77,44 +78,44 @@ class Map:
                 self.graphicsViewer.moveActor(mover, newIndex)
     
     def dashActor(self, mover, targetCoord):
-        print(mover.name, ' is taking the dash action to ', targetCoord)
+        dprint(mover.name, ' is taking the dash action to ', targetCoord)
         movement = 2*(mover.speed/5)
         #targetCoord = [i for i in self.arrayCenters if self.arrayCenters[i] ==target][0]
         moverCoord = [i for i in self.arrayCenters if self.arrayCenters[i] ==mover][0]
 
         line = drawLine(moverCoord, targetCoord, self)
-        #print(line)
+        #dprint(line)
         options = [x for x in line if self.distanceCalc(list(self.arrayCenters).index(moverCoord), list(self.arrayCenters).index(x)) <= movement]
         if options[-1] == targetCoord or self.arrayCenters[options[-1]] != '':
             moverIndex = list(self.arrayCenters).index(moverCoord)
             targetIndex = list(self.arrayCenters).index(targetCoord)
             moverNew = self.nearestFreeHex(moverIndex, targetIndex)
-            #print('nearestFreeHex chose', moverNew)
+            #dprint('nearestFreeHex chose', moverNew)
             self.moveActor(mover, moverNew)
         else:
-            #print('going option[-1]', options[-1])
+            #dprint('going option[-1]', options[-1])
             self.moveActor(mover, options[-1])
         
 
     def moveToNearest(self, mover, target):
-        #print(mover.name, ' is going to ', target.name)
+        #dprint(mover.name, ' is going to ', target.name)
         if mover == target:
             #self.printCurrMap()
             return
-        print(mover, target)
+        dprint(mover, target)
         moverLoc = [i for i in self.arrayCenters if self.arrayCenters[i] == mover][0]
         
         Arabella = target
-        #print(moverLoc)
-        #print(Arabella)
+        #dprint(moverLoc)
+        #dprint(Arabella)
         moverIndex = list(self.arrayCenters).index(moverLoc)
         Arabella = list(self.arrayCenters).index(Arabella)
         
 
         moverNew = self.nearestFreeHex(moverIndex, Arabella)
-        ##print(moverNew)
+        ##dprint(moverNew)
         self.moveActor(mover, moverNew)
-        ##print(Ephraim)
+        ##dprint(Ephraim)
         #self.arrayCenters[moverLoc] = ''
         #self.arrayCenters[moverNew] = mover
         #self.printCurrMap()
@@ -135,7 +136,7 @@ class Map:
                 height = 1
                 width = 0.5
         
-        print(height, width)
+        dprint(height, width)
         startingPoint = [0, 0]
         r = height / (2 * (1 + (heightNumber - 1) * 2 * math.cos(math.pi * 60 / 180)))
         self.radius = r
@@ -165,10 +166,10 @@ class Map:
         
 
     def distanceCalc(self, index1, index2):
-        ##print(list(self.arrayCenters)[index1])
-        ##print(list(self.arrayCenters)[index2])
+        ##dprint(list(self.arrayCenters)[index1])
+        ##dprint(list(self.arrayCenters)[index2])
         test = self.doubledHeight(list(self.arrayCenters)[index1], list(self.arrayCenters)[index2])
-        ##print(test)
+        ##dprint(test)
         return test
     
     def col_round(self, x):
@@ -203,13 +204,13 @@ class Map:
         partyEnemyRatio = totalParty/totalEnemy
         maxX = max([x[0] for x in list(self.arrayCenters)])
         maxY = max([x[1] for x in list(self.arrayCenters)])
-        ##print(maxY)
+        ##dprint(maxY)
         partyX = self.col_round(partyEnemyRatio*maxX/2)
         if partyEnemyRatio > 1:
             newX = 1 - 1/partyEnemyRatio
             partyX = self.col_round(newX*maxX)
 
-        ##print(partyX)
+        ##dprint(partyX)
         partySide = []
         enemySide = []
         for key in self.arrayCenters.keys():
@@ -217,7 +218,7 @@ class Map:
                 partySide.append(key)
             else:
                 enemySide.append(key)
-        ##print(enemySide)
+        ##dprint(enemySide)
         totalList = [party, enemy]
         for side in totalList:
             for member in side:
@@ -225,10 +226,10 @@ class Map:
                 while saved == 0:
                     if member in party:
                         coord = r.sample(partySide, 1)[0]
-                        #print(member.name, coord)
+                        #dprint(member.name, coord)
                     else:
                         coord = r.sample(enemySide, 1)[0]
-                        #print(member.name, coord)
+                        #dprint(member.name, coord)
                     if self.arrayCenters[coord] == '':
                         self.arrayCenters[coord] = member
                         # Update graphics viewer if it exists
@@ -238,20 +239,20 @@ class Map:
                         saved = 1
                     else:
                         continue
-        ##print(self.arrayCenters)
+        ##dprint(self.arrayCenters)
     
     def neighbors(self, testCoord):
 
         coordList = list(self.arrayCenters)
         testIndex = coordList.index(testCoord)
         distanceList =[self.distanceCalc(testIndex, coordList.index(i)) for i in coordList]
-        ##print(len(distanceList))
+        ##dprint(len(distanceList))
         yourNeighbors = [i for i, x in enumerate(distanceList) if x == 1 ]
-        ##print('Your neighors Cood', [list(self.arrayCenters)[x] for x in yourNeighbors])
+        ##dprint('Your neighors Cood', [list(self.arrayCenters)[x] for x in yourNeighbors])
         return(yourNeighbors)
     
     def nearestFreeHex(self, startIndex, endIndex):
-        ##print(startIndex, endIndex)
+        ##dprint(startIndex, endIndex)
         nearIndexList = self.neighbors(list(self.arrayCenters)[endIndex])
         min = 999999
         minIndex = -99 # invalid index to catch if nothing is in reach
@@ -263,8 +264,8 @@ class Map:
         if minIndex == -99:
             minIndex = startIndex
             self.printCurrMap()
-            #print(self.arrayCenters[list(self.arrayCenters)[startIndex]], 'going to', self.arrayCenters[list(self.arrayCenters)[endIndex]])
-        #print("nearestFreehex", list(self.arrayCenters)[minIndex])
+            #dprint(self.arrayCenters[list(self.arrayCenters)[startIndex]], 'going to', self.arrayCenters[list(self.arrayCenters)[endIndex]])
+        #dprint("nearestFreehex", list(self.arrayCenters)[minIndex])
         return list(self.arrayCenters)[minIndex]
         #return minIndex
     
@@ -282,9 +283,9 @@ class Map:
         coordList = list(self.arrayCenters)
         maxX = max([x[0] for x in list(self.arrayCenters)])
         maxY = max([x[1] for x in list(self.arrayCenters)])
-        ##print(maxY)
+        ##dprint(maxY)
         for y in range(maxY + 1):
-            ##print(y)
+            ##dprint(y)
             x = 0
             string += '\n'
             while x <= maxX:
@@ -308,7 +309,7 @@ class Map:
                         input = self.arrayCenters[coord].name[0]
                     string += '\t' + input + '\t'
                 x += 1
-        print(string)
+        dprint(string)
 
 
         '''for coord in coordList:
@@ -317,9 +318,9 @@ class Map:
                 string += 'X' + '\t'
             else:
                 string += self.arrayCenters[coord].name[0] + '\t'
-                #print(self.arrayCenters[coord].name)
+                #dprint(self.arrayCenters[coord].name)
                 self.neighbors(coord)
             if coord[0] == maxX:
                 string += '\n'
-        #print(string)'''
+        #dprint(string)'''
 

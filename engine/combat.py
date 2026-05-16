@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass
 from typing import Optional
 
-from engine.utils import safe_log
+from engine.utils import safe_log, dprint
 from engine.dice import rollDice, rollSave, rollDeathSave, printDeathSaves
 from engine.targeting import (
     drawLine, coordWithinReach, moveWithingReach,
@@ -34,7 +34,7 @@ def removeDeadActors(map_obj, sortedInitList):
     totalList = map_obj.party + map_obj.enemy
     deadActors = [actor for actor in totalList if not actor.alive]
     for deadActor in deadActors:
-        print(deadActor.name, 'is dead')
+        dprint(deadActor.name, 'is dead')
         if deadActor in map_obj.party:
             map_obj.party.remove(deadActor)
         else:
@@ -54,7 +54,7 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
     Loops through every weapon and spell, decides best move/cast to maximise damage/healing.
     Returns [actor, map_obj, turnChoices, turnChoice] in interactive mode, else executes action.
     """
-    print(gViewer)
+    dprint(gViewer)
     healDownedTeammate = []
 
     if not actor.is_player:
@@ -63,7 +63,7 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
         if 'deathSaves' in actor.status:
             rollDeathSave(actor, map_obj)
             if 'deathSaves' in actor.status or 'unconscious' in actor.status:
-                print(actor.name, 'turn is skipped, in deathSaves or unconscious', actor.status)
+                dprint(actor.name, 'turn is skipped, in deathSaves or unconscious', actor.status)
                 safe_log(
                     '\t' + actor.name + ' turn is skipped, in deathSaves or unconscious '
                     + str(actor.status), map_obj
@@ -74,7 +74,7 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
         if actor in map_obj.party:
             for mate in map_obj.party:
                 if mate.alive and 'deathSaves' in mate.status:
-                    print('Teammate', mate.name, 'is down at',
+                    dprint('Teammate', mate.name, 'is down at',
                           [x for x in list(map_obj.arrayCenters) if map_obj.arrayCenters[x] == mate][0])
                     healDownedTeammate.append(
                         [x for x in list(map_obj.arrayCenters) if map_obj.arrayCenters[x] == mate][0]
@@ -512,11 +512,11 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                     and float(choice.mod) >= float(mostHealing)
                     and float(choice.mod) != 0
                     and any(x in healDownedTeammate for x in choice.targets)):
-                print('Prioritizing healing downed teammate!')
+                dprint('Prioritizing healing downed teammate!')
                 mostHealing = choice.mod
                 turnChoice = choice
 
-    print(turnChoice, "before interactive check")
+    dprint(turnChoice, "before interactive check")
 
     if not interactive:
         doAction(actor, map_obj, turnChoice)
@@ -530,7 +530,7 @@ def chooseAction(actor, map_obj, turnChoices, turnChoice):
     from engine.utils import stringToTuple
 
     for action in turnChoices:
-        print(
+        dprint(
             '\t', action.mod, ':', action.name, 'will do',
             'hitting', action.numHit, 'enemies if you move from',
             action.currCoord, 'to', action.moveCoord
@@ -542,7 +542,7 @@ def chooseAction(actor, map_obj, turnChoices, turnChoice):
             choice = action
 
     if not choice:
-        print("Your choice does not match a possible action. Try again.")
+        dprint("Your choice does not match a possible action. Try again.")
         chooseAction(actor, map_obj, turnChoices, turnChoice)
         return
 
@@ -553,7 +553,7 @@ def chooseAction(actor, map_obj, turnChoices, turnChoice):
     if override_Target == 'yes':
         for coord in map_obj.arrayCenters:
             if map_obj.arrayCenters[coord] != '':
-                print('\t', map_obj.arrayCenters[coord].name, " at ", coord)
+                dprint('\t', map_obj.arrayCenters[coord].name, " at ", coord)
         newTarget = stringToTuple(input("New coords of target?\n"))
         choice.targets = [newTarget]
 
@@ -588,7 +588,7 @@ def doAction(actor, map_obj, turnChoice):
         _doBreakFree(actor, map_obj, turnChoice)
         return
 
-    print(actor.name, 'is taking action', turnChoice.type, 'with', turnChoice.name)
+    dprint(actor.name, 'is taking action', turnChoice.type, 'with', turnChoice.name)
 
     if turnChoice.type == 'Wdmg':
         weaponChoice = [x for x in actor.weaponList if x.name == turnChoice.name][0]
@@ -639,7 +639,7 @@ def healSpellTurn(actor, turnChoice, map_obj):
 
 
 def takeHealing(actor, people, dmg, map_obj):
-    print(actor.name, 'is healing', people.name, 'for', dmg)
+    dprint(actor.name, 'is healing', people.name, 'for', dmg)
     safe_log('\t' + actor.name + ' is healing ' + people.name + ' for ' + str(dmg), map_obj)
     if people.is_player:
         if any(x in people.status for x in ['deathSaves', 'unconscious']):
@@ -745,7 +745,7 @@ def weaponAttack(actor, target, weap, map_obj):
     targDistance = map_obj.distanceCalc(myIndex, targetIndex)
 
     if targDistance > weap.range / 5:
-        print(actor.name, 'out of range to hit', target.name, 'with', weap.name, '...', targDistance, '..', weap.range / 5)
+        dprint(actor.name, 'out of range to hit', target.name, 'with', weap.name, '...', targDistance, '..', weap.range / 5)
         safe_log(
             '\t' + actor.name + ' out of range to hit ' + target.name + ' with ' + weap.name
             + ' ... ' + str(targDistance) + ' .. ' + str(weap.range / 5), map_obj
@@ -789,14 +789,14 @@ def weaponAttack(actor, target, weap, map_obj):
 
 
 def takeDmg(actor, target, dmg, map_obj):
-    print(actor.name, 'is doing', dmg, 'to', target.name)
+    dprint(actor.name, 'is doing', dmg, 'to', target.name)
     safe_log('\t' + actor.name + ' is doing ' + str(dmg) + ' to ' + target.name, map_obj)
 
     if not target.is_player:
         target.health -= dmg
         if target.health <= 0:
             target.alive = 0
-            print(target.name + ' is dead')
+            dprint(target.name + ' is dead')
     else:
         if 'deathSaves' in target.status:
             target.deathSaves['fail'].append(1)

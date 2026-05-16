@@ -9,6 +9,7 @@ from PyQt5.QtCore import Qt, pyqtSignal, QEvent
 import pathlib
 import json
 import sys
+import argparse
 import traceback
 from pathlib import Path
 
@@ -25,6 +26,7 @@ from model.Interactive.interactiveEncounter import interactiveEncounter
 from model.Simulation.encounterSim import Encounter
 from controller import SimController
 from engine.difficulty import calculate_difficulty, parse_cr
+import engine.utils as _engine_utils
 
 _SAVED_OBJS = _root / "actors" / "savedObjs"
 
@@ -869,6 +871,16 @@ class MainWindow(QMainWindow):
         self.light_action.triggered.connect(lambda: self.setTheme("light"))
         self.dark_action.triggered.connect(lambda: self.setTheme("dark"))
 
+        # ---- Debug menu ----
+        debug_menu = menubar.addMenu("Debug")
+        self.debug_action = QAction("Enable Debug Output", self, checkable=True)
+        self.debug_action.setChecked(_engine_utils.DEBUG)
+        self.debug_action.setToolTip(
+            "Print verbose engine messages to the console (useful for diagnosing crashes)"
+        )
+        self.debug_action.toggled.connect(_engine_utils.set_debug)
+        debug_menu.addAction(self.debug_action)
+
 
         self.setWindowTitle("GM Sim")
         self.resize(1400, 900)
@@ -996,9 +1008,21 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
-    app = QApplication([])
+    parser = argparse.ArgumentParser(description="DMSim — D&D Combat Simulator")
+    parser.add_argument(
+        "--debug", action="store_true",
+        help="Enable verbose debug output from the engine during a run"
+    )
+    args, qt_args = parser.parse_known_args()
+
+    if args.debug:
+        _engine_utils.set_debug(True)
+
+    app = QApplication(qt_args or sys.argv[:1])
 
     window = MainWindow()
+    if args.debug:
+        window.debug_action.setChecked(True)
     window.setWindowIcon(QtGui.QIcon(str(_root / 'DM_Sim_Icon.png')))
     window.show()
 

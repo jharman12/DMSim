@@ -9,6 +9,7 @@ sys.path.insert(1, str(_root))
 
 from engine.dice import down_round, weibull, cone
 from engine.combat import takeDmg, rollDice
+from engine.utils import dprint
 from model.weapon import WeaponNew
 from model.actor import Actor
 
@@ -18,7 +19,7 @@ class Monster(Actor):
     def __init__(self, name, ac, health, speed, modDict, weaponList, size, spells, spellMod, multiAttack, legRes = 0, legAction = [0, ''], Image = None):
         self.name = name
         self.Image = Image
-        print(Image)
+        dprint(Image)
         self.ac = ac
         self.health = health
         self.maxHealth = health
@@ -101,16 +102,16 @@ class Monster(Actor):
                         area = cone(width)
                         party = 4
 
-                ##print(area)
+                ##dprint(area)
                 ratio =  area / 25*party
                 percentHit = weibull(ratio)
-                ##print(percentHit)
+                ##dprint(percentHit)
                 totalHit = down_round(party * percentHit)
-                ##print(totalHit)
+                ##dprint(totalHit)
                 avgDmg = totalHit * avgDmg 
 
-                ##print(spell)
-                ##print(totalDmg)
+                ##dprint(spell)
+                ##dprint(totalDmg)
             area = self.spells[spell][1]['area']
             if area == '':
                 area = 0
@@ -118,11 +119,11 @@ class Monster(Actor):
                 area = int(re.findall(r'\d+', area)[0])
             spellRange = int(re.findall(r'\d+', self.spells[spell][1]['range'])[0]) + area
             turnInfo[spell] = [avgDmg, spellRange, self.spells[spell][0]]
-            ##print(spell, self.spells[spell][0],  spellRange)
+            ##dprint(spell, self.spells[spell][0],  spellRange)
             if avgDmg >= maxDmg:
                 maxDmg = avgDmg
             spellDmg += avgDmg
-        ##print(maxDmg)
+        ##dprint(maxDmg)
         
         meleeMaxDmg = 0
         rangedMaxDmg = 0
@@ -148,7 +149,7 @@ class Monster(Actor):
                         meleeMaxDmg = avgDmg
                         weaponChoices[weap.name] = meleeMaxDmg
             turnInfo[weap.name] = [avgDmg, weap.range, 9999]
-        ##print(turnInfo)
+        ##dprint(turnInfo)
         moreInfo = []
         for turn in turnInfo.keys():
             turns = turnInfo[turn][2]
@@ -164,7 +165,7 @@ class Monster(Actor):
             rangeFactor = (info[0]/totalDmg)*info[1]
             optimalRange += rangeFactor
         self.optRange = int(optimalRange/5)
-        #print(self.optRange)
+        #dprint(self.optRange)
 
         return {'Melee': meleeMaxDmg, 'Ranged': rangedMaxDmg, 'Ranged Spell': maxDmg}
     
@@ -174,7 +175,7 @@ class Monster(Actor):
             can be used to reset used spellslots
 
         '''
-        print("Called ", self.name, " defineSpellSlots")
+        dprint("Called ", self.name, " defineSpellSlots")
         self.spells = self.initSpells
         self.legActions = self.maxLegActions
         self.alive = 1
@@ -184,7 +185,7 @@ class Monster(Actor):
         ''' double checked
         Turn decider function for legendary action
         '''
-        print("In legendary actions")
+        dprint("In legendary actions")
         map = m
         if self in map.enemy:
             enemyList = [ list(map.arrayCenters).index(i) for i in map.arrayCenters.keys() if map.arrayCenters[i] != '' and map.arrayCenters[i] not in map.enemy]
@@ -193,7 +194,7 @@ class Monster(Actor):
             enemyList = [ list(map.arrayCenters).index(i) for i in map.arrayCenters.keys() if map.arrayCenters[i] != '' and map.arrayCenters[i] not in map.party]
         
         myIndex = [list(map.arrayCenters).index(i) for i in map.arrayCenters.keys() if map.arrayCenters[i] == self][0]
-        #print(list(map.arrayCenters)[myIndex])
+        #dprint(list(map.arrayCenters)[myIndex])
         closest = 999
         distance = []
         for index in enemyList:
@@ -210,10 +211,10 @@ class Monster(Actor):
         attackTimes = 1
         for weap in self.legActionWeapon:
             avgDmg = 0
-            ##print(int((int(weap.range) + int(self.speed))/5), minDist)
+            ##dprint(int((int(weap.range) + int(self.speed))/5), minDist)
             if int(minDist) > int((int(weap.range) )/5):
                
-                ##print('not within range')
+                ##dprint('not within range')
                 continue
            
             
@@ -222,7 +223,7 @@ class Monster(Actor):
             diceCount = weap.diceCount
             for di in dice:
                     diceCount = weap.diceCount[weap.diceType.index(di)]
-                    ##print(diceCount)
+                    ##dprint(diceCount)
                     avgDmg +=  attackTimes * (0.5 + weap.dmgMod + diceCount * di / 2 )
             if maxDmg < avgDmg:
                 maxDmg = avgDmg
@@ -230,20 +231,20 @@ class Monster(Actor):
         if maxDmg == 0:
             return
         rollToHit = [x + int(attackWith.attackMod) for x in rollDice(attackTimes, 20)]
-        ##print(rollToHit)
-        ##print(target.name, target.ac)
+        ##dprint(rollToHit)
+        ##dprint(target.name, target.ac)
         hits = sum([1 for x in rollToHit if x >= int(target.ac)])
-        ##print(hits)
+        ##dprint(hits)
         #dmg = sum(rollDice(hits*int(weap.diceCount), int(weap.diceType))) 
         dmg = sum([rollDice(hits*int(attackWith.diceCount[i]), int(attackWith.diceType[i])) for i in range(len(attackWith.diceType))][0]) + hits*int(attackWith.dmgMod)
-        ##print(dmg)
-        ##print(target.health)
+        ##dprint(dmg)
+        ##dprint(target.health)
         #target.health -= dmg
         
         takeDmg(self, target, dmg, map)
         self.legActions -= 1
-        print(self.legActions, " = num leg actions")
-        ##print(self.name,'is doing a weapon attack and is doing', dmg, 'to', target.name, 'and they are now at', target.health)
+        dprint(self.legActions, " = num leg actions")
+        ##dprint(self.name,'is doing a weapon attack and is doing', dmg, 'to', target.name, 'and they are now at', target.health)
 
         
         
@@ -255,9 +256,9 @@ class MonsterDump:
             with open(path + "\\monsters.json", "r") as file:
                 monsters = json.load(file)
         except FileNotFoundError:
-            print('path failed to load characters')
+            dprint('path failed to load characters')
             pass
-        #print(monsters)
+        #dprint(monsters)
         newList = []
         for weap in obj.weaponList:
             newList.append(weap.__dict__)
@@ -295,7 +296,7 @@ def createMonsterList(nameList, path):
         with open(path + "monsters.json", "r") as file:
             monsters = json.load(file)
     except FileNotFoundError:
-        print('path failed to load monsters')
+        dprint('path failed to load monsters')
         return []
     
     monsterList = [Monster(name = name,

@@ -9,6 +9,7 @@ _root = pathlib.Path(__file__).parent.parent
 sys.path.insert(1, str(_root))
 
 from engine.dice import down_round, weibull, cone, col_round, rollDice
+from engine.utils import dprint
 from model.weapon import WeaponNew
 from model.actor import Actor
 
@@ -405,7 +406,7 @@ def createPartyList(nameList, path):
             data = json.load(file)
             characters = data#.get("characters", {})
     except FileNotFoundError:
-        print('Failed to load characters')
+        dprint('Failed to load characters')
         characters = {}
     
     partyList = [Player(name = name, 

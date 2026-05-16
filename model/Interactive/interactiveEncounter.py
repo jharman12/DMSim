@@ -11,10 +11,11 @@ from PyQt5.QtCore import QThread, pyqtSignal
 # Add root directory to path for imports
 dmSimPath = str(pathlib.Path(__file__).parent.parent.parent.resolve())
 sys.path.insert(0, dmSimPath)
-print(dmSimPath)
+dprint(dmSimPath)
 from engine.combat import takeTurn, removeDeadActors
 from engine.dice import rollSave
 from engine.persistent import apply_zone_to_actor, tick_persistent_spells
+from engine.utils import dprint
 from model.map import Map
 
 
@@ -98,7 +99,7 @@ class interactiveEncounter:
         deadActors = [actor for actor in totalList if not actor.alive]
         if len(deadActors) >= 1:
             for deadActor in deadActors:
-                print(deadActor.name, 'is dead')
+                dprint(deadActor.name, 'is dead')
                 self.map.combatLog(deadActor.name + ' has died!')
                 if deadActor in map.party:
                     map.party.remove(deadActor)
@@ -115,12 +116,12 @@ class interactiveEncounter:
         return deadActors
 
     def calcTurn(self):
-        print(self.sortedInitList, self.curTurn)
+        dprint(self.sortedInitList, self.curTurn)
         actor = list(self.sortedInitList)[self.curTurn]
         self.map.combatLog('Current Turn:' + str(self.curTurn) + '\n\t' + actor.name)
 
         for healthCheck in list(self.sortedInitList.keys()):
-            print('\t\t', healthCheck.name, healthCheck.health)
+            dprint('\t\t', healthCheck.name, healthCheck.health)
 
         # Apply persistent zone effects at the start of this actor's turn.
         for ps in list(self.map.persistent_spells):

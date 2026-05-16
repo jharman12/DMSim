@@ -1,5 +1,24 @@
 import re
 
+# ---------------------------------------------------------------------------
+# Debug mode
+# ---------------------------------------------------------------------------
+# Set to True to enable verbose print output during a simulation run.
+# Can be toggled at runtime via set_debug() or from main.py --debug flag.
+DEBUG: bool = False
+
+
+def set_debug(enabled: bool):
+    """Enable or disable debug print output globally."""
+    global DEBUG
+    DEBUG = enabled
+
+
+def dprint(*args, **kwargs):
+    """Print only when DEBUG mode is enabled."""
+    if DEBUG:
+        print(*args, **kwargs)
+
 
 def singleton(cls):
     instances = {}
