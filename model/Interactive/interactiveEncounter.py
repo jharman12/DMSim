@@ -11,7 +11,6 @@ from PyQt5.QtCore import QThread, pyqtSignal
 # Add root directory to path for imports
 dmSimPath = str(pathlib.Path(__file__).parent.parent.parent.resolve())
 sys.path.insert(0, dmSimPath)
-dprint(dmSimPath)
 from engine.combat import takeTurn, removeDeadActors
 from engine.dice import rollSave
 from engine.persistent import apply_zone_to_actor, tick_persistent_spells
@@ -35,6 +34,7 @@ class interactiveEncounter:
             actor.cc = []
             actor.restrained = []
             actor.concentration_spell = None  # no active concentration on encounter start
+            actor.active_conditions = set()   # display-only condition tracking
             # Ensure every actor has maxSpeed so end_turn can restore it correctly.
             if not hasattr(actor, 'maxSpeed'):
                 actor.maxSpeed = actor.speed

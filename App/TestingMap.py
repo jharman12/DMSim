@@ -341,51 +341,177 @@ class CustomGraphicsView(QGraphicsView):
 
     def show_character_popup(self, character_obj, scene_pos):
         """
-        Displays an info popup inside the graphics view near the scene position.
+        Displays a styled info popup inside the graphics view near the clicked actor.
         """
         # Remove existing popup
         if self.info_popup:
             self.info_popup.deleteLater()
             self.info_popup = None
 
-        # Create popup container
+        c = character_obj
+        hp = max(int(c.health), 0)
+        max_hp = max(int(c.maxHealth), 1)
+        hp_pct = hp / max_hp
+
+        # Health bar colour: green → yellow → red
+        if hp_pct > 0.5:
+            bar_color = "#4caf50"
+        elif hp_pct > 0.25:
+            bar_color = "#ff9800"
+        else:
+            bar_color = "#f44336"
+
+        bar_fill = max(int(hp_pct * 100), 0)
+
+        # Collect active conditions
+        conditions = []
+        # Persistent display conditions set by the engine (CC, Restrained, etc.)
+        for cond in sorted(getattr(c, 'active_conditions', set())):
+            conditions.append(f"⚡ {cond}")
+        # Concentration (always live)
+        if getattr(c, 'concentration_spell', None):
+            ps = c.concentration_spell
+            conditions.append(f"🔮 Concentrating: {ps.spell_name}")
+        if hasattr(c, 'status') and c.status:
+            for s in c.status:
+                if s not in ('deathSaves', 'unconscious'):
+                    conditions.append(f"• {s}")
+                elif s == 'deathSaves':
+                    conditions.append("💀 Death Saves")
+                elif s == 'unconscious':
+                    conditions.append("😵 Unconscious")
+
+        actor_type = "Player" if getattr(c, 'is_player', False) else "Monster"
+        type_color = "#66aaff" if getattr(c, 'is_player', False) else "#ff7777"
+
+        # Build popup widget
         popup = QFrame(self)
-        popup.setStyleSheet("""
-            QFrame {
-                background-color: #2c2c2c;
-                border: 2px solid red;
-                border-radius: 6px;
+        popup.setFixedWidth(270)
+        popup.setStyleSheet(f"""
+            QFrame#actorPopup {{
+                background-color: #1e1e2e;
+                border: 1px solid #444;
+                border-radius: 8px;
+            }}
+            QLabel {{ background: transparent; color: #eee; }}
+        """)
+        popup.setObjectName("actorPopup")
+        popup.setFrameShape(QFrame.NoFrame)
+
+        outer = QVBoxLayout(popup)
+        outer.setContentsMargins(10, 8, 10, 10)
+        outer.setSpacing(6)
+
+        # --- Header row: name + close button ---
+        header_row = QHBoxLayout()
+        header_row.setSpacing(4)
+
+        name_lbl = QLabel(f"<b>{c.name}</b>")
+        name_lbl.setStyleSheet("color: #ffffff; font-size: 16px;")
+        header_row.addWidget(name_lbl, stretch=1)
+
+        type_badge = QLabel(actor_type)
+        type_badge.setStyleSheet(
+            f"color: {type_color}; font-size: 13px; font-style: italic;"
+        )
+        type_badge.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        header_row.addWidget(type_badge)
+
+        close_btn = QPushButton("✕")
+        close_btn.setFixedSize(22, 22)
+        close_btn.setStyleSheet("""
+            QPushButton {
+                background: transparent; color: #aaa;
+                border: none; font-size: 14px;
             }
-            QLabel {
-                color: white;
+            QPushButton:hover { color: #fff; }
+        """)
+        close_btn.clicked.connect(self.hide_character_popup)
+        header_row.addWidget(close_btn)
+        outer.addLayout(header_row)
+
+        # --- Divider ---
+        div = QFrame()
+        div.setFrameShape(QFrame.HLine)
+        div.setStyleSheet("color: #444;")
+        outer.addWidget(div)
+
+        # --- HP bar ---
+        hp_header = QHBoxLayout()
+        hp_title = QLabel("HP")
+        hp_title.setStyleSheet("color: #aaa; font-size: 13px;")
+        hp_val = QLabel(f"{hp} / {max_hp}")
+        hp_val.setStyleSheet("color: #eee; font-size: 13px;")
+        hp_val.setAlignment(Qt.AlignRight)
+        hp_header.addWidget(hp_title)
+        hp_header.addWidget(hp_val)
+        outer.addLayout(hp_header)
+
+        bar_container = QFrame()
+        bar_container.setFixedHeight(12)
+        bar_container.setStyleSheet("""
+            QFrame {
+                background-color: #333;
+                border-radius: 5px;
             }
         """)
-        popup.setFrameShape(QFrame.Box)
+        bar_inner_layout = QHBoxLayout(bar_container)
+        bar_inner_layout.setContentsMargins(0, 0, 0, 0)
+        bar_inner_layout.setSpacing(0)
 
-        layout = QVBoxLayout(popup)
-        layout.setContentsMargins(8, 8, 8, 8)
+        bar_fill_widget = QFrame()
+        bar_fill_widget.setFixedHeight(12)
+        bar_fill_widget.setStyleSheet(f"""
+            QFrame {{
+                background-color: {bar_color};
+                border-radius: 5px;
+            }}
+        """)
+        # Use a progress-bar-style proportional width via size policy + stretch
+        bar_inner_layout.addWidget(bar_fill_widget, stretch=bar_fill)
+        if bar_fill < 100:
+            spacer = QFrame()
+            spacer.setStyleSheet("background: transparent;")
+            bar_inner_layout.addWidget(spacer, stretch=100 - bar_fill)
 
-        # Build text from the character object
-        # (You can replace this with whatever attributes exist)
-        info_text = (
-            f"<b>{character_obj.name}</b><br>"
-            f"HP: {character_obj.health}/{character_obj.maxHealth}<br>"
-            f"AC: {character_obj.ac}<br>"
-            f"Speed: {character_obj.speed}<br>"
-        )
+        outer.addWidget(bar_container)
 
-        label = QLabel(info_text)
-        label.setWordWrap(True)
-        layout.addWidget(label)
+        # --- Stats row ---
+        stats_row = QHBoxLayout()
+        for label, val in [("AC", c.ac), ("Speed", f"{c.speed} ft")]:
+            stat_box = QVBoxLayout()
+            stat_box.setSpacing(0)
+            lbl = QLabel(label)
+            lbl.setStyleSheet("color: #888; font-size: 11px;")
+            lbl.setAlignment(Qt.AlignCenter)
+            v = QLabel(str(val))
+            v.setStyleSheet("color: #ddd; font-size: 15px; font-weight: bold;")
+            v.setAlignment(Qt.AlignCenter)
+            stat_box.addWidget(lbl)
+            stat_box.addWidget(v)
+            stats_row.addLayout(stat_box)
+        outer.addLayout(stats_row)
+
+        # --- Conditions ---
+        if conditions:
+            cond_div = QFrame()
+            cond_div.setFrameShape(QFrame.HLine)
+            cond_div.setStyleSheet("color: #444;")
+            outer.addWidget(cond_div)
+            for cond_text in conditions:
+                cond_lbl = QLabel(cond_text)
+                cond_lbl.setStyleSheet("color: #ffcc66; font-size: 12px;")
+                outer.addWidget(cond_lbl)
 
         popup.adjustSize()
 
-        # Convert scene → view coords
+        # Convert scene → view coords, clamp to stay inside the view
         view_pos = self.mapFromScene(scene_pos)
-
-        # Position popup slightly offset
-        popup.move(view_pos.x() + 10, view_pos.y() + 10)
+        x = min(view_pos.x() + 12, self.width() - popup.width() - 4)
+        y = min(view_pos.y() + 12, self.height() - popup.height() - 4)
+        popup.move(max(x, 0), max(y, 0))
         popup.show()
+        popup.raise_()
 
         self.info_popup = popup
 

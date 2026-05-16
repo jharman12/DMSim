@@ -21,6 +21,23 @@ if TYPE_CHECKING:
     from model.actor import Actor
 
 
+# ---------------------------------------------------------------------------
+# Active condition tracking (display only)
+# ---------------------------------------------------------------------------
+
+def _add_condition(actor, condition: str):
+    """Add a condition name to actor.active_conditions for UI display."""
+    if not hasattr(actor, 'active_conditions'):
+        actor.active_conditions = set()
+    actor.active_conditions.add(condition)
+
+
+def _remove_condition(actor, condition: str):
+    """Remove a condition name from actor.active_conditions."""
+    if hasattr(actor, 'active_conditions'):
+        actor.active_conditions.discard(condition)
+
+
 @dataclass
 class PersistentSpell:
     caster: object          # Actor — kept as `object` to avoid circular import
@@ -126,9 +143,11 @@ def apply_zone_to_actor(ps: PersistentSpell, actor, map_obj) -> bool:
         if ps.effect.lower() in ('restrained',):
             # Always re-roll — a success this turn frees the actor even if restrained before.
             actor.restrained = []
+            _remove_condition(actor, 'Restrained')
             failed = rollSave(actor, ps.save_type, ps.dc, map_obj)
             if failed:
                 actor.restrained = [ps.save_type, ps.dc]
+                _add_condition(actor, 'Restrained')
                 safe_log(f'\t{actor.name} is Restrained by {ps.spell_name}!', map_obj)
         else:
             failed = rollSave(actor, ps.save_type, ps.dc, map_obj)
@@ -136,6 +155,7 @@ def apply_zone_to_actor(ps: PersistentSpell, actor, map_obj) -> bool:
                 # Mark cc as zone-applied this turn (4th element = True) so calcTurn
                 # skips the redundant second save and just loses the actor's turn.
                 actor.cc = [ps.spell.get('lvl', 1), [ps.save_type], ps.dc, True]
+                _add_condition(actor, ps.effect)
                 safe_log(f'\t{actor.name} is affected by {ps.spell_name}!', map_obj)
 
     return True
@@ -176,6 +196,11 @@ def end_concentration(caster, map_obj) -> PersistentSpell | None:
     safe_log(f'\t{caster.name} loses concentration on {ps.spell_name}.', map_obj)
     caster.concentration_spell = None
     if hasattr(map_obj, 'persistent_spells') and ps in map_obj.persistent_spells:
+        # Clear active conditions caused by this zone from all affected actors
+        all_actors = list(getattr(map_obj, 'party', [])) + list(getattr(map_obj, 'enemy', []))
+        for actor in all_actors:
+            if ps.effect:
+                _remove_condition(actor, ps.effect)
         map_obj.persistent_spells.remove(ps)
     return ps
 
