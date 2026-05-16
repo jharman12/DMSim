@@ -1,10 +1,7 @@
+# Compiled Python
+__pycache__/
+*.py[cod]
+*.pyo
 
-__pycache__/modelMethods.cpython-312.pyc
-App/__pycache__/character_widget.cpython-312.pyc
-App/__pycache__/character_widget.cpython-312.pyc
-App/__pycache__/custom_graphics_view.cpython-312.pyc
-App/__pycache__/encounter_widget.cpython-312.pyc
-App/__pycache__/test_widget.cpython-312.pyc
-App/__pycache__/map_widget.cpython-312.pyc
-model/__pycache__/player.cpython-312.pyc
-model/__pycache__/monster.cpython-312.pyc
+# Virtual environment
+.venv/

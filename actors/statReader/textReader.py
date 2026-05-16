@@ -2,13 +2,16 @@ import math
 import re
 import sys 
 import pathlib
-dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-18]
 
-sys.path.insert(1, dmSimPath)
-from modelMethods import numberAfterString, numberBeforeString, text2int, WeaponNew, down_round, weibull
+_root = pathlib.Path(__file__).parent.parent.parent
+sys.path.insert(1, str(_root))
+
+from engine.utils import numberAfterString, numberBeforeString, text2int
+from engine.dice import down_round, weibull
+from engine.combat import rollDice
+from model.weapon import WeaponNew
 import json
-sys.path.insert(1, dmSimPath + '\model')
-from monster import Monster
+from model.monster import Monster
 
 class buildMonsterFromString:
     def __init__(self, text):

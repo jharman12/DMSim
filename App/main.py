@@ -2,27 +2,31 @@ from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QTabWidget, QHBoxLayout, QTabBar,
     QPushButton, QMessageBox, QLabel, QApplication, QAction, QActionGroup,
     QListWidget, QDialog, QLineEdit, QSpinBox, QGroupBox, QListWidgetItem,
-    QFileDialog, QComboBox, QTextEdit, QProgressDialog
+    QFileDialog, QComboBox, QTextEdit, QProgressDialog, QInputDialog,
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QEvent
+
+import pathlib
+import json
+import sys
+import traceback
+from pathlib import Path
+
+_root = pathlib.Path(__file__).parent.parent
+sys.path.insert(1, str(_root))
+sys.path.insert(2, str(_root / 'App'))
 
 from newCharWindow import CharacterEditor, CharacterStore
 from monsterWindow import MonsterEditor, MonsterStore
 from TestingMap import MapWidget
-import pathlib
-import json
-import sys
-from pathlib import Path
-from player import createPartyList
-from monster import createMonsterList
-dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-4]
-sys.path.insert(1, dmSimPath + '\\model')
-from player import createPartyList
-from monster import createMonsterList
-sys.path.insert(1, dmSimPath + '\\model\\Interactive')
-from interactiveEncounter import interactiveEncounter
-sys.path.insert(1, dmSimPath + '\\model\\Simulation')
-from encounterSim import Encounter
+from model.player import createPartyList
+from model.monster import createMonsterList
+from model.Interactive.interactiveEncounter import interactiveEncounter
+from model.Simulation.encounterSim import Encounter
+from controller import SimController
+from engine.difficulty import calculate_difficulty, parse_cr
+
+_SAVED_OBJS = _root / "actors" / "savedObjs"
 
 
 '''
@@ -350,8 +354,6 @@ class EncounterBuilderTab(QWidget):
             self.update_difficulty()
 
     def add_to_list(self, list_widget, avail):
-        # Simple dialog to select from avail
-        from PyQt5.QtWidgets import QInputDialog
         item, ok = QInputDialog.getItem(self, "Select", "Choose:", avail, 0, False)
         if ok and item:
             list_widget.addItem(item)
@@ -440,12 +442,13 @@ class EncounterBuilderTab(QWidget):
             return
         name = current.text()
         enc_data = self.enc_store.get_encounter(name)
-        path = dmSimPath + '\\actors\\savedObjs\\'
+        path = str(_SAVED_OBJS) + "\\"
         party = createPartyList(enc_data["party"], path=path)
         npcs = createPartyList(enc_data["npcs"], path=path)
         enemies = createMonsterList(enc_data["enemies"], path=path)
         encounter = interactiveEncounter(party, npcs, enemies, enc_data["numHexes"], enc_data["mapImage"])
-        self.start_callback(encounter)
+        controller = SimController(encounter)
+        self.start_callback(controller)
 
     def buildEncounter(self):
         # Keep for compatibility, but not used
@@ -453,100 +456,33 @@ class EncounterBuilderTab(QWidget):
 
     def update_difficulty(self):
         """Update the encounter difficulty display based on party and enemies using D&D 5e rules."""
-        # Update party size
         party_size = self.party_list.count()
         self.party_size_label.setText(str(party_size))
-        
-        # Calculate average party level from selected characters
-        party_level = 1
-        if party_size > 0:
-            total_level = 0
-            valid_count = 0
-            for i in range(party_size):
-                char_name = self.party_list.item(i).text()
-                char_data = self.char_store.get(char_name)
-                if char_data:
-                    level = char_data.get("level", 1)
-                    try:
-                        total_level += int(level)
-                        valid_count += 1
-                    except (ValueError, TypeError):
-                        pass
-            if valid_count > 0:
-                party_level = total_level // valid_count
-            else:
-                party_level = 1
-        
-        self.party_level_label.setText(str(party_level))
-        
-        # Calculate total enemy CR
+
+        # Average party level
+        levels = []
+        for i in range(party_size):
+            char_data = self.char_store.get(self.party_list.item(i).text())
+            if char_data:
+                try:
+                    levels.append(int(char_data.get("level", 1)))
+                except (ValueError, TypeError):
+                    pass
+        avg_level = (sum(levels) // len(levels)) if levels else 1
+        self.party_level_label.setText(str(avg_level))
+
+        # Collect enemy CRs
+        enemy_crs = []
         total_cr = 0.0
-        enemy_count = self.enemy_list.count()
-        for i in range(enemy_count):
-            enemy_name = self.enemy_list.item(i).text()
-            monster_data = self.mon_store.get(enemy_name)
+        for i in range(self.enemy_list.count()):
+            monster_data = self.mon_store.get(self.enemy_list.item(i).text())
             if monster_data:
-                cr_str = monster_data.get("cr", "0")
-                # Handle fractional CRs like "1/8", "1/4", "1/2"
-                if "/" in str(cr_str):
-                    parts = str(cr_str).split("/")
-                    try:
-                        total_cr += float(parts[0]) / float(parts[1])
-                    except (ValueError, ZeroDivisionError):
-                        pass
-                else:
-                    try:
-                        total_cr += float(cr_str)
-                    except ValueError:
-                        pass
-        
+                cr = parse_cr(monster_data.get("cr", "0"))
+                enemy_crs.append(cr)
+                total_cr += cr
         self.total_cr_label.setText(f"{total_cr:.1f}")
-        
-        # Calculate difficulty using D&D 5e scaling rules
-        if party_size == 0:
-            difficulty = "—"
-        else:
-            # D&D 5e XP thresholds per character by level
-            easy_xp = 25 * party_level
-            medium_xp = 50 * party_level
-            hard_xp = 100 * party_level
-            deadly_xp = 150 * party_level
-            
-            # Total party thresholds
-            easy_total = easy_xp * party_size
-            medium_total = medium_xp * party_size
-            hard_total = hard_xp * party_size
-            deadly_total = deadly_xp * party_size
-            
-            if enemy_count == 0:
-                difficulty = "None"
-            else:
-                # Multiplier for action economy (multiple monsters gain advantage)
-                if enemy_count <= 2:
-                    multiplier = 1.0
-                elif enemy_count <= 6:
-                    multiplier = 1.5
-                elif enemy_count <= 10:
-                    multiplier = 2.0
-                elif enemy_count <= 14:
-                    multiplier = 2.5
-                else:
-                    multiplier = 3.0
-                
-                encounter_xp = total_cr * multiplier
-                
-                # Determine difficulty tier
-                if encounter_xp >= deadly_total:
-                    difficulty = "Deadly"
-                elif encounter_xp >= hard_total:
-                    difficulty = "Hard"
-                elif encounter_xp >= medium_total:
-                    difficulty = "Medium"
-                elif encounter_xp >= easy_total:
-                    difficulty = "Easy"
-                else:
-                    difficulty = "Trivial"
-        
+
+        difficulty = calculate_difficulty(party_size, avg_level, enemy_crs)
         self.difficulty_label.setText(difficulty)
 
     def simulate_encounter(self):
@@ -572,7 +508,7 @@ class EncounterBuilderTab(QWidget):
         
         try:
             # Load party, npcs, and enemies
-            path = dmSimPath + '\\actors\\savedObjs\\'
+            path = str(_SAVED_OBJS) + "\\"
             party = createPartyList(data["party"], path=path)
             npcs = createPartyList(data["npcs"], path=path)
             enemies = createMonsterList(data["enemies"], path=path)
@@ -594,7 +530,6 @@ class EncounterBuilderTab(QWidget):
             
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Simulation failed: {str(e)}")
-            import traceback
             traceback.print_exc()
         finally:
             progress.close()
@@ -995,10 +930,8 @@ class MainWindow(QMainWindow):
         return False
 
 
-    def startEncounter(self, encounter=None):
-        if encounter is None:
-            encounter = self.encounter_builder.buildEncounter()
-        if not encounter:
+    def startEncounter(self, controller=None):
+        if controller is None:
             QMessageBox.warning(self, "Error", "Invalid encounter setup")
             return
 
@@ -1006,7 +939,7 @@ class MainWindow(QMainWindow):
         if self.map_window:
             self.map_window.close()
 
-        self.map_window = MapWidget(encounter)
+        self.map_window = MapWidget(controller)
         self.map_window.show()
 
 
@@ -1014,7 +947,7 @@ if __name__ == "__main__":
     app = QApplication([])
 
     window = MainWindow()
-    window.setWindowIcon(QtGui.QIcon( dmSimPath + '\\DM_Sim_Icon.png'))
+    window.setWindowIcon(QtGui.QIcon(str(_root / 'DM_Sim_Icon.png')))
     window.show()
 
     app.exec()

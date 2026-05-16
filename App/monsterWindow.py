@@ -9,12 +9,13 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import Qt
 import pathlib
-dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-4]
 import sys
-sys.path.insert(1, dmSimPath + '/model/')
-from monster import Monster
 
-sys.path.insert(1, dmSimPath + '/actors/statReader')
+_root = pathlib.Path(__file__).parent.parent
+sys.path.insert(1, str(_root))
+sys.path.insert(2, str(_root / 'actors' / 'statReader'))
+
+from model.monster import Monster
 from textReader import buildMonsterFromString
 
 

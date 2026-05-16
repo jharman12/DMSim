@@ -114,23 +114,27 @@ import sys
 from functools import lru_cache
 import pathlib
 import re
-dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-4]
-print(dmSimPath)
-sys.path.insert(1, dmSimPath + '\\model')
-#from interactiveMap import interactiveMap
-from player import createPartyList
-from monster import createMonsterList, Monster
-from modelMethods import myAction, doAction, drawLine, calcMoveHexes
-sys.path.insert(1, dmSimPath + '\\model\\Interactive')
-from interactiveEncounter import interactiveEncounter
+_root = pathlib.Path(__file__).parent.parent
+sys.path.insert(1, str(_root))
+from model.player import createPartyList, Player
+from model.monster import createMonsterList, Monster
+from engine.targeting import drawLine, calcMoveHexes, hex_calc_line, hex_calc_hexes, hex_calc_square
+from model.Interactive.interactiveEncounter import interactiveEncounter
 
 
-#class Player:
-#    def __init__(self, name, image):
-#        self.name = name
-#        self.image = image # path to image
+_UNKNOWN_IMAGE = str(_root / "App" / "unknown.jpg")
 
 
+def _get_actor_pixmap(actor) -> "QPixmap":
+    """Return QPixmap for an actor, falling back to the unknown placeholder."""
+    if actor.Image is None:
+        return QPixmap(_UNKNOWN_IMAGE)
+    full = str(_root) + actor.Image
+    if os.path.exists(full):
+        return QPixmap(full)
+    if os.path.exists(actor.Image):
+        return QPixmap(actor.Image)
+    return QPixmap(_UNKNOWN_IMAGE)
 
 
 class TextScale:
@@ -583,7 +587,8 @@ class CustomGraphicsView(QGraphicsView):
         return snap_idx
 
     def angleDiff(self, a, b):
-        """Return smallest angular difference."""
+        """Return smallest angular difference (kept for backward compat)."""
+        import math
         diff = abs(a - b) % (2 * math.pi)
         if diff > math.pi:
             diff = 2 * math.pi - diff
@@ -591,176 +596,14 @@ class CustomGraphicsView(QGraphicsView):
 
     @lru_cache(maxsize=2048)
     def calcLine(self, index1, index2, hexLimit):
-        # move this, cone, and square into model methods?
-        # mainly just want to see if we can use this version on line
-        # in the main model
-        
-        map = self.encounter.map
-        coord1 = list(map.arrayCenters)[index1]
-        coord2 = list(map.arrayCenters)[index2]
-        # simple case... outside hexlimit
-        if map.distanceCalc(index1, index2) >= hexLimit:
+        return hex_calc_line(index1, index2, hexLimit, self.encounter.map)
 
-            line = drawLine(coord1, coord2, map)
-            hexes = [list(map.arrayCenters).index(coord) for coord in line]
-            affected = [ind for ind in hexes if map.distanceCalc(ind, index1) <= hexLimit and ind != index1]
-            return affected
-        
-        cone = self.calcHexes(index1, index2, hexLimit)
-        
-        maxDist = [ind for ind in cone if map.distanceCalc(ind, index1) == hexLimit]
-        
-        for ind in maxDist:
-            newCoord = list(map.arrayCenters)[ind]
-            line = drawLine(coord1, newCoord, map)
-            #print(coord2, line)
-            if coord2 in line:
-                #print(line)
-                return [list(map.arrayCenters).index(x) for x in line if x != coord1]
-            
-        #print('Error calcLine failed')
-        return []
- 
     @lru_cache(maxsize=2048)
     def calcHexes(self, index1, index2, hexLimit):
-        import operator, math
+        return hex_calc_hexes(index1, index2, hexLimit, self.encounter.map)
 
-        map = self.encounter.map
-        arrayCenters = list(map.arrayCenters)
-
-        # === OPERATIONS (your provided table) =========================
-        operations2 = [
-            [[operator.sub, 1], [operator.add, 1], [operator.sub, 1], [operator.sub, 1]],
-            [[operator.sub, 1], [operator.sub, 1], [operator.add, 0], [operator.sub, 2]],
-            [[operator.add, 0], [operator.sub, 2], [operator.add, 1], [operator.sub, 1]],
-            [[operator.add, 1], [operator.sub, 1], [operator.add, 1], [operator.add, 1]],
-            [[operator.add, 1], [operator.add, 1], [operator.add, 0], [operator.add, 2]],
-            [[operator.add, 0], [operator.add, 2], [operator.sub, 1], [operator.add, 1]]
-        ]
-
-        # === STEP 1: Use ALREADY double-coords ========================
-        ox, oy = arrayCenters[index1]
-        tx, ty = arrayCenters[index2]
-
-        # === STEP 2: compute angle using double-coords ================
-        angle = math.atan2((oy - ty), (ox - tx))
-
-
-        # Hex direction center angles (still correct for double axial)
-        dirAngles = [
-            math.radians(0),     # E
-            math.radians(60),    # NE
-            math.radians(120),   # NW
-            math.radians(180),   # W
-            math.radians(-120),  # SW
-            math.radians(-60)    # SE
-        ]
-
-        # Select closest operation
-        bestOpIndex = min(
-            range(6),
-            key=lambda i: abs((angle - dirAngles[i] + math.pi) % (2 * math.pi) - math.pi)
-        )
-        selectedOp = operations2[bestOpIndex]
-
-        affectedCoords = []
-
-        # === STEP 3: Cone sweep (EXACT logic from your method) ========
-        for cell in range(hexLimit):
-
-            # POSITIVE direction
-            if selectedOp[0][1] == 0:
-                px = selectedOp[0][0](ox, selectedOp[0][1])
-                py = selectedOp[1][0](selectedOp[1][0](oy, cell * 2), selectedOp[1][1])
-            else:
-                px = selectedOp[0][0](selectedOp[0][0](ox, cell), selectedOp[0][1])
-                py = selectedOp[1][0](selectedOp[1][0](oy, cell), selectedOp[1][1])
-
-            # NEGATIVE direction
-            if selectedOp[2][1] == 0:
-                nx = selectedOp[2][0](ox, selectedOp[2][1])
-                ny = selectedOp[3][0](selectedOp[3][0](oy, cell * 2), selectedOp[3][1])
-            else:
-                nx = selectedOp[2][0](selectedOp[2][0](ox, cell), selectedOp[2][1])
-                ny = selectedOp[3][0](selectedOp[3][0](oy, cell), selectedOp[3][1])
-
-            dx = abs(px - nx)
-            dy = abs(py - ny)
-
-            if dx == 0 and dy == 2:
-                affectedCoords.append((px, py))
-                affectedCoords.append((nx, ny))
-            else:
-                maxX, minX = max(px, nx), min(px, nx)
-                maxY, minY = max(py, ny), min(py, ny)
-
-                if selectedOp[0] == selectedOp[2]:
-                    # vertical fill
-                    for y in range(minY, maxY + 1):
-                        affectedCoords.append((px, y))
-                else:
-                    # diagonal fill
-                    if selectedOp[3][1] == 2:
-                        yLine = list(range(minY, maxY + 1))
-                        xLine = list(range(maxX, minX - 1, -1))
-                    else:
-                        yLine = list(range(minY, maxY + 1))
-                        xLine = list(range(minX, maxX + 1))
-
-                    for k in range(len(xLine)):
-                        affectedCoords.append((xLine[k], yLine[k]))
-
-        # === STEP 4: Convert axial coords → indexes ====================
-        affectedIndexes = []
-
-        coordSet = set(affectedCoords)
-        for i, coord in enumerate(arrayCenters):
-            if coord in coordSet:
-                affectedIndexes.append(i)
-
-        return affectedIndexes
-
-    
     def calcSquare(self, index1, index2, hexLimit):
-        import operator, math
-
-        map = self.encounter.map
-        arrayCenters = list(map.arrayCenters)
-        # === STEP 1: Use ALREADY double-coords ========================
-        ox, oy = arrayCenters[index1]
-        tx, ty = arrayCenters[index2]
-
-        # === STEP 2: compute angle using double-coords ================
-        angle = math.atan2((oy - ty), (ox - tx))
-
-        
-        operations = [[operator.sub,1, operator.add, 1,operator.add,0,operator.sub,0], 
-                    [operator.sub, 1, operator.sub, 1,operator.add,0,operator.sub,0],
-                    [operator.add,1, operator.add, 1,operator.add,0,operator.sub,0], 
-                    [operator.add, 1, operator.sub, 1,operator.add,0,operator.sub,0],
-                    [operator.sub, 1, operator.add, 2,operator.add,1,operator.sub,5],
-                    [operator.add, 1, operator.sub, 2,operator.sub,1,operator.add,5],
-                    [operator.add, 1, operator.sub, 2,operator.sub,1,operator.sub,5],
-                    [operator.sub, 1, operator.add, 2,operator.add,1,operator.add,5]]
-        moveCoord = list(arrayCenters)[index2]
-        op = operations[0]
-        startCoord = (op[0](moveCoord[0], op[1]), op[2](moveCoord[1], op[3]))
-        squareCoords = []
-        ##print(op)
-        for k in range(hexLimit):
-            for l in range(hexLimit):
-                x = op[4](op[0](startCoord[0], k),op[5])
-                if op[2] == operator.add:
-                    y= op[6](operator.sub(startCoord[1], 2*l),op[7])
-                else:
-                    y= op[6](operator.add(startCoord[1], 2*l),op[7])
-                if x % 2 != y % 2 :
-                    y = op[2](y, 1)
-                if (x,y) in list(arrayCenters):
-                    squareCoords.append((x,y))
-        return [list(arrayCenters).index(coord) for coord in squareCoords]
-            
-        #return []
+        return hex_calc_square(index1, index2, hexLimit, self.encounter.map)
     def getSphereHexes(self, distance_hexes, spellRange, mouse_pos):
         
         if self.affected != None:
@@ -1059,18 +902,8 @@ class CustomGraphicsView(QGraphicsView):
     def loadFromEncounter(self, myEncounter):
         
         self.removeAllActors()
-        # add the characters back
         for player in myEncounter.totalList:
-            if player.Image == None:
-                px = QPixmap(dmSimPath + "\\App\\unknown.jpg")
-            elif os.path.exists(dmSimPath + player.Image):
-                px = QPixmap(dmSimPath + player.Image)
-            elif os.path.exists(player.Image):
-                px = QPixmap(player.Image)
-            else:
-                print("path doesnt exist, trying unknown")
-                px = QPixmap(dmSimPath + "\\App\\unknown.jpg")
-
+            px = _get_actor_pixmap(player)
             self.addCharacterPixmap(px, player)
         
         # resize them
@@ -1494,9 +1327,20 @@ class TurnActionPanel(QWidget):
 
 
 class MapWidget(QWidget):
-    def __init__(self, myEncounter):
+    def __init__(self, controller):
         super().__init__()
         global gViewer
+
+        # Accept either a SimController (new) or a bare interactiveEncounter (legacy).
+        from controller import SimController
+        if isinstance(controller, SimController):
+            self.controller = controller
+        else:
+            # Wrap legacy encounter so the rest of the code is uniform
+            self.controller = SimController(controller)
+
+        # Convenience alias — all internal code uses this directly
+        self.myEncounter = self.controller.encounter
 
         self.installEventFilter(self)
 
@@ -1603,7 +1447,7 @@ class MapWidget(QWidget):
         map_frame_layout.addLayout(top_button_row)
 
         # --- Map widget ---
-        self.map_view = CustomGraphicsView(myEncounter)
+        self.map_view = CustomGraphicsView(self.myEncounter)
         gViewer = self.map_view
         self.map_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
@@ -1622,28 +1466,19 @@ class MapWidget(QWidget):
         # ============================================================
         # SETUP MAP PIXMAP
         # ============================================================
-        pixmap = QPixmap(myEncounter.mapImage)
+        pixmap = QPixmap(self.myEncounter.mapImage)
         self.map_view.setMapPixmap(pixmap)
 
         # Add players to map
-        for player in myEncounter.totalList:
-            if player.Image is None:
-                px = QPixmap(dmSimPath + "\\App\\unknown.jpg")
-            elif os.path.exists(dmSimPath + player.Image):
-                px = QPixmap(dmSimPath + player.Image)
-            elif os.path.exists(player.Image):
-                px = QPixmap(player.Image)
-            else:
-                px = QPixmap(dmSimPath + "\\App\\unknown.jpg")
-
+        for player in self.myEncounter.totalList:
+            px = _get_actor_pixmap(player)
             self.map_view.addCharacterPixmap(px, player)
 
         # Add hex grid
-        num_vertical_grids = int(myEncounter.numHexes)
+        num_vertical_grids = int(self.myEncounter.numHexes)
         map_rect = self.map_view.map_item.boundingRect()
         self.map_view.drawHexGrid(num_vertical_grids, map_rect)
 
-        self.myEncounter = myEncounter
         self.undo_stack = deque(maxlen=20)  # cap memory
         # ============================================================
         # RIGHT SIDE: TURN ACTION PANEL
@@ -1698,11 +1533,37 @@ class MapWidget(QWidget):
 
         self.setLayout(main_layout)
 
+        # ---- Wire SimController signals ----
+        self.controller.log_message.connect(self.turn_action_panel.log)
+        self.controller.turn_changed.connect(self._on_turn_changed)
+        self.controller.actor_died.connect(self._on_actor_died)
+        self.controller.encounter_ended.connect(self._on_encounter_ended)
+
         self.testingTheory()
 
         self.TextScale = TextScale
         self.setAllFonts()
 
+
+    # ------------------------------------------------------------------
+    # SimController signal handlers
+    # ------------------------------------------------------------------
+
+    def _on_turn_changed(self, actor):
+        """Called by SimController.turn_changed signal when the active actor changes."""
+        self.map_view.setCurTurn(actor)
+        self.updateTurnOrder()
+
+    def _on_actor_died(self, actor):
+        """Called by SimController.actor_died signal."""
+        self.turn_action_panel.log(f'{actor.name} has died!')
+
+    def _on_encounter_ended(self, winner):
+        """Called by SimController.encounter_ended signal."""
+        self.turn_action_panel.log(f'--- Encounter over! {winner} wins! ---')
+        self.start_button.setEnabled(False)
+
+    # ------------------------------------------------------------------
 
     def saveEncounter(self):
         print("Saving encounter...")
@@ -1797,23 +1658,12 @@ class MapWidget(QWidget):
         encounter = self.myEncounter
         turnOrder = encounter.sortedInitList
         curTurn = [encounter.curTurn][0]
-        
-        
-        
+
         for i in range(6): # hard set to five for now but this should be length of turn indicator
-            #self.turn_action_panel.log('\t'+ list(turnOrder)[curTurn].name)
             player = list(turnOrder)[curTurn]
-            if player.Image == None:
-                pixmap = QPixmap(dmSimPath + "\\App\\unknown.jpg")
-            elif os.path.exists(dmSimPath + player.Image):
-                pixmap = QPixmap(dmSimPath + player.Image)
-            elif os.path.exists(player.Image):
-                pixmap = QPixmap(player.Image)
-            else:
-                print("path doesnt exist, trying unknown")
-                pixmap = QPixmap(dmSimPath + "\\App\\unknown.jpg")
-            
-            if i ==0:
+            pixmap = _get_actor_pixmap(player)
+
+            if i == 0:
                 lbl = self.turn_order_widget.current_icon
             else:
                 lbl = self.turn_order_widget.next_icons[i-1]
@@ -1923,74 +1773,41 @@ class MapWidget(QWidget):
         pass
     
     def moveButton(self):
-        # crashes if dash is enabled maybe should grey out move button when dash is selected??
-        hexIndex = self.map_view.getCurActorHexIndex() # starting index
-
-        if self.turnChoice != None and self.actor != None:
-            if hexIndex != None:
-                
-                self.saveTurnSnapshot() # save start of new turn
-                currLocation = list(self.myEncounter.map.arrayCenters)[hexIndex]
-                self.turnChoice.moveCoord = currLocation
-                map = self.myEncounter.map
-                origIndex = [list(map.arrayCenters).index(coord) for coord in map.arrayCenters if map.arrayCenters[coord] == self.actor][0]
-                self.myEncounter.map.moveActor(self.actor, currLocation) # need to make return if op attack caused
-                distanceMoved = self.myEncounter.map.distanceCalc(hexIndex, origIndex)
-                self.actor.speed -= distanceMoved*5
-                newMoveHexes = calcMoveHexes(self.actor, self.myEncounter.map)
-                self.map_view.setCurMoveCoords(newMoveHexes)
-                print("I have moved ", distanceMoved, ' and i have ', self.actor.speed/5, ' move left')
-                # add speed reduction and recalc move areas
+        hexIndex = self.map_view.getCurActorHexIndex()
+        if self.turnChoice is not None and self.actor is not None and hexIndex is not None:
+            self.saveTurnSnapshot()
+            currLocation = list(self.myEncounter.map.arrayCenters)[hexIndex]
+            self.turnChoice.moveCoord = currLocation
+            dist, new_move_hexes = self.controller.move_actor(self.actor, currLocation, hexIndex)
+            self.map_view.setCurMoveCoords(new_move_hexes)
 
     def endTurnButton(self):
         self.map_view.spellAreaCheck = None
         self.map_view.affected = None
-        map = self.myEncounter.map
-        self.myEncounter.removeDeadActors()
 
-        for enemy in map.enemy:
-            if enemy.legActions >= 1 and len(map.party) != 0:
-                # this isnt actually "takeLegAction" its check to see you can take leg action and if you can then take
-                self.turn_action_panel.log('Legendary Action cehck by: ' + enemy.name + '\n')
-                enemy.takeLegAction(map)
-                self.myEncounter.removeDeadActors()
-        self.myEncounter.nextTurn()
-        
-        turns = self.myEncounter.calcTurn()
-        self.actor.speed = int(self.actor.maxSpeed) # reset my speed that I have reduced
-        
-        if turns != None:
+        turns = self.controller.end_turn(self.actor)
+        if turns is not None:
             self.actor = turns[0]
             self.turnChoices = turns[2]
             self.turnChoice = turns[3]
             self.turn_action_panel.update_turn_panel(self.actor, self.turnChoices, self.turnChoice)
-            
+
         self.turn_action_panel.buildSpellSlots(self.actor)
         self.updateTurnOrder()
         self.turn_action_panel.take_turn_button.setEnabled(True)
         self.turn_action_panel.action_dropdown.setEnabled(True)
-        
-        
 
     def takeTurnButton(self):
-        # now load inputs and and call doAction function
-        #myAction(name =, type=, mod=, numHit=, currCoord=, moveCoord=, targets=, castCoord=)
-        # grab name of spell
         hexIndex = self.map_view.getCurActorHexIndex()
-        
-        #print('Current Actors current location on the map', currLocation)
-        if self.turnChoice != None and self.actor != None: # for now just do the best action. will work on actually choosing action
-            if hexIndex != None:
+        if self.turnChoice is not None and self.actor is not None:
+            if hexIndex is not None:
                 currLocation = list(self.myEncounter.map.arrayCenters)[hexIndex]
                 self.turnChoice.moveCoord = currLocation
-            self.saveTurnSnapshot() # save start of new turn
+            self.saveTurnSnapshot()
             currAction = self.turn_action_panel.action_dropdown.currentText()
             self.turnChoice.type = [x.type for x in self.turnChoices if x.name == currAction][0]
             self.turnChoice.name = currAction
-            doAction(self.actor, self.myEncounter.map, self.turnChoice)
-            self.myEncounter.removeDeadActors()
-            # add grey out take turn button
-            # add grey out actions
+            self.controller.take_action(self.actor, self.turnChoice)
             self.turn_action_panel.take_turn_button.setEnabled(False)
             self.turn_action_panel.action_dropdown.setEnabled(False)
             self.turn_action_panel.buildSpellSlots(self.actor)
@@ -2026,7 +1843,8 @@ class MapWidget(QWidget):
 
     
         
-dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-4]
+
+
 
 
 

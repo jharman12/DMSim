@@ -11,8 +11,9 @@ import pathlib
 dmSimPath = str(pathlib.Path(__file__).parent.parent.parent.resolve())
 sys.path.insert(0, dmSimPath)
 
-from modelMethods import takeTurn, removeDeadActors, rollSave
-from model.Simulation.map import Map
+from engine.combat import takeTurn, removeDeadActors
+from engine.dice import rollSave
+from model.map import Map
 
 class Encounter:
     def __init__(self, partyList, npcList, enemyList, n):

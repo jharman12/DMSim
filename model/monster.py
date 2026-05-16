@@ -1,22 +1,20 @@
 import re
 import math
-import numpy as np
-import time
-import operator
-from scipy import spatial
-import numpy as np
-import time
 import sys
 import json
-import array
 import pathlib
-dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-6]
-sys.path.insert(1, dmSimPath)
-from modelMethods import down_round, weibull, cone, WeaponNew, col_round, bestSphere, \
-    bestCone, bestLine2, bestSquare, takeDmg, takeReaction, moveWithingReach, rollDice, \
-    rollSave, rollDeathSave
-    
-class Monster:
+
+_root = pathlib.Path(__file__).parent.parent
+sys.path.insert(1, str(_root))
+
+from engine.dice import down_round, weibull, cone
+from engine.combat import takeDmg, rollDice
+from model.weapon import WeaponNew
+from model.actor import Actor
+
+class Monster(Actor):
+    is_player = False
+
     def __init__(self, name, ac, health, speed, modDict, weaponList, size, spells, spellMod, multiAttack, legRes = 0, legAction = [0, ''], Image = None):
         self.name = name
         self.Image = Image
@@ -30,7 +28,7 @@ class Monster:
         self.size = size
         self.spells = {}
         self.initSpells ={}
-        with open(dmSimPath + "\\spells\\spellList.json", "r") as file:
+        with open(str(_root / "spells" / "spellList.json"), "r") as file:
             spellList = json.load(file)
         for spell in spells.keys():
             # Handle both formats: {"spell": count} and {"spell": [count, dict]}
@@ -231,7 +229,7 @@ class Monster:
                 attackWith = weap
         if maxDmg == 0:
             return
-        rollToHit = [x + int(attackWith.attackMod) for x in rollDice(attackTimes, 20) ]
+        rollToHit = [x + int(attackWith.attackMod) for x in rollDice(attackTimes, 20)]
         ##print(rollToHit)
         ##print(target.name, target.ac)
         hits = sum([1 for x in rollToHit if x >= int(target.ac)])

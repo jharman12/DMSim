@@ -2,11 +2,13 @@ import random as r
 import math
 import inspect
 import sys
-
 import pathlib
-dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-6]
-sys.path.insert(1, dmSimPath)
-from modelMethods import takeReaction, drawLine
+
+_root = pathlib.Path(__file__).parent.parent.parent
+sys.path.insert(1, str(_root))
+
+from engine.combat import takeReaction
+from engine.targeting import drawLine
 
 class Map:
     def __init__(self, numHex, partyList, enemyList, graphicsViewer=None):

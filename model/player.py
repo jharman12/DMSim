@@ -1,25 +1,22 @@
 
 import re
 import math
-import numpy as np
-import time
-import operator
-from scipy import spatial
-import numpy as np
-import time
 import sys
 import json
-import array
 import pathlib
-dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-6]
-sys.path.insert(1, dmSimPath)
-from modelMethods import down_round, weibull, cone, WeaponNew, col_round, bestSphere, \
-    bestCone, bestLine2, bestSquare, takeDmg, takeReaction, moveWithingReach, rollDice, \
-    rollSave, rollDeathSave
-    
+
+_root = pathlib.Path(__file__).parent.parent
+sys.path.insert(1, str(_root))
+
+from engine.dice import down_round, weibull, cone, col_round, rollDice
+from model.weapon import WeaponNew
+from model.actor import Actor
 
 
-class Player:
+
+class Player(Actor):
+    is_player = True
+
     def __init__(self, name, lvl, ac, health, modDict, turnFactors, weaponList, type, Image = False, known_spells=None):
         self.name = name
         
@@ -101,7 +98,7 @@ class Player:
         if spellcastingAbility:
             self.spellAttackMod = self.proficiency + down_round((self.modDict[spellcastingAbility]-10)/2)
         self.spellDC = 8 + self.spellAttackMod
-        with open(dmSimPath + "\\spells\\spellList.json", "r") as file:
+        with open(str(_root / "spells" / "spellList.json"), "r") as file:
             spellList = json.load(file)
         self.spells = {}
         for spell in spellList:
@@ -402,11 +399,7 @@ class Player:
 
 
 def createPartyList(nameList, path):
-    '''
-    Load newChars.json and create player classes
-    from output. 
-    nameList is a list of characters names to be matched to newChars.json
-    '''
+    """Load newChars.json and create Player instances for each name in nameList."""
     try:
         with open(path + "newChars.json", "r") as file:
             data = json.load(file)

@@ -1,4 +1,4 @@
-from encounterSim import Encounter
+from model.Simulation.encounterSim import Encounter
 #from playersModel import Player
 
 import sys
@@ -6,16 +6,15 @@ import json
 import pathlib
 
 # Get to DMSim root directory (up from Simulation to model to DMSim)
-dmSimPath = str(pathlib.Path(__file__).parent.parent.parent.resolve())
+_root = pathlib.Path(__file__).parent.parent.parent
 
-
-sys.path.insert(0, dmSimPath + '/actors/statReader')
-sys.path.insert(0, dmSimPath)
+sys.path.insert(0, str(_root / 'actors' / 'statReader'))
+sys.path.insert(0, str(_root))
 from actors.statReader.textReader import buildMonsterFromString
-from player import createPartyList, Player
+from model.player import createPartyList, Player
 import random as r 
-from model.Simulation.map import Map
-from modelMethods import takeTurn, removeDeadActors, myAction
+from model.map import Map
+from engine.combat import takeTurn, removeDeadActors, myAction
 from model.monster import Monster, MonsterDump, createMonsterList
 
 

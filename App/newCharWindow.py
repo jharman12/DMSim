@@ -1,13 +1,16 @@
 import json
+import pathlib
 from PyQt5.QtWidgets import (
     QWidget, QLabel, QLineEdit, QSpinBox, QComboBox, QCompleter,
     QPushButton, QFileDialog, QVBoxLayout, QHBoxLayout,
     QGridLayout, QGroupBox, QListWidget, QListWidgetItem,
-    QScrollArea, QApplication, QTabWidget, QMessageBox, QScrollArea
+    QScrollArea, QApplication, QTabWidget, QMessageBox,
 )
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import Qt, QEvent
 from pathlib import Path
+
+_root = pathlib.Path(__file__).parent.parent
 
 class AutocompleteLineEdit(QLineEdit):
     """QLineEdit that accepts Tab to autocomplete with the closest match."""
@@ -23,7 +26,9 @@ class AutocompleteLineEdit(QLineEdit):
         super().keyPressEvent(event)
 
 class CharacterStore:
-    def __init__(self, file_path="A:\\Code\\Python\\Git Repo\\DMSim\\actors\\savedObjs\\newChars.json"):
+    def __init__(self, file_path=None):
+        if file_path is None:
+            file_path = _root / "actors" / "savedObjs" / "newChars.json"
         self.file_path = Path(file_path)
         self.characters = {}  # name -> data
         self.load()
@@ -32,10 +37,7 @@ class CharacterStore:
         if self.file_path.exists():
             with open(self.file_path, "r") as f:
                 data = json.load(f)
-
-            # 🔥 FIX HERE
-            self.characters = data#.get("characters", {})
-            print(data)
+            self.characters = data
         else:
             self.characters = {}
 
@@ -53,10 +55,6 @@ class CharacterStore:
 
     def get(self, name):
         return self.characters.get(name)
-
-    def upsert(self, name, data):
-        self.characters[name] = data
-        self.save()
 
     def delete(self, name):
         if name in self.characters:
@@ -174,7 +172,6 @@ class CharacterEditor(QWidget):
         self.character_selector.blockSignals(True)
         self.character_selector.clear()
         self.character_selector.addItem("New Character")
-        print(self.store.get_names())
         self.character_selector.addItems(self.store.get_names())
         self.character_selector.blockSignals(False)
 
@@ -258,21 +255,6 @@ class CharacterEditor(QWidget):
             spin.setValue(0)
 
         self.clearWeapons()
-
-    def addWeaponFromData(self, data):
-        
-
-        for weap in data: # data here is list of dictionaries
-            self.addWeapon()
-            w = self.weapon_widgets[-1]
-            print(weap)
-            w["name"].setText(weap["name"])
-            w["type"].setCurrentText(weap["type"])
-            w["range"].setValue(weap["range"])
-            w["attack_mod"].setValue(weap["attack_mod"])
-            w["dice_count"].setValue(weap["dice_count"])
-            w["dice_type"].setCurrentText(weap["dice_type"])
-            w["damage_mod"].setValue(weap["damage_mod"])
 
     def loadSelectedCharacter(self, name):
         if name == "— New Character —" or name not in self.character_db:

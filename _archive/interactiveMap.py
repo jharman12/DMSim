@@ -3,7 +3,7 @@ import pathlib
 
 dmSimPath = str(pathlib.Path(__file__).parent.resolve())[0:-6]
 sys.path.insert(1, dmSimPath)
-from model.Simulation.map import Map
+from model.map import Map
 
 class interactiveMap(Map):
     """
