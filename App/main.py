@@ -330,9 +330,61 @@ class EncounterBuilderTab(QWidget):
         layout.addLayout(lists_layout)
 
     def browse_map_image(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Select Map Image", "", "Image Files (*.png *.jpg *.jpeg *.bmp *.gif)")
+        # First, show option to select from existing maps or browse for new
+        maps_dir = Path(dmSimPath) / "App" / "Maps"
+        maps_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Get list of existing maps
+        existing_maps = []
+        if maps_dir.exists():
+            for ext in ['*.png', '*.jpg', '*.jpeg', '*.bmp', '*.gif', '*.webp']:
+                existing_maps.extend(maps_dir.glob(ext))
+        
+        # Show file dialog starting in Maps directory
+        start_dir = str(maps_dir) if maps_dir.exists() else ""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, 
+            "Select Map Image", 
+            start_dir, 
+            "Image Files (*.png *.jpg *.jpeg *.bmp *.gif *.webp)"
+        )
+        
         if file_path:
-            self.map_edit.setText(file_path)
+            file_path = Path(file_path)
+            
+            # Check if the file is already in the Maps directory
+            if maps_dir in file_path.parents or file_path.parent == maps_dir:
+                # File is already in Maps directory, use relative path
+                relative_path = "App\\Maps\\" + file_path.name
+            else:
+                # Copy file to Maps directory
+                destination = maps_dir / file_path.name
+                
+                # Handle duplicate names
+                counter = 1
+                while destination.exists():
+                    stem = file_path.stem
+                    suffix = file_path.suffix
+                    destination = maps_dir / f"{stem}_{counter}{suffix}"
+                    counter += 1
+                
+                try:
+                    shutil.copy2(file_path, destination)
+                    relative_path = "App\\Maps\\" + destination.name
+                    QMessageBox.information(
+                        self, 
+                        "Map Copied", 
+                        f"Map image copied to: {destination.name}"
+                    )
+                except Exception as e:
+                    QMessageBox.warning(
+                        self, 
+                        "Copy Failed", 
+                        f"Failed to copy map image: {str(e)}\nUsing original path."
+                    )
+                    relative_path = str(file_path)
+            
+            self.map_edit.setText(relative_path)
 
     def add_from_combo(self, combo, list_widget):
         text = combo.currentText().strip()

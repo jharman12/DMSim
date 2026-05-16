@@ -17,7 +17,7 @@
             "Dire Wolf"
         ],
         "numHexes": 20,
-        "mapImage": "A:\\Code\\Python\\Git Repo\\DMSim\\App\\Maps\\maze Engine.webp"
+        "mapImage": "App\\Maps\\maze Engine.webp"
     },
     "Dryads": {
         "name": "Dryads",
@@ -44,7 +44,7 @@
             "Dryad"
         ],
         "numHexes": 15,
-        "mapImage": "A:\\Code\\Python\\Git Repo\\DMSim\\App\\Maps\\maze Engine.webp"
+        "mapImage": "App\\Maps\\maze Engine.webp"
     },
     "Lich": {
         "name": "Lich",
@@ -60,6 +60,6 @@
             "Lich"
         ],
         "numHexes": 20,
-        "mapImage": "A:\\Code\\Python\\Git Repo\\DMSim\\App\\Maps\\maze Engine.webp"
+        "mapImage": "App\\Maps\\maze Engine.webp"
     }
 }
