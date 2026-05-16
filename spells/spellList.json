@@ -2090,7 +2090,7 @@
         "concentration": "Y",
         "classes": "Sorcerer, Wizard",
         "dice": [
-            "2d4"
+            ""
         ],
         "uniqueDice": "n",
         "combat": "y"
@@ -2715,7 +2715,7 @@
         "area": "sphere 20 ft",
         "attack": "",
         "save": "Constitution Save",
-        "effect": "Control",
+        "effect": "Incapacitated",
         "concentration": "Y",
         "classes": "Bard, Sorcerer, Wizard",
         "dice": [

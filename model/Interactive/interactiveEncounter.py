@@ -2,7 +2,6 @@ from dataclasses import dataclass
 import random as r
 import numpy as np
 import time
-#import pandas as pd
 import numpy as np
 import time
 import sys
@@ -15,6 +14,7 @@ sys.path.insert(0, dmSimPath)
 print(dmSimPath)
 from engine.combat import takeTurn, removeDeadActors
 from engine.dice import rollSave
+from engine.persistent import apply_zone_to_actor, tick_persistent_spells
 from model.map import Map
 
 
@@ -32,6 +32,8 @@ class interactiveEncounter:
             actor.legRes = actor.maxLegRes
             actor.legActions = actor.maxLegActions
             actor.cc = []
+            actor.restrained = []
+            actor.concentration_spell = None  # no active concentration on encounter start
 
     
     def __getstate__(self):
@@ -49,13 +51,8 @@ class interactiveEncounter:
         self.graphicsViewer = graphicsViewer
 
     def nextTurn(self):
-        
-        
-        # Add remove red outline, add red line to new turn
-        # should probably just make below a function
-        
+        # Remove red outline from current actor
         curActor = list(self.sortedInitList)[self.curTurn]
-        #print("trying to remove red outline from ", curActor.name)
         curIndex = self.graphicsViewer.character_objs.index(curActor)
         item = self.graphicsViewer.character_items[curIndex]
         pixMap = item.pixmap()
@@ -63,12 +60,16 @@ class interactiveEncounter:
         item.setPixmap(removeOutline)
 
         self.removeDeadActors()
-        self.curTurn += 1 
-        
+        self.curTurn += 1
+
         if self.curTurn >= len(self.sortedInitList):
+            # New round starts — tick persistent spell durations.
             self.curTurn = 0
-        
-        # now that turn has changed, updated who has a red line
+            expired = tick_persistent_spells(self.map)
+            for ps in expired:
+                self.graphicsViewer.remove_persistent_zone(ps.spell_name)
+
+        # Update red outline to new actor
         curActor = list(self.sortedInitList)[self.curTurn]
         self.graphicsViewer.setCurTurn(curActor)
         curIndex = self.graphicsViewer.character_objs.index(curActor)
@@ -76,7 +77,6 @@ class interactiveEncounter:
         pixMap = item.pixmap()
         removeOutline = self.graphicsViewer.addRedOutline(pixMap)
         item.setPixmap(removeOutline)
-
 
     def removeDeadActors(self):
         map = self.map
@@ -97,60 +97,68 @@ class interactiveEncounter:
                 self.graphicsViewer.scene.removeItem(self.graphicsViewer.character_items[charIndex])
                 del self.graphicsViewer.character_items[charIndex]
                 del self.graphicsViewer.character_objs[charIndex]
-                
+
         return deadActors
 
     def calcTurn(self):
-        # new combat... 
-        # perform following actions
-        #   do a health check
-        #   check for actor cc and leg res to ignore cc
-        #   calc best turn
         print(self.sortedInitList, self.curTurn)
         actor = list(self.sortedInitList)[self.curTurn]
         self.map.combatLog('Current Turn:' + str(self.curTurn) + '\n\t' + actor.name)
 
-        # do some initial checks to see current state
         for healthCheck in list(self.sortedInitList.keys()):
             print('\t\t', healthCheck.name, healthCheck.health)
-        
-        if actor.legRes >= 1 and len(actor.cc) > 0: # if cced and has legendary resistance... use it and continue
+
+        # Apply persistent zone effects at the start of this actor's turn.
+        for ps in list(self.map.persistent_spells):
+            apply_zone_to_actor(ps, actor, self.map)
+            # Zone application may have killed the actor — check
+            self.removeDeadActors()
+            if actor not in self.map.party and actor not in self.map.enemy:
+                # Actor died from zone; advance to next turn
+                if self.sortedInitList:
+                    self.nextTurn()
+                    return self.calcTurn()
+                return
+
+        # Log restrained status (actor can still act, just can't move)
+        if getattr(actor, 'restrained', []):
+            self.map.combatLog(f'\t{actor.name} is Restrained (speed 0; can try to break free)')
+
+        if actor.legRes >= 1 and len(actor.cc) > 0:
             actor.legRes = actor.legRes - 1
-            #print('\t Actor used Leg Res to not be cced : '+actor.name+ ' has  '+ str(actor.legRes) + ' more\n')
             actor.cc = []
-        elif len(actor.cc) > 0: # if actor cced then spend turn trying to save
-            self.map.combatLog('\t' + actor.name + ' is cc\'ed. Rolling Save')
-            outcome = rollSave(actor, actor.cc[1][0], actor.cc[2]) 
-            
-            #print('\t Actor cced, trying to save...either way no turn taken \n')
-            if outcome: # if failed save... still cced
-                self.nextTurn()
-                return self.calcTurn()
-            else: # if passed save... no long cced
+        elif len(actor.cc) > 0:
+            zone_applied = len(actor.cc) > 3 and actor.cc[3] is True
+            if zone_applied:
+                # CC was freshly applied by a zone this turn — save already rolled, just lose the turn.
+                self.map.combatLog('\t' + actor.name + ' is incapacitated by the zone effect.')
                 actor.cc = []
                 self.nextTurn()
                 return self.calcTurn()
-        if actor in self.map.enemy: # if on enemy list your enemy is the party
-            if len(self.map.party) == 0: # if enemies already down... skip turn
-                
+            self.map.combatLog('\t' + actor.name + ' is cc\'ed. Rolling Save')
+            outcome = rollSave(actor, actor.cc[1][0], actor.cc[2])
+            if outcome:
+                self.nextTurn()
+                return self.calcTurn()
+            else:
+                actor.cc = []
+                self.nextTurn()
+                return self.calcTurn()
+
+        if actor in self.map.enemy:
+            if len(self.map.party) == 0:
                 return
             takeTurn(actor, self.map, interactive=False)
             self.nextTurn()
             testing = self.calcTurn()
-            
             return testing
-            
-            
-        else: # if not on enemy list your enemy is enemyList
-            if len(self.map.enemy) == 0: # if enemies already down... skip turn
+        else:
+            if len(self.map.enemy) == 0:
                 return
-            
-            turn =  takeTurn(actor, self.map, interactive=True)
-            if turn == None:
+            turn = takeTurn(actor, self.map, interactive=True)
+            if turn is None:
                 self.nextTurn()
                 return self.calcTurn()
             else:
                 return turn
-            
-                
     

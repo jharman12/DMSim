@@ -26,7 +26,8 @@ class Map:
 
         self.party = partyList
         self.enemy = enemyList
-        self.walls: set = set()   # hex indices that are impassable walls
+        self.walls: set = set()           # hex indices that are impassable walls
+        self.persistent_spells: list = [] # active PersistentSpell zones
         self.populateMap(self.party, self.enemy)
         
         #print('spawns as')

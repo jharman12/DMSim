@@ -33,7 +33,8 @@
       "Healing Word",
       "Shield",
       "Charm Person",
-      "Scorching Ray"
+      "Scorching Ray",
+      "Web"
     ]
   },
   "Adrel": {
@@ -169,7 +170,8 @@
       "Magic Missile",
       "Shield",
       "Shatter",
-      "Fireball"
+      "Fireball",
+      "Stinking Cloud"
     ]
   },
   "TestMulticlass": {

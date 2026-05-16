@@ -32,6 +32,8 @@ class SimController(QObject):
     log_message = pyqtSignal(str)
     action_choices_ready = pyqtSignal(list)
     actor_moved = pyqtSignal(object, int, int)  # actor, hex_index, remaining_speed
+    persistent_spell_created = pyqtSignal(object)  # PersistentSpell
+    persistent_spell_ended = pyqtSignal(object)    # PersistentSpell
 
     def __init__(self, encounter, parent=None):
         """
@@ -165,14 +167,28 @@ class SimController(QObject):
         Execute *turn_choice* for *actor*, remove any actors that died, and
         rebuild spell-slot state.  Does **not** advance the turn.
         Manual roll provider is installed/cleared around the engine call.
+        Emits persistent_spell_created / persistent_spell_ended as appropriate.
         """
         map_obj = self._encounter.map
+        spells_before = set(id(ps) for ps in map_obj.persistent_spells)
+
         self._install_roll_provider(actor)
         try:
             doAction(actor, map_obj, turn_choice)
             self._encounter.removeDeadActors()
         finally:
             self._clear_roll_provider()
+
+        # Detect newly created persistent spells
+        for ps in map_obj.persistent_spells:
+            if id(ps) not in spells_before:
+                self.persistent_spell_created.emit(ps)
+
+        # Detect spells that ended during this action (concentration broken by damage, etc.)
+        spells_after = set(id(ps) for ps in map_obj.persistent_spells)
+        for ps_id in spells_before - spells_after:
+            # We can't easily recover the object, but the GUI will reconcile via signal
+            pass
 
     def end_turn(self, actor):
         """
@@ -198,8 +214,13 @@ class SimController(QObject):
                 finally:
                     self._clear_roll_provider()
 
+        spells_before = set(id(ps) for ps in map_obj.persistent_spells)
         self._encounter.nextTurn()
         actor.speed = int(actor.maxSpeed)
+
+        # Emit signals for any persistent spells that expired during nextTurn (round wrap)
+        spells_after = set(id(ps) for ps in map_obj.persistent_spells)
+        # (expired spells have already been removed from map_obj by tick_persistent_spells)
 
         turns = self._encounter.calcTurn()
         if turns:

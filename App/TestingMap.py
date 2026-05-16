@@ -201,6 +201,8 @@ class CustomGraphicsView(QGraphicsView):
         self.wall_mode = False
         self._wall_indices: set = set()
 
+        self._persistent_zones: dict = {}  # spell_name -> list[hex_index]
+
         self.info_popup = None
         self.map_item = None
         self.character_items = []
@@ -228,6 +230,7 @@ class CustomGraphicsView(QGraphicsView):
         self.moveFill = QColor(0, 255, 0, 50)
         self.coneFill = QColor(255, 0, 0, 50)
         self.wallFill = QColor(80, 50, 20, 220)   # dark brown — always on top
+        self.persistFill = QColor(255, 140, 0, 130)  # orange — persistent spell zones
         self.setResizeAnchor(QGraphicsView.AnchorViewCenter)
 
         self.affected = None
@@ -244,12 +247,34 @@ class CustomGraphicsView(QGraphicsView):
         # Highlight the newly allowed movement hexes
         self.setHexColors(self.moveFill, indexes)
 
-        # Walls always render on top of movement highlights
+        # Persistent spell zones render above movement highlights
+        for idxs in self._persistent_zones.values():
+            self.setHexColors(self.persistFill, idxs)
+
+        # Walls always render on top
         if self._wall_indices:
             self.setHexColors(self.wallFill, list(self._wall_indices))
 
         # Rebuild the snap tree here
         self.build_snap_tree(indexes)
+
+    def add_persistent_zone(self, spell_name: str, hex_indices: list):
+        """Color and track a persistent spell zone."""
+        self._persistent_zones[spell_name] = list(hex_indices)
+        self.setHexColors(self.persistFill, hex_indices)
+
+    def remove_persistent_zone(self, spell_name: str):
+        """Remove a persistent zone and refresh hex colors."""
+        if spell_name in self._persistent_zones:
+            del self._persistent_zones[spell_name]
+        # Refresh: reset + reapply movement + remaining zones + walls
+        self.setHexColors(self.defaultFill, list(range(len(self.hex_items))))
+        if self.curMoveCoords:
+            self.setHexColors(self.moveFill, self.curMoveCoords)
+        for idxs in self._persistent_zones.values():
+            self.setHexColors(self.persistFill, idxs)
+        if self._wall_indices:
+            self.setHexColors(self.wallFill, list(self._wall_indices))
 
     def build_snap_tree(self, indexes):
         """
@@ -1139,6 +1164,25 @@ class TurnActionPanel(QWidget):
         self.endTurnButton = QPushButton('End Turn')
 
         main_layout.addWidget(self.endTurnButton)
+
+        # ---------------- CONCENTRATION STATUS ----------------
+        self.concentration_label = QLabel()
+        self.concentration_label.setStyleSheet(
+            "color: #c080ff; font-style: italic; padding: 2px 0;"
+        )
+        self.concentration_label.setAlignment(Qt.AlignCenter)
+        self.concentration_label.setVisible(False)
+        main_layout.addWidget(self.concentration_label)
+
+        # Restrained status label
+        self.restrained_label = QLabel("⛓️ Restrained — speed 0")
+        self.restrained_label.setStyleSheet(
+            "color: #e0a020; font-style: italic; padding: 2px 0;"
+        )
+        self.restrained_label.setAlignment(Qt.AlignCenter)
+        self.restrained_label.setVisible(False)
+        main_layout.addWidget(self.restrained_label)
+
         # ---------------- GAME LOG ----------------
         self.game_log_label = QLabel("Game Log")
         self.game_log_label.setStyleSheet("font-weight: bold;")
@@ -1273,6 +1317,25 @@ class TurnActionPanel(QWidget):
             self.game_log_box.verticalScrollBar().maximum()
         )
 
+    def set_concentration(self, caster_name: str, spell_name: str):
+        """Show a concentration indicator below the action buttons."""
+        self.concentration_label.setText(f"🔮 {caster_name} concentrating: {spell_name}")
+        self.concentration_label.setVisible(True)
+
+    def clear_concentration(self):
+        """Hide the concentration indicator."""
+        self.concentration_label.setVisible(False)
+        self.concentration_label.setText("")
+
+    def set_restrained(self, save_type: str, dc: int):
+        """Show restrained status indicator."""
+        self.restrained_label.setText(f"⛓️ Restrained — speed 0 (Break Free: {save_type} DC {dc})")
+        self.restrained_label.setVisible(True)
+
+    def clear_restrained(self):
+        """Hide the restrained indicator."""
+        self.restrained_label.setVisible(False)
+
 
     def update_turn_panel(self, actor, turnChoices, turnChoice):
         """
@@ -1289,6 +1352,13 @@ class TurnActionPanel(QWidget):
         # Update turn label
         
         self.turn_label.setText(f"Current Turn: {actor.name}")
+
+        # Show/hide restrained indicator
+        restrained = getattr(actor, 'restrained', [])
+        if restrained:
+            self.set_restrained(restrained[0], restrained[1])
+        else:
+            self.clear_restrained()
 
         # Update health bar and health text
         
@@ -1512,6 +1582,8 @@ class MapWidget(QMainWindow):
         self.controller.turn_changed.connect(self._on_turn_changed)
         self.controller.actor_died.connect(self._on_actor_died)
         self.controller.encounter_ended.connect(self._on_encounter_ended)
+        self.controller.persistent_spell_created.connect(self._on_persistent_spell_created)
+        self.controller.persistent_spell_ended.connect(self._on_persistent_spell_ended)
         self.map_view.walls_changed.connect(self._on_walls_changed)
 
         self.controller.roll_provider_factory = self._make_roll_provider
@@ -1581,6 +1653,16 @@ class MapWidget(QMainWindow):
         """Sync wall indices from the view into the engine map."""
         if self.myEncounter.map is not None:
             self.myEncounter.map.walls = wall_indices
+
+    def _on_persistent_spell_created(self, ps):
+        """Paint and track a new persistent spell zone on the map."""
+        self.map_view.add_persistent_zone(ps.spell_name, ps.affected_hex_indices)
+        self.turn_action_panel.set_concentration(ps.caster.name, ps.spell_name)
+
+    def _on_persistent_spell_ended(self, ps):
+        """Remove the zone and clear concentration label."""
+        self.map_view.remove_persistent_zone(ps.spell_name)
+        self.turn_action_panel.clear_concentration()
 
     # ------------------------------------------------------------------
 
@@ -1705,16 +1787,21 @@ class MapWidget(QMainWindow):
 
 
     def updateTargets(self, affectedHexes):
-        #print(affectedHexes)
-        targetsHit = [list(self.myEncounter.map.arrayCenters)[ind] for ind in affectedHexes if 
-                      self.myEncounter.map.arrayCenters[list(self.myEncounter.map.arrayCenters)[ind]] != '']
-        #print(targetsHit)
+        coords = list(self.myEncounter.map.arrayCenters)
+        arrayCenters = self.myEncounter.map.arrayCenters
+
+        # All area coords (occupied or not) — used for persistent zone coverage
+        all_area_coords = [coords[ind] for ind in affectedHexes if ind < len(coords)]
+
+        # Only occupied coords — used as action targets this turn
+        targetsHit = [coords[ind] for ind in affectedHexes
+                      if ind < len(coords) and arrayCenters[coords[ind]] != '']
+
         self.turnChoice.targets = targetsHit
-        targetNames = [self.myEncounter.map.arrayCenters[coord].name for coord in targetsHit]
-        targetString = ''
-        for target in targetNames:
-            targetString += ' ' + target + ','
-        targetString = targetString[:-1] if targetString else ""
+        self.turnChoice.area_coords = all_area_coords
+
+        targetNames = [arrayCenters[coord].name for coord in targetsHit]
+        targetString = ', '.join(targetNames)
         self.turn_action_panel.targets_label.setText(targetString)
 
     def actionChanged(self):

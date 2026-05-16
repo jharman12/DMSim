@@ -54,6 +54,15 @@ class Actor:
     # --- Conditions ---
     cc: list
 
+    # --- Restrained condition (e.g. Web, Entangle) ---
+    # [save_type, dc] when restrained; [] when free.
+    # Unlike hard CC, a restrained actor can still act — they just can't move
+    # and may spend their action attempting to break free.
+    restrained: list
+
+    # --- Concentration ---
+    concentration_spell: object  # PersistentSpell | None — set to None on init
+
     # --- Tactical ---
     optRange: int  # preferred engagement distance in hexes
     size: str
