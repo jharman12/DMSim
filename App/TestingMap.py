@@ -386,7 +386,7 @@ class CustomGraphicsView(QGraphicsView):
 
         # Build popup widget
         popup = QFrame(self)
-        popup.setFixedWidth(270)
+        popup.setFixedWidth(320)
         popup.setStyleSheet(f"""
             QFrame#actorPopup {{
                 background-color: #1e1e2e;
@@ -407,12 +407,12 @@ class CustomGraphicsView(QGraphicsView):
         header_row.setSpacing(4)
 
         name_lbl = QLabel(f"<b>{c.name}</b>")
-        name_lbl.setStyleSheet("color: #ffffff; font-size: 16px;")
+        name_lbl.setStyleSheet("color: #ffffff; font-size: 20px;")
         header_row.addWidget(name_lbl, stretch=1)
 
         type_badge = QLabel(actor_type)
         type_badge.setStyleSheet(
-            f"color: {type_color}; font-size: 13px; font-style: italic;"
+            f"color: {type_color}; font-size: 16px; font-style: italic;"
         )
         type_badge.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         header_row.addWidget(type_badge)
@@ -422,7 +422,7 @@ class CustomGraphicsView(QGraphicsView):
         close_btn.setStyleSheet("""
             QPushButton {
                 background: transparent; color: #aaa;
-                border: none; font-size: 14px;
+                border: none; font-size: 16px;
             }
             QPushButton:hover { color: #fff; }
         """)
@@ -439,9 +439,9 @@ class CustomGraphicsView(QGraphicsView):
         # --- HP bar ---
         hp_header = QHBoxLayout()
         hp_title = QLabel("HP")
-        hp_title.setStyleSheet("color: #aaa; font-size: 13px;")
+        hp_title.setStyleSheet("color: #aaa; font-size: 16px;")
         hp_val = QLabel(f"{hp} / {max_hp}")
-        hp_val.setStyleSheet("color: #eee; font-size: 13px;")
+        hp_val.setStyleSheet("color: #eee; font-size: 16px;")
         hp_val.setAlignment(Qt.AlignRight)
         hp_header.addWidget(hp_title)
         hp_header.addWidget(hp_val)
@@ -482,10 +482,10 @@ class CustomGraphicsView(QGraphicsView):
             stat_box = QVBoxLayout()
             stat_box.setSpacing(0)
             lbl = QLabel(label)
-            lbl.setStyleSheet("color: #888; font-size: 11px;")
+            lbl.setStyleSheet("color: #888; font-size: 14px;")
             lbl.setAlignment(Qt.AlignCenter)
             v = QLabel(str(val))
-            v.setStyleSheet("color: #ddd; font-size: 15px; font-weight: bold;")
+            v.setStyleSheet("color: #ddd; font-size: 18px; font-weight: bold;")
             v.setAlignment(Qt.AlignCenter)
             stat_box.addWidget(lbl)
             stat_box.addWidget(v)
@@ -500,7 +500,7 @@ class CustomGraphicsView(QGraphicsView):
             outer.addWidget(cond_div)
             for cond_text in conditions:
                 cond_lbl = QLabel(cond_text)
-                cond_lbl.setStyleSheet("color: #ffcc66; font-size: 12px;")
+                cond_lbl.setStyleSheet("color: #ffcc66; font-size: 15px;")
                 outer.addWidget(cond_lbl)
 
         popup.adjustSize()
