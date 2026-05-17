@@ -5,8 +5,65 @@ No engine imports — pure PyQt5.
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QSpinBox,
     QListWidget, QListWidgetItem, QGroupBox, QDialogButtonBox,
+    QPushButton,
 )
 from PyQt5.QtCore import Qt
+
+
+def _make_checkable_list(actors: list, checked_names: set) -> QListWidget:
+    """Build a QListWidget whose items toggle when either the checkbox or the name is clicked."""
+    lst = QListWidget()
+    for actor in actors:
+        item = QListWidgetItem(actor.name)
+        item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+        item.setCheckState(
+            Qt.Checked if actor.name in checked_names else Qt.Unchecked
+        )
+        lst.addItem(item)
+
+    def _toggle_item(clicked_item):
+        new_state = Qt.Unchecked if clicked_item.checkState() == Qt.Checked else Qt.Checked
+        clicked_item.setCheckState(new_state)
+
+    lst.itemClicked.connect(_toggle_item)
+    return lst
+
+
+def _make_actor_group(title: str, actors: list, checked_names: set, all_items: list) -> QGroupBox:
+    """Return a QGroupBox containing a Select All button and a checkable actor list.
+
+    Appends the list's QListWidgetItems into all_items for later retrieval.
+    """
+    box = QGroupBox(title)
+    box_layout = QVBoxLayout(box)
+
+    lst = _make_checkable_list(actors, checked_names)
+    for i in range(lst.count()):
+        all_items.append(lst.item(i))
+
+    # --- Select All / Deselect All toggle button ---
+    select_btn = QPushButton("Select All")
+
+    def _update_btn_label():
+        all_checked = all(lst.item(i).checkState() == Qt.Checked for i in range(lst.count()))
+        select_btn.setText("Deselect All" if all_checked else "Select All")
+
+    def _on_select_all():
+        all_checked = all(lst.item(i).checkState() == Qt.Checked for i in range(lst.count()))
+        new_state = Qt.Unchecked if all_checked else Qt.Checked
+        for i in range(lst.count()):
+            lst.item(i).setCheckState(new_state)
+        _update_btn_label()
+
+    # Keep button label in sync when individual items are toggled too
+    lst.itemClicked.connect(lambda _: _update_btn_label())
+
+    select_btn.clicked.connect(_on_select_all)
+    _update_btn_label()   # set correct initial label
+
+    box_layout.addWidget(select_btn)
+    box_layout.addWidget(lst)
+    return box
 
 
 class ManualRollDialog(QDialog):
@@ -128,25 +185,10 @@ class ManualRollersDialog(QDialog):
 
         outer = QHBoxLayout()
 
-        def _make_group(title: str, actors: list) -> QGroupBox:
-            box = QGroupBox(title)
-            box_layout = QVBoxLayout(box)
-            lst = QListWidget()
-            for actor in actors:
-                item = QListWidgetItem(actor.name)
-                item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-                item.setCheckState(
-                    Qt.Checked if actor.name in manual_actors else Qt.Unchecked
-                )
-                lst.addItem(item)
-                self._all_items.append(item)
-            box_layout.addWidget(lst)
-            return box
-
         if players:
-            outer.addWidget(_make_group("Players", players))
+            outer.addWidget(_make_actor_group("Players", players, manual_actors, self._all_items))
         if monsters:
-            outer.addWidget(_make_group("Monsters / NPCs", monsters))
+            outer.addWidget(_make_actor_group("Monsters / NPCs", monsters, manual_actors, self._all_items))
         layout.addLayout(outer)
 
         btn_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
@@ -194,25 +236,10 @@ class ManualActionsDialog(QDialog):
 
         outer = QHBoxLayout()
 
-        def _make_group(title: str, actors: list) -> QGroupBox:
-            box = QGroupBox(title)
-            box_layout = QVBoxLayout(box)
-            lst = QListWidget()
-            for actor in actors:
-                item = QListWidgetItem(actor.name)
-                item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-                item.setCheckState(
-                    Qt.Checked if actor.name in interactive_actors else Qt.Unchecked
-                )
-                lst.addItem(item)
-                self._all_items.append(item)
-            box_layout.addWidget(lst)
-            return box
-
         if players:
-            outer.addWidget(_make_group("Players", players))
+            outer.addWidget(_make_actor_group("Players", players, interactive_actors, self._all_items))
         if monsters:
-            outer.addWidget(_make_group("Monsters / NPCs", monsters))
+            outer.addWidget(_make_actor_group("Monsters / NPCs", monsters, interactive_actors, self._all_items))
         layout.addLayout(outer)
 
         btn_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
