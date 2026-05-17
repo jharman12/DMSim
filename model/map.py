@@ -80,13 +80,18 @@ class Map:
     def dashActor(self, mover, targetCoord):
         dprint(mover.name, ' is taking the dash action to ', targetCoord)
         movement = 2*(mover.speed/5)
-        #targetCoord = [i for i in self.arrayCenters if self.arrayCenters[i] ==target][0]
         moverCoord = [i for i in self.arrayCenters if self.arrayCenters[i] ==mover][0]
-
         line = drawLine(moverCoord, targetCoord, self)
         #dprint(line)
-        options = [x for x in line if self.distanceCalc(list(self.arrayCenters).index(moverCoord), list(self.arrayCenters).index(x)) <= movement]
-        if options[-1] == targetCoord or self.arrayCenters[options[-1]] != '':
+        options = [x for x in line
+                   if x != moverCoord
+                   and self.distanceCalc(list(self.arrayCenters).index(moverCoord),
+                                         list(self.arrayCenters).index(x)) <= movement]
+        # If no options (movement = 0 or already adjacent with no path), stay put
+        if not options:
+            return
+        
+        if self.arrayCenters[options[-1]] != '':
             moverIndex = list(self.arrayCenters).index(moverCoord)
             targetIndex = list(self.arrayCenters).index(targetCoord)
             moverNew = self.nearestFreeHex(moverIndex, targetIndex)
