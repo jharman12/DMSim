@@ -589,7 +589,7 @@ class CustomGraphicsView(QGraphicsView):
 
             if self.spellAreaCheck != None and self.affected != None:
                 self.affectedSaved.emit(self.affected)
-                self.spellAreaCheck = None
+                # updateTargets handler will deactivate target mode via _set_target_mode
 
             if item == self.map_item:
                 self.selected_item = item
@@ -1255,6 +1255,16 @@ class TurnActionPanel(QWidget):
         main_layout.addLayout(actionBox)
 
         # -------------------------------
+        # Select Target button
+        # -------------------------------
+        self.select_target_button = QPushButton("🎯 Select Target")
+        self.select_target_button.setCheckable(True)
+        self.select_target_button.setToolTip(
+            "Click to enter target-selection mode, then click a hex on the map"
+        )
+        main_layout.addWidget(self.select_target_button)
+
+        # -------------------------------
         # Targets input
         # -------------------------------
         targets_layout = QHBoxLayout()
@@ -1631,11 +1641,6 @@ class MapWidget(QMainWindow):
         self.distance_button.setCheckable(True)
         top_button_row.addWidget(self.distance_button)
 
-        self.spell_button = QPushButton("Spell Area")
-        self.spell_button.setCheckable(True)
-        self.spell_button.clicked.connect(self.spellButton_pressed)
-        top_button_row.addWidget(self.spell_button)
-
         self.wall_button = QPushButton("🧱 Walls")
         self.wall_button.setCheckable(True)
         self.wall_button.setToolTip("Click hexes to mark them as impassable walls")
@@ -1722,6 +1727,7 @@ class MapWidget(QMainWindow):
         self.turn_action_panel.move_input.clicked.connect(self.moveButton)
         self.turn_action_panel.endTurnButton.clicked.connect(self.endTurnButton)
         self.turn_action_panel.action_dropdown.currentTextChanged.connect(self.actionChanged)
+        self.turn_action_panel.select_target_button.clicked.connect(self.spellButton_pressed)
         self.turn_action_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         action_dock = QDockWidget("Turn Actions", self)
@@ -1995,90 +2001,120 @@ class MapWidget(QMainWindow):
         # All area coords (occupied or not) — used for persistent zone coverage
         all_area_coords = [coords[ind] for ind in affectedHexes if ind < len(coords)]
 
-        # Only occupied coords — used as action targets this turn
-        targetsHit = [coords[ind] for ind in affectedHexes
-                      if ind < len(coords) and arrayCenters[coords[ind]] != '']
+        # Only occupied coords, excluding the acting actor (no self-targeting)
+        actor_coord = None
+        if self.actor is not None:
+            for coord, occupant in arrayCenters.items():
+                if occupant == self.actor:
+                    actor_coord = coord
+                    break
+
+        targetsHit = [
+            coords[ind] for ind in affectedHexes
+            if ind < len(coords)
+            and arrayCenters[coords[ind]] != ''
+            and coords[ind] != actor_coord
+        ]
+
+        if not targetsHit and not all_area_coords:
+            self.turn_action_panel.log("⚠️ No valid targets in selection — try a different hex.")
+            # Leave targeting mode off but don't update turnChoice
+            self._set_target_mode(False)
+            return
 
         self.turnChoice.targets = targetsHit
         self.turnChoice.area_coords = all_area_coords
 
         targetNames = [arrayCenters[coord].name for coord in targetsHit]
-        targetString = ', '.join(targetNames)
+        targetString = ', '.join(targetNames) if targetNames else '(area, no actors hit)'
         self.turn_action_panel.targets_label.setText(targetString)
 
+        # Targeting mode complete — deactivate the button
+        self._set_target_mode(False)
+
     def actionChanged(self):
-        self.spellButton_pressed()
         action = self.turn_action_panel.action_dropdown.currentText()
         if action == 'dash':
             self.turn_action_panel.move_input.setEnabled(False)
         else:
             self.turn_action_panel.move_input.setEnabled(True)
-        #self.spell_button.setChecked(False)
-    
+        # Configure target params for the new action and auto-activate targeting
+        self._setup_target_params()
+        self._set_target_mode(True)
+
+    def _set_target_mode(self, active: bool):
+        """Turn targeting mode on or off and sync the button state."""
+        self.map_view.spellAreaCheck = True if active else False
+        self.turn_action_panel.select_target_button.setChecked(active)
+
     def spellButton_pressed(self):
-        if self.map_view.curActor == None:
+        if self.map_view.curActor is None:
             return
-        if self.map_view.spellAreaCheck:
-            self.map_view.spellAreaCheck = False
-        else:
-            self.map_view.spellAreaCheck = True
-        
+        # Toggle targeting mode
+        currently_on = bool(self.map_view.spellAreaCheck)
+        self._setup_target_params()
+        self._set_target_mode(not currently_on)
+
+    def _setup_target_params(self):
+        """Configure spell/weapon area parameters on the map view for the current action."""
         actor = self.map_view.curActor
+        if actor is None:
+            return
+
         newMoves = calcMoveHexes(actor, self.myEncounter.map)
         self.map_view.setCurMoveCoords(newMoves)
-        
+
         action = self.turn_action_panel.action_dropdown.currentText()
         weapons = [x.name for x in actor.weaponList]
-        # set spell defaults to none
+
+        # Reset area parameters
         self.map_view.spellAreaType = None
-        self.map_view.spellRange = None # line assume spell range = 0
+        self.map_view.spellRange = None
         self.map_view.spellDistance = None
         self.map_view.spell_centers = []
         self.map_view.spell_tree = None
         self.map_view.spell_index = []
-        if action in actor.spells.keys():
-            if 'cone' in actor.spells[action]['area']:
+
+        spell_data = None
+        if action in actor.spells:
+            raw = actor.spells[action]
+            # Monsters store spells as [count, dict]; players store dict directly
+            spell_data = raw[1] if isinstance(raw, list) else raw
+        
+        if spell_data is not None:
+            area = spell_data.get('area', '')
+            if 'cone' in area:
                 self.map_view.spellAreaType = 'cone'
-                self.map_view.spellRange = None # cones assume spell range = 0
-                self.map_view.spellDistance = int(int(re.findall(r'\d+', actor.spells[action]['area'])[0])/5)
-
-            elif 'sphere' in actor.spells[action]['area']:
+                self.map_view.spellRange = None
+                self.map_view.spellDistance = int(int(re.findall(r'\d+', area)[0]) / 5)
+            elif 'sphere' in area:
                 self.map_view.spellAreaType = 'sphere'
-                self.map_view.spellRange = int(int(re.findall(r'\d+', actor.spells[action]['range'])[0])/5) 
-                self.map_view.spellDistance = int(int(re.findall(r'\d+', actor.spells[action]['area'])[0])/5)
+                self.map_view.spellRange = int(int(re.findall(r'\d+', spell_data['range'])[0]) / 5)
+                self.map_view.spellDistance = int(int(re.findall(r'\d+', area)[0]) / 5)
                 self.map_view.calcSpellLimit(self.map_view.spellRange)
-            
-            elif 'line' in actor.spells[action]['area']:
+            elif 'line' in area:
                 self.map_view.spellAreaType = 'line'
-                self.map_view.spellRange = None # line assume spell range = 0
-                self.map_view.spellDistance = int(int(re.findall(r'\d+', actor.spells[action]['area'])[0])/5)
-            
-            elif 'square' in actor.spells[action]['area']:
+                self.map_view.spellRange = None
+                self.map_view.spellDistance = int(int(re.findall(r'\d+', area)[0]) / 5)
+            elif 'square' in area:
                 self.map_view.spellAreaType = 'square'
-                self.map_view.spellRange = int(int(re.findall(r'\d+', actor.spells[action]['range'])[0])/5) 
-                self.map_view.spellDistance = int(int(re.findall(r'\d+', actor.spells[action]['area'])[0])/5)
+                self.map_view.spellRange = int(int(re.findall(r'\d+', spell_data['range'])[0]) / 5)
+                self.map_view.spellDistance = int(int(re.findall(r'\d+', area)[0]) / 5)
                 self.map_view.calcSpellLimit(self.map_view.spellRange)
-
-            else: #youre a single target spell
+            else:  # single target spell
                 self.map_view.spellAreaType = 'single'
-                self.map_view.spellRange = int(int(re.findall(r'\d+', actor.spells[action]['range'])[0])/5) 
-                self.map_view.spellDistance = 0 
+                self.map_view.spellRange = int(int(re.findall(r'\d+', spell_data['range'])[0]) / 5)
+                self.map_view.spellDistance = 0
                 self.map_view.calcSpellLimit(self.map_view.spellRange)
         elif action in weapons:
             weapon = actor.weaponList[weapons.index(action)]
             self.map_view.spellAreaType = 'single'
-            self.map_view.spellRange = weapon.range/5
-            self.map_view.spellDistance = 0 
+            self.map_view.spellRange = weapon.range / 5
+            self.map_view.spellDistance = 0
             self.map_view.calcSpellLimit(self.map_view.spellRange)
         elif action == 'dash':
-            #print('dash action')
-            newMoves = calcMoveHexes(actor, self.myEncounter.map, type = 'dash')
+            newMoves = calcMoveHexes(actor, self.myEncounter.map, type='dash')
             self.map_view.setCurMoveCoords(newMoves)
-
-                
-
-                
-        pass
     
     def moveButton(self):
         hexIndex = self.map_view.getCurActorHexIndex()
@@ -2090,7 +2126,7 @@ class MapWidget(QMainWindow):
             self.map_view.setCurMoveCoords(new_move_hexes)
 
     def endTurnButton(self):
-        self.map_view.spellAreaCheck = None
+        self._set_target_mode(False)
         self.map_view.affected = None
 
         turns = self.controller.end_turn(self.actor)
