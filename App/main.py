@@ -19,6 +19,7 @@ sys.path.insert(2, str(_root / 'App'))
 
 from newCharWindow import CharacterEditor, CharacterStore
 from monsterWindow import MonsterEditor, MonsterStore
+from spellEditor import SpellEditorTab
 from TestingMap import MapWidget
 from model.player import createPartyList
 from model.monster import createMonsterList
@@ -924,9 +925,12 @@ class MainWindow(QMainWindow):
         self.encounter_store = EncounterStore()
         self.encounter_builder = EncounterBuilderTab(self.startEncounter, self, self.char_store, self.monster_store, self.encounter_store)
 
+        self.spell_editor = SpellEditorTab()
+
         self.tabs.addTab(self.character_editor, "Characters")
         self.tabs.addTab(self.encounter_builder, "Encounter Builder")
         self.tabs.addTab(self.monster_editor, "Monsters")
+        self.tabs.addTab(self.spell_editor, "Spell Editor")
 
         # Keep reference so it doesn’t get GC’d
         self.map_window = None
@@ -935,6 +939,7 @@ class MainWindow(QMainWindow):
         self.textScaleChanged.connect(self.character_editor.applyFonts)
         self.textScaleChanged.connect(self.encounter_builder.applyFonts)
         self.textScaleChanged.connect(self.monster_editor.applyFonts)
+        self.textScaleChanged.connect(self.spell_editor.applyFonts)
 
         # Install event filter so the main window can capture Ctrl+Wheel
         app = QApplication.instance()

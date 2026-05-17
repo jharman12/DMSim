@@ -171,7 +171,8 @@
       "Shield",
       "Shatter",
       "Fireball",
-      "Stinking Cloud"
+      "Stinking Cloud",
+      "Persistent Spell"
     ]
   },
   "TestMulticlass": {

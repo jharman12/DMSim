@@ -4533,7 +4533,7 @@
         "time": "1 Action",
         "duration": "Instantaneous",
         "range": "150 ft",
-        "area": "",  
+        "area": "",
         "attack": "",
         "save": "Dexterity Save",
         "effect": "Fire",
@@ -5328,5 +5328,22 @@
         ],
         "uniqueDice": "n",
         "combat": "n"
+    },
+    "Persistent Spell": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "1 Minute",
+        "range": "60 ft",
+        "area": "sphere 60 ft",
+        "attack": "",
+        "save": "Wisdom Save",
+        "effect": "Incapacitated",
+        "concentration": "Y",
+        "classes": "Sorcerer, Warlock, Wizard",
+        "dice": [
+            ""
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
     }
 }
