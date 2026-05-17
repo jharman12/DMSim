@@ -5,12 +5,14 @@ from PyQt5.QtWidgets import (
     QFileDialog, QComboBox, QTextEdit, QProgressDialog, QInputDialog,
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QEvent
+from PyQt5.QtGui import QPixmap
 
 import pathlib
 import json
 import sys
 import argparse
 import traceback
+import shutil
 from pathlib import Path
 
 _root = pathlib.Path(__file__).parent.parent
@@ -30,6 +32,18 @@ from engine.difficulty import calculate_difficulty, parse_cr
 import engine.utils as _engine_utils
 
 _SAVED_OBJS = _root / "actors" / "savedObjs"
+_DEFAULT_MAP = _root / "App" / "Maps" / "TestingMap.webp"
+
+
+def _resolve_map_image(path: str) -> str:
+    """Return *path* if it points to a readable image, otherwise the default map path."""
+    if path:
+        p = Path(path)
+        if not p.is_absolute():
+            p = _root / p
+        if p.exists():
+            return str(p)
+    return str(_DEFAULT_MAP)
 
 
 '''
@@ -196,13 +210,29 @@ class EncounterBuilderTab(QWidget):
 
         # Map Image
         map_layout = QHBoxLayout()
-        map_layout.addWidget(QLabel("Map Image Path:"))
+        map_layout.addWidget(QLabel("Map Image:"))
         self.map_edit = QLineEdit()
+        self.map_edit.setReadOnly(True)
+        self.map_edit.setPlaceholderText("(default map)")
+        self.map_edit.textChanged.connect(self._update_map_preview)
         map_layout.addWidget(self.map_edit)
         browse_btn = QPushButton("Browse...")
         browse_btn.clicked.connect(self.browse_map_image)
+        clear_btn = QPushButton("✕")
+        clear_btn.setFixedWidth(28)
+        clear_btn.setToolTip("Clear selection and use default map")
+        clear_btn.clicked.connect(lambda: self.map_edit.setText(""))
         map_layout.addWidget(browse_btn)
+        map_layout.addWidget(clear_btn)
         details_layout.addLayout(map_layout)
+
+        # Map preview thumbnail
+        self._map_preview = QLabel()
+        self._map_preview.setFixedSize(240, 135)
+        self._map_preview.setAlignment(Qt.AlignCenter)
+        self._map_preview.setStyleSheet("border: 1px solid #555; background: #222;")
+        details_layout.addWidget(self._map_preview)
+        self._update_map_preview("")  # load default preview
 
         details_group.setLayout(details_layout)
         layout.addWidget(details_group)
@@ -332,61 +362,62 @@ class EncounterBuilderTab(QWidget):
         lists_layout.addWidget(enemy_group)
         layout.addLayout(lists_layout)
 
+    def _update_map_preview(self, path: str):
+        """Refresh the thumbnail to show the selected map (or the default)."""
+        resolved = _resolve_map_image(path)
+        px = QPixmap(resolved)
+        if px.isNull():
+            self._map_preview.setText("No preview")
+        else:
+            self._map_preview.setPixmap(
+                px.scaled(240, 135, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            )
+        # Update placeholder hint
+        if path:
+            self._map_preview.setToolTip(path)
+        else:
+            self._map_preview.setToolTip(f"Default map: {_DEFAULT_MAP.name}")
+
     def browse_map_image(self):
-        # First, show option to select from existing maps or browse for new
-        maps_dir = Path(dmSimPath) / "App" / "Maps"
+        maps_dir = _root / "App" / "Maps"
         maps_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Get list of existing maps
-        existing_maps = []
-        if maps_dir.exists():
-            for ext in ['*.png', '*.jpg', '*.jpeg', '*.bmp', '*.gif', '*.webp']:
-                existing_maps.extend(maps_dir.glob(ext))
-        
-        # Show file dialog starting in Maps directory
-        start_dir = str(maps_dir) if maps_dir.exists() else ""
+
+        start_dir = str(maps_dir)
         file_path, _ = QFileDialog.getOpenFileName(
-            self, 
-            "Select Map Image", 
-            start_dir, 
+            self,
+            "Select Map Image",
+            start_dir,
             "Image Files (*.png *.jpg *.jpeg *.bmp *.gif *.webp)"
         )
-        
+
         if file_path:
             file_path = Path(file_path)
-            
-            # Check if the file is already in the Maps directory
-            if maps_dir in file_path.parents or file_path.parent == maps_dir:
-                # File is already in Maps directory, use relative path
+
+            if file_path.parent == maps_dir:
                 relative_path = "App\\Maps\\" + file_path.name
             else:
-                # Copy file to Maps directory
                 destination = maps_dir / file_path.name
-                
-                # Handle duplicate names
                 counter = 1
                 while destination.exists():
-                    stem = file_path.stem
-                    suffix = file_path.suffix
-                    destination = maps_dir / f"{stem}_{counter}{suffix}"
+                    destination = maps_dir / f"{file_path.stem}_{counter}{file_path.suffix}"
                     counter += 1
-                
+
                 try:
                     shutil.copy2(file_path, destination)
                     relative_path = "App\\Maps\\" + destination.name
                     QMessageBox.information(
-                        self, 
-                        "Map Copied", 
+                        self,
+                        "Map Copied",
                         f"Map image copied to: {destination.name}"
                     )
                 except Exception as e:
                     QMessageBox.warning(
-                        self, 
-                        "Copy Failed", 
+                        self,
+                        "Copy Failed",
                         f"Failed to copy map image: {str(e)}\nUsing original path."
                     )
                     relative_path = str(file_path)
-            
+
             self.map_edit.setText(relative_path)
 
     def add_from_combo(self, combo, list_widget):
@@ -501,7 +532,7 @@ class EncounterBuilderTab(QWidget):
         party = createPartyList(enc_data["party"], path=path)
         npcs = createPartyList(enc_data["npcs"], path=path)
         enemies = createMonsterList(enc_data["enemies"], path=path)
-        encounter = interactiveEncounter(party, npcs, enemies, enc_data["numHexes"], enc_data["mapImage"])
+        encounter = interactiveEncounter(party, npcs, enemies, enc_data["numHexes"], _resolve_map_image(enc_data["mapImage"]))
         controller = SimController(encounter)
         self.start_callback(controller)
 

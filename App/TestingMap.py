@@ -125,6 +125,7 @@ from dialogs import ManualRollDialog, ManualRollersDialog, ManualActionsDialog
 
 
 _UNKNOWN_IMAGE = str(_root / "App" / "unknown.jpg")
+_DEFAULT_MAP = str(_root / "App" / "Maps" / "TestingMap.webp")
 
 
 def _get_actor_pixmap(actor) -> "QPixmap":
@@ -2026,7 +2027,10 @@ class MapWidget(QMainWindow):
         # ------------------------------------------------------------------
         # SETUP MAP PIXMAP, ACTORS, HEX GRID
         # ------------------------------------------------------------------
-        pixmap = QPixmap(self.myEncounter.mapImage)
+        map_path = self.myEncounter.mapImage or _DEFAULT_MAP
+        pixmap = QPixmap(map_path)
+        if pixmap.isNull():
+            pixmap = QPixmap(_DEFAULT_MAP)
         self.map_view.setMapPixmap(pixmap)
 
         for player in self.myEncounter.totalList:
