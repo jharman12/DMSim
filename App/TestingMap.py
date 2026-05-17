@@ -236,6 +236,10 @@ class CustomGraphicsView(QGraphicsView):
 
         self._persistent_zones: dict = {}  # spell_name -> list[hex_index]
 
+        # Callback to fetch prev-turn data from MapWidget — set by MapWidget after init
+        self._prev_turn_lookup = None   # callable(actor) -> dict or None
+        self._prev_turn_clear = None    # callable() to clear log + path highlights
+
         self.info_popup = None
         self.map_item = None
         self.character_items = []
@@ -266,6 +270,7 @@ class CustomGraphicsView(QGraphicsView):
         self.persistFill = QColor(255, 140, 0, 130)  # orange — persistent spell zones
         self.distStartFill = QColor(0, 220, 220, 160)   # cyan — distance start hex
         self.distPathFill = QColor(180, 180, 180, 80)   # dim grey — path route
+        self.prevTurnPathFill = QColor(120, 80, 200, 100)  # purple — previous turn path
         self.setResizeAnchor(QGraphicsView.AnchorViewCenter)
 
         self.affected = None
@@ -486,6 +491,25 @@ class CustomGraphicsView(QGraphicsView):
         if self._wall_indices:
             self.setHexColors(self.wallFill, list(self._wall_indices))
 
+    def show_prev_turn_path(self, from_idx: int, to_idx: int | None):
+        """Highlight the actor's previous-turn movement path in purple."""
+        self._refresh_hex_colors()
+        if from_idx is not None and to_idx is not None and from_idx != to_idx:
+            path = self._find_path(from_idx, to_idx)
+            if path:
+                mid = [i for i in path[1:-1]]
+                if mid:
+                    self.setHexColors(self.prevTurnPathFill, mid)
+                self.setHexColors(QColor(140, 60, 220, 180), [from_idx])   # dark purple start
+                self.setHexColors(QColor(180, 100, 255, 180), [to_idx])    # bright purple end
+        elif from_idx is not None:
+            # Actor didn't move — just highlight their hex
+            self.setHexColors(QColor(140, 60, 220, 180), [from_idx])
+
+    def clear_prev_turn_path(self):
+        """Remove previous-turn path highlights."""
+        self._refresh_hex_colors()
+
     def build_snap_tree(self, indexes):
         """
         Build a KD-Tree for snapping characters, using only the hexes
@@ -549,9 +573,11 @@ class CustomGraphicsView(QGraphicsView):
         real_hex_index = self.curMoveCoords[snap_idx]
         return real_hex_index
 
-    def show_character_popup(self, character_obj, scene_pos):
+    def show_character_popup(self, character_obj, scene_pos, prev_turn_callback=None, clear_callback=None):
         """
         Displays a styled info popup inside the graphics view near the clicked actor.
+        prev_turn_callback: callable(actor) to show previous-turn path/log highlight.
+        clear_callback: callable() to clear previous-turn highlights.
         """
         # Remove existing popup
         if self.info_popup:
@@ -713,6 +739,36 @@ class CustomGraphicsView(QGraphicsView):
                 cond_lbl.setStyleSheet("color: #ffcc66; font-size: 15px;")
                 outer.addWidget(cond_lbl)
 
+        # --- Previous Turn button (shown only when turn data exists) ---
+        if prev_turn_callback is not None:
+            prev_div = QFrame()
+            prev_div.setFrameShape(QFrame.HLine)
+            prev_div.setStyleSheet("color: #444;")
+            outer.addWidget(prev_div)
+
+            prev_btn = QPushButton("🕐 Show Previous Turn")
+            prev_btn.setCheckable(True)
+            prev_btn.setStyleSheet("""
+                QPushButton {
+                    background: #2a2a3a; color: #c0a0ff; border: 1px solid #6040aa;
+                    border-radius: 4px; padding: 4px 8px; font-size: 14px;
+                }
+                QPushButton:checked {
+                    background: #4a2a7a; color: #ffffff; border: 2px solid #a060ff;
+                }
+                QPushButton:hover { background: #3a2a5a; }
+            """)
+
+            def _toggle_prev_turn(checked):
+                if checked:
+                    prev_turn_callback(character_obj)
+                else:
+                    if clear_callback:
+                        clear_callback()
+
+            prev_btn.toggled.connect(_toggle_prev_turn)
+            outer.addWidget(prev_btn)
+
         popup.adjustSize()
 
         # Convert scene → view coords, clamp to stay inside the view
@@ -729,6 +785,8 @@ class CustomGraphicsView(QGraphicsView):
         if self.info_popup:
             self.info_popup.deleteLater()
             self.info_popup = None
+        # Always clear prev-turn highlights when popup is dismissed
+        self.clear_prev_turn_path()
 
     def setMapPixmap(self, pixmap):
         if self.map_item is not None:
@@ -773,8 +831,26 @@ class CustomGraphicsView(QGraphicsView):
                 index = self.character_items.index(clicked_item)
                 character_obj = self.character_objs[index]
 
-                # Show popup
-                self.show_character_popup(character_obj, scene_pos)
+                # Show popup — pass prev-turn callbacks if available
+                prev_cb = None
+                if self._prev_turn_lookup is not None:
+                    record = self._prev_turn_lookup(character_obj)
+                    if record is not None:
+                        def _make_prev_cb(rec):
+                            def _cb(actor):
+                                self.show_prev_turn_path(rec.get('from_idx'), rec.get('to_idx'))
+                                if self._prev_turn_clear:
+                                    # signal log highlight via clear callback reference holder
+                                    pass
+                                # Trigger log highlight via stored log-highlight callback
+                                if hasattr(self, '_prev_turn_log_highlight'):
+                                    self._prev_turn_log_highlight(rec)
+                            return _cb
+                        prev_cb = _make_prev_cb(record)
+
+                self.show_character_popup(character_obj, scene_pos,
+                                          prev_turn_callback=prev_cb,
+                                          clear_callback=self._prev_turn_clear)
             else:
                 # Clicked elsewhere → hide popup
                 self.hide_character_popup()
@@ -2005,6 +2081,10 @@ class MapWidget(QMainWindow):
         self.turnChoice = None
         self.actor = None
 
+        # Previous-turn data keyed by actor name
+        self._turn_records: dict = {}   # {actor_name: {from_idx, to_idx, log_start, log_end}}
+        self._log_turn_start: int = 0   # block count at start of current turn
+
         # ------------------------------------------------------------------
         # VIEW MENU: toggle dock visibility
         # ------------------------------------------------------------------
@@ -2038,6 +2118,11 @@ class MapWidget(QMainWindow):
         self.controller.set_interactive_actors(default_interactive)
         # Also set on the encounter directly in case preCombat hasn't been called yet.
         self.myEncounter.interactive_actors = default_interactive
+
+        # Wire prev-turn callbacks into the map view
+        self.map_view._prev_turn_lookup = self._lookup_turn_record
+        self.map_view._prev_turn_clear = self._clear_prev_turn_highlights
+        self.map_view._prev_turn_log_highlight = self._highlight_log_entries
 
         self.testingTheory()
 
@@ -2086,6 +2171,76 @@ class MapWidget(QMainWindow):
         self.updateTurnOrder()
         # Sync concentration label to actual engine state
         self._refresh_concentration_label()
+
+    # ------------------------------------------------------------------
+    # Previous-turn tracking
+    # ------------------------------------------------------------------
+
+    def _actor_hex_idx(self, actor) -> int | None:
+        """Return the current hex index of an actor on the map, or None."""
+        coords = list(self.myEncounter.map.arrayCenters)
+        for i, coord in enumerate(coords):
+            if self.myEncounter.map.arrayCenters[coord] == actor:
+                return i
+        return None
+
+    def _record_turn_start(self, actor):
+        """Snapshot actor's hex position and current log block count."""
+        if actor is None:
+            return
+        idx = self._actor_hex_idx(actor)
+        self._turn_records.setdefault(actor.name, {})['from_idx'] = idx
+        self._log_turn_start = self.turn_action_panel.game_log_box.document().blockCount()
+
+    def _record_turn_end(self, actor):
+        """Record where actor ended up and what log blocks were written this turn."""
+        if actor is None:
+            return
+        idx = self._actor_hex_idx(actor)
+        rec = self._turn_records.setdefault(actor.name, {})
+        rec['to_idx'] = idx
+        rec['log_start'] = self._log_turn_start
+        rec['log_end'] = self.turn_action_panel.game_log_box.document().blockCount()
+
+    def _lookup_turn_record(self, actor) -> dict | None:
+        """Return the stored turn record for an actor, or None if no data yet."""
+        return self._turn_records.get(actor.name)
+
+    def _highlight_log_entries(self, record: dict):
+        """Highlight log lines from record['log_start'] to record['log_end'] in the game log."""
+        from PyQt5.QtGui import QTextCursor, QTextCharFormat, QColor as _QColor
+        log_box = self.turn_action_panel.game_log_box
+        doc = log_box.document()
+        start_block = record.get('log_start', 0)
+        end_block = record.get('log_end', 0)
+        if start_block >= end_block:
+            return
+
+        highlight_fmt = QTextCharFormat()
+        highlight_fmt.setBackground(_QColor(80, 50, 140, 160))
+
+        selections = []
+        for block_num in range(start_block, min(end_block, doc.blockCount())):
+            block = doc.findBlockByNumber(block_num)
+            cursor = QTextCursor(block)
+            cursor.select(QTextCursor.BlockUnderCursor)
+            sel = log_box.ExtraSelection()
+            sel.cursor = cursor
+            sel.format = highlight_fmt
+            selections.append(sel)
+
+        log_box.setExtraSelections(selections)
+
+        # Scroll to the first highlighted line
+        if start_block < doc.blockCount():
+            cursor = QTextCursor(doc.findBlockByNumber(start_block))
+            log_box.setTextCursor(cursor)
+            log_box.ensureCursorVisible()
+
+    def _clear_prev_turn_highlights(self):
+        """Clear both the log highlights and the map path highlight."""
+        self.turn_action_panel.game_log_box.setExtraSelections([])
+        self.map_view.clear_prev_turn_path()
 
     def _on_actor_died(self, actor):
         """Called by SimController.actor_died signal."""
@@ -2406,6 +2561,9 @@ class MapWidget(QMainWindow):
         self.distance_button.setChecked(False)
         self.map_view.set_distance_mode(False)
 
+        # Record end-of-turn state for the current actor before advancing
+        self._record_turn_end(self.actor)
+
         turns = self.controller.end_turn(self.actor)
         if turns is not None:
             self.actor = turns[0]
@@ -2417,6 +2575,9 @@ class MapWidget(QMainWindow):
         self.updateTurnOrder()
         self.turn_action_panel.take_turn_button.setEnabled(True)
         self.turn_action_panel.action_dropdown.setEnabled(True)
+
+        # Record start-of-turn state for the new actor
+        self._record_turn_start(self.actor)
 
     def takeTurnButton(self):
         hexIndex = self.map_view.getCurActorHexIndex()
@@ -2444,6 +2605,8 @@ class MapWidget(QMainWindow):
             self.turn_action_panel.update_turn_panel(self.actor, self.turnChoices, self.turnChoice)
             self.turn_action_panel.buildSpellSlots(self.actor)
         self.saveTurnSnapshot() # save start of new turn
+        # Record starting position for first actor
+        self._record_turn_start(self.actor)
 
     def testingTheory(self):
         

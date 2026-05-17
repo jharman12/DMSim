@@ -20,3 +20,4 @@ Skip 13.) In the encounter builder add a build that autogenerates an encounter f
 18.) undo turn needs to work with persistent spells.
 19.) in right click window add optional button to set stats (to handle dm adjudication outside of the engine)
 20.) Link the log with the undo turn action feature. I would like the log to know what turn its connected to. When the user right clicks on the log, have a pop-up that says "set to current turn". When thats click, a warning should ask if the user understands this as I want it to delete everything after that turn in the log and reset the engine and GUI map to that turn.
+21.) Add a new type from task 3 that is the party members current health. These should show the party members name, icon, heatlh bar, and health numbers.
