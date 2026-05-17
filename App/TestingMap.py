@@ -200,6 +200,39 @@ class CustomGraphicsView(QGraphicsView):
 
         self.wall_mode = False
         self._wall_indices: set = set()
+        self._wall_drag_adding: bool = True   # True = painting walls, False = erasing
+
+        # Wall mode overlay toolbar (top-right of view)
+        self._wall_toolbar = QFrame(self)
+        self._wall_toolbar.setStyleSheet(
+            "QFrame { background: rgba(30,30,40,220); border: 1px solid #555; border-radius: 6px; }"
+        )
+        tbl = QHBoxLayout(self._wall_toolbar)
+        tbl.setContentsMargins(6, 4, 6, 4)
+        tbl.setSpacing(6)
+
+        self._wall_create_btn = QPushButton("➕ Create")
+        self._wall_create_btn.setCheckable(True)
+        self._wall_create_btn.setChecked(True)
+        self._wall_create_btn.setStyleSheet(
+            "QPushButton { color: #eee; border: 1px solid #555; border-radius: 4px; padding: 3px 8px; }"
+            "QPushButton:checked { background-color: #1a6a1a; color: #ffffff; border: 2px solid #44cc44; }"
+        )
+        self._wall_delete_btn = QPushButton("🗑 Delete")
+        self._wall_delete_btn.setCheckable(True)
+        self._wall_delete_btn.setStyleSheet(
+            "QPushButton { color: #eee; border: 1px solid #555; border-radius: 4px; padding: 3px 8px; }"
+            "QPushButton:checked { background-color: #7a1a1a; color: #ffffff; border: 2px solid #ff4444; }"
+        )
+
+        self._wall_create_btn.clicked.connect(self._wall_mode_create)
+        self._wall_delete_btn.clicked.connect(self._wall_mode_delete)
+
+        tbl.addWidget(self._wall_create_btn)
+        tbl.addWidget(self._wall_delete_btn)
+        self._wall_toolbar.adjustSize()
+        self._wall_toolbar.setVisible(False)
+        self._wall_toolbar.setAttribute(Qt.WA_TransparentForMouseEvents, False)
 
         self._persistent_zones: dict = {}  # spell_name -> list[hex_index]
 
@@ -292,6 +325,34 @@ class CustomGraphicsView(QGraphicsView):
             self.setHexColors(self.persistFill, idxs)
         if self._wall_indices:
             self.setHexColors(self.wallFill, list(self._wall_indices))
+
+    # ------------------------------------------------------------------
+    # Wall mode toolbar
+    # ------------------------------------------------------------------
+
+    def show_wall_toolbar(self, visible: bool):
+        """Show or hide the wall mode overlay toolbar."""
+        self._wall_toolbar.setVisible(visible)
+        if visible:
+            self._position_wall_toolbar()
+
+    def _position_wall_toolbar(self):
+        """Place the wall toolbar in the top-right of the view."""
+        self._wall_toolbar.adjustSize()
+        margin = 10
+        x = self.width() - self._wall_toolbar.width() - margin
+        self._wall_toolbar.move(x, margin)
+        self._wall_toolbar.raise_()
+
+    def _wall_mode_create(self):
+        self._wall_drag_adding = True
+        self._wall_create_btn.setChecked(True)
+        self._wall_delete_btn.setChecked(False)
+
+    def _wall_mode_delete(self):
+        self._wall_drag_adding = False
+        self._wall_delete_btn.setChecked(True)
+        self._wall_create_btn.setChecked(False)
 
     # ------------------------------------------------------------------
     # Distance-calc mode
@@ -739,16 +800,19 @@ class CustomGraphicsView(QGraphicsView):
                         self._show_dist_path(path, self._dist_start_idx, idx)
                 return
 
-            # Wall-placement mode: toggle the clicked hex as a wall
+            # Wall-placement mode: apply according to selected Create/Delete mode
             if self.wall_mode and item in self.hex_items:
                 idx = self.hex_items.index(item)
-                if idx in self._wall_indices:
-                    self._wall_indices.discard(idx)
-                    self.setHexColors(self.defaultFill, [idx])
+                if self._wall_drag_adding:
+                    if idx not in self._wall_indices:
+                        self._wall_indices.add(idx)
+                        self.setHexColors(self.wallFill, [idx])
+                        self.walls_changed.emit(set(self._wall_indices))
                 else:
-                    self._wall_indices.add(idx)
-                    self.setHexColors(self.wallFill, [idx])
-                self.walls_changed.emit(set(self._wall_indices))
+                    if idx in self._wall_indices:
+                        self._wall_indices.discard(idx)
+                        self.setHexColors(self.defaultFill, [idx])
+                        self.walls_changed.emit(set(self._wall_indices))
                 return
 
             if self.spellAreaCheck != None and self.affected != None:
@@ -768,6 +832,8 @@ class CustomGraphicsView(QGraphicsView):
         super().resizeEvent(event)
         if self._dist_label.isVisible():
             self._position_dist_label()
+        if self._wall_toolbar.isVisible():
+            self._position_wall_toolbar()
 
     def handleSpellAreaCheck(self, mouse_pos):
         # need to pass hex distance and spell range through here
@@ -804,12 +870,23 @@ class CustomGraphicsView(QGraphicsView):
         
         if self.curActor != None:
             scene_pos = self.mapToScene(event.pos())
-            #print('Trying to drawHex')
             if self.spellAreaCheck:
                 self.handleSpellAreaCheck(scene_pos)
-                #affected = self.getConeHexes(distance_hexes=6, mouse_pos=scene_pos)
-                #self.setHexColors(self.coneFill, affected)
-            #print('setting', affected)
+
+        # Wall drag-paint: paint/erase walls while LMB held
+        if self.wall_mode and event.buttons() == Qt.LeftButton:
+            item = self.itemAt(event.pos())
+            if item in self.hex_items:
+                idx = self.hex_items.index(item)
+                if self._wall_drag_adding and idx not in self._wall_indices:
+                    self._wall_indices.add(idx)
+                    self.setHexColors(self.wallFill, [idx])
+                    self.walls_changed.emit(set(self._wall_indices))
+                elif not self._wall_drag_adding and idx in self._wall_indices:
+                    self._wall_indices.discard(idx)
+                    self.setHexColors(self.defaultFill, [idx])
+                    self.walls_changed.emit(set(self._wall_indices))
+            return
 
         if event.buttons() == Qt.LeftButton and self.selected_item:
             # Convert view-space delta into scene-space delta
@@ -1431,6 +1508,9 @@ class TurnActionPanel(QWidget):
         self.select_target_button.setToolTip(
             "Click to enter target-selection mode, then click a hex on the map"
         )
+        self.select_target_button.setStyleSheet(
+            "QPushButton:checked { background-color: #8b1a1a; color: #ffffff; border: 2px solid #ff4444; border-radius: 4px; }"
+        )
         main_layout.addWidget(self.select_target_button)
 
         # -------------------------------
@@ -1811,12 +1891,18 @@ class MapWidget(QMainWindow):
         self.distance_button.setToolTip(
             "Click to enter distance mode — click a start hex, then an end hex to measure the path"
         )
+        self.distance_button.setStyleSheet(
+            "QPushButton:checked { background-color: #1a6fa8; color: #ffffff; border: 2px solid #4ab0ff; border-radius: 4px; }"
+        )
         self.distance_button.clicked.connect(self._toggle_distance_mode)
         top_button_row.addWidget(self.distance_button)
 
         self.wall_button = QPushButton("🧱 Walls")
         self.wall_button.setCheckable(True)
         self.wall_button.setToolTip("Click hexes to mark them as impassable walls")
+        self.wall_button.setStyleSheet(
+            "QPushButton:checked { background-color: #7a4a10; color: #ffffff; border: 2px solid #d08030; border-radius: 4px; }"
+        )
         self.wall_button.clicked.connect(self._toggle_wall_mode)
         top_button_row.addWidget(self.wall_button)
 
@@ -2019,8 +2105,11 @@ class MapWidget(QMainWindow):
         self.map_view.wall_mode = checked
         if checked:
             self.map_view.setCursor(Qt.CrossCursor)
+            # Reset to Create mode each time wall mode is activated
+            self.map_view._wall_mode_create()
         else:
             self.map_view.unsetCursor()
+        self.map_view.show_wall_toolbar(checked)
 
     def _toggle_distance_mode(self, checked: bool):
         """Enable or disable distance-measurement mode on the map view."""
