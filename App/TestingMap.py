@@ -121,7 +121,7 @@ from model.player import createPartyList, Player
 from model.monster import createMonsterList, Monster
 from engine.targeting import drawLine, calcMoveHexes, hex_calc_line, hex_calc_hexes, hex_calc_square
 from model.Interactive.interactiveEncounter import interactiveEncounter
-from dialogs import ManualRollDialog, ManualRollersDialog, ManualActionsDialog
+from dialogs import ManualRollDialog, ManualRollersDialog, ManualActionsDialog, SetStatsDialog
 
 
 _UNKNOWN_IMAGE = str(_root / "App" / "unknown.jpg")
@@ -939,6 +939,33 @@ class CustomGraphicsView(QGraphicsView):
 
             prev_btn.toggled.connect(_toggle_prev_turn)
             outer.addWidget(prev_btn)
+
+        # --- Set Stats button (always shown) ---
+        stats_div = QFrame()
+        stats_div.setFrameShape(QFrame.HLine)
+        stats_div.setStyleSheet("color: #444;")
+        outer.addWidget(stats_div)
+
+        set_stats_btn = QPushButton("⚙️ Set Stats")
+        set_stats_btn.setStyleSheet("""
+            QPushButton {
+                background: #2a2a3a; color: #aaddff; border: 1px solid #446688;
+                border-radius: 4px; padding: 4px 8px; font-size: 14px;
+            }
+            QPushButton:hover { background: #2a3a4a; }
+        """)
+
+        def _open_set_stats():
+            dlg = SetStatsDialog(c, parent=self)
+            if dlg.exec_() == SetStatsDialog.Accepted:
+                dlg.apply()
+                # Rebuild popup in same position to reflect new values
+                popup.deleteLater()
+                self.info_popup = None
+                self.show_character_popup(c, scene_pos, prev_turn_callback, clear_callback)
+
+        set_stats_btn.clicked.connect(_open_set_stats)
+        outer.addWidget(set_stats_btn)
 
         popup.adjustSize()
 
