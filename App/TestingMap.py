@@ -95,14 +95,14 @@ import sys
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QTextEdit, QCheckBox, QMenuBar, QMenu, QAction,
     QLabel, QPushButton, QLineEdit, QScrollArea, QFrame, QProgressBar, QComboBox, QSplitter, QSplitterHandle, QGroupBox,
-    QMainWindow, QDockWidget, QToolBar
+    QMainWindow, QDockWidget, QToolBar, QMessageBox
 )
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QFont
 
 from PyQt5.QtGui import QPixmap, QIcon
 
 from PyQt5.QtWidgets import QApplication, QPushButton, QMainWindow, QWidget, QVBoxLayout, QDockWidget, QToolBar
-from PyQt5.QtCore import QSize, Qt, QEvent
+from PyQt5.QtCore import QSize, Qt, QEvent, QTimer
 
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPolygonItem
@@ -1744,6 +1744,214 @@ class GroupedComboBox(QComboBox):
             return bool(item.data(Qt.UserRole+1))
         return False
 
+
+# ── Combat log ──────────────────────────────────────────────────────────────
+
+class TurnGroupFrame(QFrame):
+    """
+    One collapsible turn block in the combat log.
+    Shows a header button (click to expand/collapse) and a body of log lines.
+    Right-clicking the header offers 'Set to Current Turn'.
+    """
+    undo_requested = pyqtSignal(int)   # emits serial
+
+    _HEADER_STYLE = """
+        QPushButton {{
+            background: {bg}; color: {fg};
+            border: {border}; border-radius: 3px;
+            text-align: left; padding: 3px 8px;
+            font-size: 20px; font-family: Consolas, monospace; font-weight: bold;
+        }}
+        QPushButton:hover {{ background: #252540; }}
+    """
+
+    def __init__(self, label: str, serial: int, accessible: bool, parent=None):
+        super().__init__(parent)
+        self.serial = serial
+        self._accessible = accessible
+        self._expanded = True
+
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 2)
+        outer.setSpacing(0)
+
+        self._header_btn = QPushButton(f"▼  {label}")
+        self._header_btn.setFlat(True)
+        self._header_btn.setCursor(Qt.PointingHandCursor)
+        self._header_btn.clicked.connect(self._toggle)
+        self._header_btn.setContextMenuPolicy(Qt.CustomContextMenu)
+        self._header_btn.customContextMenuRequested.connect(self._on_right_click)
+        outer.addWidget(self._header_btn)
+
+        self._content = QWidget()
+        content_layout = QVBoxLayout(self._content)
+        content_layout.setContentsMargins(16, 0, 0, 4)
+        content_layout.setSpacing(1)
+        self._content_layout = content_layout
+        outer.addWidget(self._content)
+
+        self._apply_style(highlighted=False)
+
+    def add_message(self, text: str):
+        lbl = QLabel(text)
+        lbl.setWordWrap(True)
+        lbl.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        lbl.setStyleSheet(
+            "color: #ccc; font-size: 18px; font-family: Consolas, monospace;"
+            " background: transparent;"
+        )
+        self._content_layout.addWidget(lbl)
+
+    def _toggle(self):
+        self._expanded = not self._expanded
+        self._content.setVisible(self._expanded)
+        arrow = "▼" if self._expanded else "▶"
+        txt = self._header_btn.text()
+        self._header_btn.setText(arrow + txt[1:])
+
+    def set_expanded(self, expanded: bool):
+        self._expanded = expanded
+        self._content.setVisible(expanded)
+        arrow = "▼" if expanded else "▶"
+        txt = self._header_btn.text()
+        self._header_btn.setText(arrow + txt[1:])
+
+    def _on_right_click(self, pos):
+        if not self._accessible:
+            return
+        menu = QMenu(self)
+        act = menu.addAction("🔄  Set to Current Turn")
+        chosen = menu.exec_(self._header_btn.mapToGlobal(pos))
+        if chosen == act:
+            self.undo_requested.emit(self.serial)
+
+    def highlight(self, on: bool):
+        self._apply_style(highlighted=on)
+        if on:
+            self.set_expanded(True)
+
+    def _apply_style(self, highlighted: bool):
+        if highlighted:
+            bg, fg, border = "#3d2a6a", "#c0a0ff", "1px solid #7050bb"
+        else:
+            bg, fg, border = "#1a1a2a", "#99bbdd", "1px solid #2a2a44"
+        self._header_btn.setStyleSheet(
+            self._HEADER_STYLE.format(bg=bg, fg=fg, border=border)
+        )
+
+
+class TurnLogWidget(QWidget):
+    """
+    Collapsible, right-clickable combat log.  Replaces the plain QTextEdit.
+
+    Each turn becomes a TurnGroupFrame header (click to collapse/expand).
+    Right-click a header → 'Set to Current Turn' (if it's still in the undo stack).
+    """
+    undo_requested = pyqtSignal(int)   # emits serial to undo to
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._groups: list = []          # list[TurnGroupFrame]
+        self._pending_serial: int = 0
+        self._oldest_accessible: int = 0
+        self._highlighted_group = None   # TurnGroupFrame | None
+        self._current_group = None       # TurnGroupFrame | None
+
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+
+        self._scroll = QScrollArea()
+        self._scroll.setWidgetResizable(True)
+        self._scroll.setStyleSheet("QScrollArea { border: none; background: #111; }")
+        outer.addWidget(self._scroll)
+
+        self._container = QWidget()
+        self._container.setStyleSheet("background: #111;")
+        self._layout = QVBoxLayout(self._container)
+        self._layout.setContentsMargins(4, 4, 4, 4)
+        self._layout.setSpacing(2)
+        self._layout.addStretch(1)
+        self._scroll.setWidget(self._container)
+
+    # ── Public API ─────────────────────────────────────────────────────────
+
+    def prepare_serial(self, serial: int):
+        """Tell the widget what serial the NEXT 'Current Turn:' message will use."""
+        self._pending_serial = serial
+
+    def set_oldest_accessible(self, oldest: int):
+        """Mark groups older than `oldest` as no longer undo-able."""
+        self._oldest_accessible = oldest
+        for g in self._groups:
+            g._accessible = g.serial >= oldest
+
+    def log(self, text: str):
+        """Route a log message; auto-starts a new group when a turn header is detected."""
+        if text.startswith("Current Turn:"):
+            self._start_new_group(text)
+        elif self._current_group is not None:
+            self._current_group.add_message(text)
+        else:
+            lbl = QLabel(text)
+            lbl.setStyleSheet(
+                "color: #aaa; font-size: 18px; font-family: Consolas, monospace;"
+                " background: transparent;"
+            )
+            self._layout.insertWidget(self._layout.count() - 1, lbl)
+        QTimer.singleShot(0, self._scroll_to_bottom)
+
+    def truncate_after_serial(self, serial: int):
+        """Remove all groups with serial >= `serial`."""
+        to_remove = [g for g in self._groups if g.serial >= serial]
+        for g in to_remove:
+            self._groups.remove(g)
+            g.deleteLater()
+        self._current_group = self._groups[-1] if self._groups else None
+        if self._highlighted_group in to_remove:
+            self._highlighted_group = None
+
+    def highlight_group(self, serial: int):
+        """Highlight (and expand) the turn group matching `serial`."""
+        if self._highlighted_group:
+            self._highlighted_group.highlight(False)
+            self._highlighted_group = None
+        for g in self._groups:
+            if g.serial == serial:
+                g.highlight(True)
+                self._highlighted_group = g
+                QTimer.singleShot(0, lambda grp=g: self._scroll.ensureWidgetVisible(grp))
+                break
+
+    def clear_highlights(self):
+        if self._highlighted_group:
+            self._highlighted_group.highlight(False)
+            self._highlighted_group = None
+
+    def clear(self):
+        for g in list(self._groups):
+            g.deleteLater()
+        self._groups.clear()
+        self._current_group = None
+        self._highlighted_group = None
+
+    # ── Internals ──────────────────────────────────────────────────────────
+
+    def _start_new_group(self, label: str):
+        serial = self._pending_serial
+        accessible = serial >= self._oldest_accessible
+        grp = TurnGroupFrame(label, serial, accessible)
+        grp.undo_requested.connect(self.undo_requested)
+        self._groups.append(grp)
+        self._current_group = grp
+        self._layout.insertWidget(self._layout.count() - 1, grp)
+
+    def _scroll_to_bottom(self):
+        self._scroll.verticalScrollBar().setValue(
+            self._scroll.verticalScrollBar().maximum()
+        )
+
+
 class TurnOrderWidget(QWidget):
     def __init__(self):
         super().__init__()
@@ -1924,17 +2132,10 @@ class TurnActionPanel(QWidget):
         self.game_log_label.setStyleSheet("font-weight: bold;")
         main_layout.addWidget(self.game_log_label)
 
-        self.game_log_box = QTextEdit() 
-        self.game_log_box.setReadOnly(True)
-        self.game_log_box.setMinimumHeight(200)
-        self.game_log_box.setStyleSheet(
-            "background-color: #111; color: #ddd; font-family: Consolas, monospace;"
-        )
-        self.game_log_box.setSizePolicy(
-            QSizePolicy.Expanding,
-            QSizePolicy.Expanding
-        )
-        main_layout.addWidget(self.game_log_box, stretch=2)
+        self.turn_log = TurnLogWidget()
+        self.turn_log.setMinimumHeight(200)
+        self.turn_log.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        main_layout.addWidget(self.turn_log, stretch=2)
 
 
         #main_layout.addStretch(1)
@@ -1958,11 +2159,7 @@ class TurnActionPanel(QWidget):
         set_font(self.take_turn_button, textScale.size(textScale.SM))
 
         set_font(self.game_log_label, textScale.size(textScale.MD), QFont.Bold)
-        set_font(
-            self.game_log_box,
-            textScale.size(textScale.MD),
-            monospace=True
-        )
+        # TurnLogWidget uses fixed internal CSS; no font scaling needed
         # Apply font to grouped boxes and their title
         for child in self.findChildren(QGroupBox):
             set_font(child, textScale.size(textScale.MD), QFont.Bold)
@@ -2080,11 +2277,8 @@ class TurnActionPanel(QWidget):
 
 
     def log(self, text):
-        """Append text to the game log (like print())."""
-        self.game_log_box.append(text)
-        self.game_log_box.verticalScrollBar().setValue(
-            self.game_log_box.verticalScrollBar().maximum()
-        )
+        """Append text to the combat log."""
+        self.turn_log.log(text)
 
     def set_concentration(self, caster_name: str, spell_name: str):
         """Show a concentration indicator below the action buttons."""
@@ -2470,6 +2664,8 @@ class MapWidget(QMainWindow):
         self.map_view.drawHexGrid(num_vertical_grids, map_rect)
 
         self.undo_stack = deque(maxlen=20)
+        self._turn_serial: int = 0    # increments on each saveTurnSnapshot()
+        self._oldest_serial: int = 1  # serial of oldest entry in undo_stack
 
         # ------------------------------------------------------------------
         # DOCK: TURN ORDER (top)
@@ -2496,6 +2692,7 @@ class MapWidget(QMainWindow):
         self.turn_action_panel.action_dropdown.currentTextChanged.connect(self.actionChanged)
         self.turn_action_panel.select_target_button.clicked.connect(self.spellButton_pressed)
         self.turn_action_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.turn_action_panel.turn_log.undo_requested.connect(self._undo_to_serial)
 
         action_dock = QDockWidget("Turn Actions", self)
         action_dock.setObjectName("TurnActionsDock")
@@ -2515,9 +2712,9 @@ class MapWidget(QMainWindow):
 
         self._secondary_map_window = None   # SecondaryMapWindow instance
 
-        # Previous-turn data keyed by actor name
-        self._turn_records: dict = {}   # {actor_name: {from_idx, to_idx, log_start, log_end}}
-        self._log_turn_start: int = 0   # block count at start of current turn
+        # Previous-turn data keyed by actor name: {actor_name: {from_idx, to_idx, serial}}
+        self._turn_records: dict = {}
+        self._current_actor_serial: int = 0  # serial of the currently-running turn
 
         # ------------------------------------------------------------------
         # VIEW MENU: toggle dock visibility
@@ -2621,61 +2818,35 @@ class MapWidget(QMainWindow):
         return None
 
     def _record_turn_start(self, actor):
-        """Snapshot actor's hex position and current log block count."""
+        """Snapshot actor's hex position and current turn serial."""
         if actor is None:
             return
         idx = self._actor_hex_idx(actor)
         self._turn_records.setdefault(actor.name, {})['from_idx'] = idx
-        self._log_turn_start = self.turn_action_panel.game_log_box.document().blockCount()
+        self._current_actor_serial = self._turn_serial
 
     def _record_turn_end(self, actor):
-        """Record where actor ended up and what log blocks were written this turn."""
+        """Record where actor ended up and which serial their turn used."""
         if actor is None:
             return
         idx = self._actor_hex_idx(actor)
         rec = self._turn_records.setdefault(actor.name, {})
         rec['to_idx'] = idx
-        rec['log_start'] = self._log_turn_start
-        rec['log_end'] = self.turn_action_panel.game_log_box.document().blockCount()
+        rec['serial'] = self._current_actor_serial
 
     def _lookup_turn_record(self, actor) -> dict | None:
         """Return the stored turn record for an actor, or None if no data yet."""
         return self._turn_records.get(actor.name)
 
     def _highlight_log_entries(self, record: dict):
-        """Highlight log lines from record['log_start'] to record['log_end'] in the game log."""
-        from PyQt5.QtGui import QTextCursor, QTextCharFormat, QColor as _QColor
-        log_box = self.turn_action_panel.game_log_box
-        doc = log_box.document()
-        start_block = record.get('log_start', 0)
-        end_block = record.get('log_end', 0)
-        if start_block >= end_block:
-            return
-
-        highlight_fmt = QTextCharFormat()
-        highlight_fmt.setBackground(_QColor(80, 50, 140, 160))
-
-        selections = []
-        for block_num in range(start_block, min(end_block, doc.blockCount())):
-            block = doc.findBlockByNumber(block_num)
-            cursor = QTextCursor(block)
-            cursor.select(QTextCursor.BlockUnderCursor)
-            sel = log_box.ExtraSelection()
-            sel.cursor = cursor
-            sel.format = highlight_fmt
-            selections.append(sel)
-
-        log_box.setExtraSelections(selections)
-
-        # Scroll to the first highlighted line
-        if start_block < doc.blockCount():
-            cursor = QTextCursor(doc.findBlockByNumber(start_block))
-            log_box.setTextCursor(cursor)
-            log_box.ensureCursorVisible()
+        """Highlight the turn group for the given actor record."""
+        serial = record.get('serial')
+        if serial is not None:
+            self.turn_action_panel.turn_log.highlight_group(serial)
 
     def _clear_prev_turn_highlights(self):
         """Clear both the log highlights and the map path highlight."""
-        self.turn_action_panel.game_log_box.setExtraSelections([])
+        self.turn_action_panel.turn_log.clear_highlights()
         self.map_view.clear_prev_turn_path()
 
     def _on_actor_died(self, actor):
@@ -2838,7 +3009,7 @@ class MapWidget(QMainWindow):
 
 
     def saveTurnSnapshot(self):
-        # remove pyqt widgets
+        # Nullify PyQt widgets before deep-copy
         self.myEncounter.graphicsViewer = None
         self.myEncounter.map.graphicsViewer = None
         self.myEncounter.map.combatLog = None
@@ -2846,29 +3017,85 @@ class MapWidget(QMainWindow):
         self.myEncounter.graphicsViewer = self.map_view
         self.myEncounter.map.graphicsViewer = self.map_view
         self.myEncounter.map.combatLog = self.turn_action_panel.log
+
+        # Track oldest accessible serial when deque is full
+        if len(self.undo_stack) == 20:
+            self._oldest_serial += 1
+            self.turn_action_panel.turn_log.set_oldest_accessible(self._oldest_serial)
+
         self.undo_stack.append(snapshot)
-        print('undo stack length', len(self.undo_stack))
-    
+        self._turn_serial += 1
+        self.turn_action_panel.turn_log.prepare_serial(self._turn_serial)
+
     def undoTurn(self):
         if not self.undo_stack:
             return
+
+        # Truncate the current in-progress turn group then re-log it after restore.
+        # _turn_serial stays the same — we are replaying the same turn.
+        self.turn_action_panel.turn_log.truncate_after_serial(self._turn_serial)
 
         self.myEncounter = self.undo_stack.pop()
         self.myEncounter.graphicsViewer = self.map_view
         self.myEncounter.map.graphicsViewer = self.map_view
         self.myEncounter.map.combatLog = self.turn_action_panel.log
-
-        # Point the controller at the restored encounter so subsequent actions
-        # (take_action, move_actor, etc.) operate on the correct state.
         self.controller._encounter = self.myEncounter
 
-        self.rebuildFromEncounter()
-        print('Undo stack length', len(self.undo_stack))
+        self.turn_action_panel.turn_log.prepare_serial(self._turn_serial)
+        self.rebuildFromEncounter(relog_turn_header=True)
 
-    def rebuildFromEncounter(self):
-        # need to build restarts here.
+    def _undo_to_serial(self, serial: int):
+        """Undo the encounter back to the start of the given turn serial."""
+        undo_count = self._turn_serial - serial + 1
+        if undo_count <= 0 or undo_count > len(self.undo_stack):
+            return
+
+        reply = QMessageBox.warning(
+            self,
+            "Set to Current Turn",
+            f"This will restore the encounter to the state at the start of that turn and "
+            f"remove all log entries after it.\n\nThis cannot be undone. Continue?",
+            QMessageBox.Yes | QMessageBox.Cancel,
+            QMessageBox.Cancel,
+        )
+        if reply != QMessageBox.Yes:
+            return
+
+        # Truncate log to just before this turn
+        self.turn_action_panel.turn_log.truncate_after_serial(serial)
+
+        # Pop all snapshots down to the target (silently, without rebuilding)
+        for _ in range(undo_count - 1):
+            if self.undo_stack:
+                self.undo_stack.pop()
+        # _turn_serial becomes `serial` — the restored state IS at serial's turn
+        self._turn_serial = serial
+
+        # Final pop + restore
+        self.myEncounter = self.undo_stack.pop()
+        self.myEncounter.graphicsViewer = self.map_view
+        self.myEncounter.map.graphicsViewer = self.map_view
+        self.myEncounter.map.combatLog = self.turn_action_panel.log
+        self.controller._encounter = self.myEncounter
+
+        # Prepare serial so calcTurn re-logs the header into the correct group
+        self.turn_action_panel.turn_log.prepare_serial(serial)
+        self.rebuildFromEncounter(relog_turn_header=True)
+
+    def rebuildFromEncounter(self, relog_turn_header: bool = False):
         self.map_view.loadFromEncounter(self.myEncounter)
-        turns = self.myEncounter.calcTurn()
+
+        if relog_turn_header:
+            # Called from undo paths — let calcTurn write the header into the log
+            # so the current group is re-created after truncation.
+            turns = self.myEncounter.calcTurn()
+        else:
+            # Normal rebuild — suppress the header so it isn't double-logged.
+            _noop = lambda *_: None
+            old_log = self.myEncounter.map.combatLog
+            self.myEncounter.map.combatLog = _noop
+            turns = self.myEncounter.calcTurn()
+            self.myEncounter.map.combatLog = old_log
             
         if turns != None:
             self.actor = turns[0]
@@ -3084,7 +3311,6 @@ class MapWidget(QMainWindow):
     def moveButton(self):
         hexIndex = self.map_view.getCurActorHexIndex()
         if self.turnChoice is not None and self.actor is not None and hexIndex is not None:
-            self.saveTurnSnapshot()
             currLocation = list(self.myEncounter.map.arrayCenters)[hexIndex]
             self.turnChoice.moveCoord = currLocation
             dist, new_move_hexes = self.controller.move_actor(self.actor, currLocation, hexIndex)
@@ -3099,6 +3325,9 @@ class MapWidget(QMainWindow):
 
         # Record end-of-turn state for the current actor before advancing
         self._record_turn_end(self.actor)
+
+        # Save snapshot of the completed turn (= start of next turn state)
+        self.saveTurnSnapshot()
 
         turns = self.controller.end_turn(self.actor)
         if turns is not None:
@@ -3121,7 +3350,6 @@ class MapWidget(QMainWindow):
             if hexIndex is not None:
                 currLocation = list(self.myEncounter.map.arrayCenters)[hexIndex]
                 self.turnChoice.moveCoord = currLocation
-            self.saveTurnSnapshot()
             currAction = self.turn_action_panel.action_dropdown.currentText()
             self.turnChoice.type = [x.type for x in self.turnChoices if x.name == currAction][0]
             self.turnChoice.name = currAction
@@ -3132,6 +3360,8 @@ class MapWidget(QMainWindow):
         
     def run_command(self):
         self.turn_action_panel.log('Starting Combat!')
+        # Snapshot BEFORE calcTurn so serial 1 covers the first turn header logged below
+        self.saveTurnSnapshot()
         turns = self.myEncounter.calcTurn()
         if turns != None:
             self.actor = turns[0]
@@ -3140,7 +3370,6 @@ class MapWidget(QMainWindow):
             self.turnChoice = turns[3]
             self.turn_action_panel.update_turn_panel(self.actor, self.turnChoices, self.turnChoice)
             self.turn_action_panel.buildSpellSlots(self.actor)
-        self.saveTurnSnapshot() # save start of new turn
         # Record starting position for first actor
         self._record_turn_start(self.actor)
 
