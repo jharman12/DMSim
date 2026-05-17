@@ -243,46 +243,28 @@ class CharacterEditor(QWidget):
         self.character_selector.addItems(self.character_db.keys())
 
     def clearEditor(self):
+        self.clearForm()
+
+    def clearForm(self):
         self.name_input.clear()
-        self.class_input.clear()
         self.level_input.setValue(1)
         self.ac_input.setValue(10)
         self.hp_input.setValue(1)
         self.image_label.setText("No Image")
         self.image_path = None
 
+        self.clearClasses()
+        self.clearSpells()
+
         for spin in self.mods.values():
             spin.setValue(0)
 
         self.clearWeapons()
 
-    def loadSelectedCharacter(self, name):
-        if name == "— New Character —" or name not in self.character_db:
-            self.clearEditor()
-            self.current_character = None
-            return
-
-        char = self.character_db[name]
-        self.current_character = name
-
-        self.name_input.setText(char["name"])
-        self.class_input.setText(char["class"])
-        self.level_input.setValue(char["level"])
-        self.ac_input.setValue(char["ac"])
-        self.hp_input.setValue(char["hp"])
-
-        self.image_path = char.get("image")
-        if self.image_path:
-            px = QPixmap(self.image_path).scaled(100, 100, Qt.KeepAspectRatio)
-            self.image_label.setPixmap(px)
-
-        for k, spin in self.mods.items():
-            spin.setValue(char["mods"].get(k, 0))
-
-        self.clearWeapons()
-        for weapon in char["weapons"]:
-            self.addWeaponFromData(weapon)
-
+    def _update_total_level(self):
+        """Recalculate total level from all class level spinboxes and display it."""
+        total = sum(c["level_spin"].value() for c in self.class_widgets)
+        self.level_input.setValue(max(total, 1))
 
     def _buildCharacterLoader(self):
         box = QGroupBox("Character Database")
@@ -296,32 +278,12 @@ class CharacterEditor(QWidget):
         box.setLayout(layout)
         return box
 
-    def clearForm(self):
-        self.name_input.clear()
-        self.level_input.setValue(1)
-        self.ac_input.setValue(10)
-        self.hp_input.setValue(1)
-        self.image_label.setText("No Image")
-        self.image_path = None
-        
-        # Clear classes
-        self.clearClasses()
-
-        # Clear spells
-        self.clearSpells()
-
-        for spin in self.mods.values():
-            spin.setValue(0)
-
-        self.clearWeapons()
-
     def loadCharacter(self, name):
         if name == "New Character":
             self.clearForm()
             return
 
         data = self.store.get(name)
-        print(data)
         if not data:
             return
 
@@ -331,24 +293,26 @@ class CharacterEditor(QWidget):
         class_data = data.get("class")
         self.clearClasses()
         if isinstance(class_data, dict):
-            # Multiclass character
             for class_name, level in sorted(class_data.items()):
                 self.addClassFromData({"name": class_name, "level": level})
         else:
-            # Single-class character
             self.addClassFromData({"name": class_data, "level": data.get("level", 1)})
         
-        self.level_input.setValue(data.get("level", 1))
+        self._update_total_level()
         self.ac_input.setValue(data.get("ac", 10))
         self.hp_input.setValue(data.get("hp", 1))
 
         self.loadModifiers(data.get("mods", {}))
-        if "image" in data:
-            self.image_path = data["image"]
-            px = QPixmap(self.image_path).scaled(100, 100, Qt.KeepAspectRatio)
+
+        image_path = data.get("image")
+        if image_path and Path(image_path).exists():
+            self.image_path = image_path
+            px = QPixmap(image_path).scaled(100, 100, Qt.KeepAspectRatio)
             self.image_label.setPixmap(px)
         else:
+            self.image_path = None
             self.image_label.setText("No Image")
+
         # Spells (optional known list)
         self.clearSpells()
         known_spells = data.get("known_spells")
@@ -357,8 +321,10 @@ class CharacterEditor(QWidget):
             self._set_spell_widgets_enabled(True)
             for spell in known_spells:
                 self.addSpellFromData(spell)
+
         self.clearWeapons()
-        self.addWeaponFromData(data.get("weapons", []))
+        for weapon in data.get("weapons", []):
+            self.addWeaponFromData(weapon)
 
 
     def _buildCoreInfo(self):
@@ -369,6 +335,8 @@ class CharacterEditor(QWidget):
 
         self.level_input = QSpinBox()
         self.level_input.setRange(1, 20)
+        self.level_input.setReadOnly(True)
+        self.level_input.setToolTip("Total level (auto-calculated from classes)")
 
         self.ac_input = QSpinBox()
         self.ac_input.setRange(0, 40)
@@ -513,6 +481,7 @@ class CharacterEditor(QWidget):
         level_spin = QSpinBox()
         level_spin.setRange(1, 20)
         level_spin.setValue(1)
+        level_spin.valueChanged.connect(self._update_total_level)
 
         del_btn = QPushButton("Delete")
         del_btn.clicked.connect(lambda: self.deleteClass(row))
@@ -606,7 +575,7 @@ class CharacterEditor(QWidget):
         for i, abil in enumerate(abilities):
             lbl = QLabel(abil)
             spin = QSpinBox()
-            spin.setRange(0, 30)
+            spin.setRange(-5, 30)
             self.mods[abil.lower()] = spin
 
             grid.addWidget(lbl, 0, i)
