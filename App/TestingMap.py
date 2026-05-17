@@ -1745,7 +1745,150 @@ class GroupedComboBox(QComboBox):
         return False
 
 
-# ── Combat log ──────────────────────────────────────────────────────────────
+# ── Party Health Widget ──────────────────────────────────────────────────────
+
+class PartyHealthCard(QFrame):
+    """
+    A single row showing one actor's icon, name, health bar, and HP numbers.
+    Styled to match the dark popup aesthetic.
+    """
+    def __init__(self, actor, parent=None):
+        super().__init__(parent)
+        self.actor = actor
+        self.setObjectName("partyHealthCard")
+        self.setStyleSheet("""
+            QFrame#partyHealthCard {
+                background: #1e1e2e;
+                border: 1px solid #2a2a44;
+                border-radius: 5px;
+            }
+        """)
+
+        row = QHBoxLayout(self)
+        row.setContentsMargins(6, 4, 8, 4)
+        row.setSpacing(8)
+
+        # Icon
+        self._icon_lbl = QLabel()
+        self._icon_lbl.setFixedSize(36, 36)
+        self._icon_lbl.setScaledContents(True)
+        px = _get_actor_pixmap(actor)
+        self._icon_lbl.setPixmap(px.scaled(36, 36, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        row.addWidget(self._icon_lbl)
+
+        # Name + bar column
+        mid = QVBoxLayout()
+        mid.setSpacing(2)
+        mid.setContentsMargins(0, 0, 0, 0)
+
+        self._name_lbl = QLabel(actor.name)
+        self._name_lbl.setStyleSheet("color: #ddd; font-size: 13px; font-weight: bold; background: transparent;")
+        mid.addWidget(self._name_lbl)
+
+        # Health bar (QFrame with fill child — same pattern as popup)
+        bar_bg = QFrame()
+        bar_bg.setFixedHeight(8)
+        bar_bg.setStyleSheet("QFrame { background: #333; border-radius: 4px; }")
+        bar_inner = QHBoxLayout(bar_bg)
+        bar_inner.setContentsMargins(0, 0, 0, 0)
+        bar_inner.setSpacing(0)
+        self._bar_fill = QFrame()
+        self._bar_fill.setFixedHeight(8)
+        self._bar_spacer = QFrame()
+        self._bar_spacer.setStyleSheet("background: transparent;")
+        bar_inner.addWidget(self._bar_fill)
+        bar_inner.addWidget(self._bar_spacer)
+        self._bar_bg = bar_bg
+        mid.addWidget(bar_bg)
+
+        row.addLayout(mid, stretch=1)
+
+        # HP numbers
+        self._hp_lbl = QLabel()
+        self._hp_lbl.setStyleSheet("color: #aaa; font-size: 12px; background: transparent;")
+        self._hp_lbl.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self._hp_lbl.setFixedWidth(72)
+        row.addWidget(self._hp_lbl)
+
+        self.refresh(int(actor.health), int(actor.maxHealth))
+
+    def refresh(self, current: int, maximum: int):
+        maximum = max(maximum, 1)
+        current = max(current, 0)
+        pct = current / maximum
+        fill = max(int(pct * 100), 0)
+        color = "#4caf50" if pct > 0.5 else ("#ff9800" if pct > 0.25 else "#f44336")
+        self._bar_fill.setStyleSheet(
+            f"QFrame {{ background: {color}; border-radius: 4px; }}"
+        )
+        lay = self._bar_bg.layout()
+        lay.setStretch(0, fill)
+        lay.setStretch(1, max(100 - fill, 0))
+        self._hp_lbl.setText(f"{current} / {maximum}")
+
+    def mark_dead(self):
+        self._name_lbl.setStyleSheet(
+            "color: #666; font-size: 13px; font-weight: bold; "
+            "text-decoration: line-through; background: transparent;"
+        )
+        self._bar_fill.setStyleSheet("QFrame { background: #444; border-radius: 4px; }")
+        self._hp_lbl.setText("0 / —")
+        self._hp_lbl.setStyleSheet("color: #555; font-size: 12px; background: transparent;")
+
+
+class PartyHealthWidget(QWidget):
+    """
+    Vertical list of PartyHealthCards, one per actor.
+    Connects to controller.hp_changed and controller.actor_died.
+    Right-click the dock title → 'Show on Player Screen' toggle.
+    """
+    show_on_player_toggled = pyqtSignal(bool)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._cards: dict = {}   # actor.name → PartyHealthCard
+
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(4, 4, 4, 4)
+        outer.setSpacing(3)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("QScrollArea { border: none; background: #181828; }")
+        outer.addWidget(scroll)
+
+        self._container = QWidget()
+        self._container.setStyleSheet("background: #181828;")
+        self._inner = QVBoxLayout(self._container)
+        self._inner.setContentsMargins(0, 0, 0, 0)
+        self._inner.setSpacing(3)
+        self._inner.addStretch(1)
+        scroll.setWidget(self._container)
+
+    def populate(self, actors):
+        """Build cards for all player actors in the list."""
+        for name in list(self._cards):
+            self._cards[name].deleteLater()
+        self._cards.clear()
+        for actor in actors:
+            if not getattr(actor, 'is_player', False):
+                continue
+            card = PartyHealthCard(actor)
+            self._cards[actor.name] = card
+            self._inner.insertWidget(self._inner.count() - 1, card)
+
+    def update_actor(self, actor, current: int, maximum: int):
+        card = self._cards.get(actor.name)
+        if card:
+            card.refresh(current, maximum)
+
+    def mark_dead(self, actor):
+        card = self._cards.get(actor.name)
+        if card:
+            card.mark_dead()
+
+
+
 
 class TurnGroupFrame(QFrame):
     """
@@ -1990,6 +2133,13 @@ class TurnOrderWidget(QWidget):
     def applyFonts(self, textScale):
         """Apply font scaling from textScale object."""
         set_font(self.box, textScale.size(textScale.MD), QFont.Bold)
+
+    def update_icons(self, pixmaps: list):
+        """Feed [current_pixmap, next1, next2, ...] — mirrors to a player-screen copy."""
+        icons = [self.current_icon] + self.next_icons
+        for lbl, px in zip(icons, pixmaps):
+            lbl.setPixmap(px.scaled(lbl.width(), lbl.height(),
+                                    Qt.KeepAspectRatio, Qt.SmoothTransformation))
     
     
 
@@ -2467,6 +2617,47 @@ class PlayerMapView(QGraphicsView):
 
         painter.restore()
 
+
+class _PlayerCurrentTurnWidget(QWidget):
+    """Read-only card showing whose turn it currently is (for the player screen)."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setStyleSheet("background: #1e1e2e;")
+        row = QHBoxLayout(self)
+        row.setContentsMargins(8, 6, 8, 6)
+        row.setSpacing(10)
+
+        self._icon = QLabel()
+        self._icon.setFixedSize(52, 52)
+        self._icon.setScaledContents(True)
+        px = QPixmap(52, 52)
+        px.fill(QColor(60, 60, 80))
+        self._icon.setPixmap(px)
+        row.addWidget(self._icon)
+
+        col = QVBoxLayout()
+        col.setSpacing(2)
+        sub = QLabel("Current Turn")
+        sub.setStyleSheet("color: #888; font-size: 13px; background: transparent;")
+        self._name = QLabel("—")
+        self._name.setStyleSheet(
+            "color: #ffffff; font-size: 20px; font-weight: bold; background: transparent;"
+        )
+        col.addWidget(sub)
+        col.addWidget(self._name)
+        row.addLayout(col)
+        row.addStretch()
+
+    def set_actor(self, actor):
+        if actor is None:
+            self._name.setText("—")
+            return
+        self._name.setText(actor.name)
+        px = _get_actor_pixmap(actor)
+        self._icon.setPixmap(
+            px.scaled(52, 52, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        )
+
 
 class SecondaryMapWindow(QMainWindow):
     """Read-only mirror of the encounter map for display on a second screen.
@@ -2496,7 +2687,12 @@ class SecondaryMapWindow(QMainWindow):
         self._view.setBackgroundBrush(QBrush(QColor(20, 20, 20)))
 
         self.setCentralWidget(self._view)
+        self._health_dock = None      # party health dock
+        self._turn_order_dock = None  # turn order mirror dock
+        self._cur_turn_dock = None    # current turn info dock
         self._fit()
+
+    # ── Fog / targeting relay ───────────────────────────────────────────────
 
     def update_fog(self, fog_indices: set):
         """Relay fog changes from the main view to the player view."""
@@ -2505,6 +2701,92 @@ class SecondaryMapWindow(QMainWindow):
     def update_target_highlight(self, target_indices: set):
         """Relay targeting highlight changes to the player view."""
         self._view.update_target_highlight(target_indices)
+
+    # ── Party health panel ──────────────────────────────────────────────────
+
+    def set_party_health_visible(self, actors, visible: bool):
+        """Show or hide a read-only party health panel on the player screen."""
+        if visible:
+            if self._health_dock is None:
+                self._phw = PartyHealthWidget()
+                self._phw.populate(actors)
+                for card in self._phw._cards.values():
+                    card.setEnabled(False)
+                self._health_dock = QDockWidget("Party Health", self)
+                self._health_dock.setAllowedAreas(Qt.AllDockWidgetAreas)
+                self._health_dock.setFeatures(
+                    QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable
+                )
+                self._health_dock.setWidget(self._phw)
+                self.addDockWidget(Qt.BottomDockWidgetArea, self._health_dock)
+            self._health_dock.setVisible(True)
+        else:
+            if self._health_dock is not None:
+                self._health_dock.setVisible(False)
+
+    def update_actor_health(self, actor, current: int, maximum: int):
+        if self._health_dock is not None and self._health_dock.isVisible():
+            self._phw.update_actor(actor, current, maximum)
+
+    def mark_actor_dead(self, actor):
+        if self._health_dock is not None and self._health_dock.isVisible():
+            self._phw.mark_dead(actor)
+
+    # ── Turn order mirror ───────────────────────────────────────────────────
+
+    def set_turn_order_visible(self, visible: bool):
+        """Show or hide a read-only turn order strip on the player screen."""
+        if visible:
+            if self._turn_order_dock is None:
+                self._player_turn_order = TurnOrderWidget()
+                # Disable interaction on all children
+                self._player_turn_order.setEnabled(False)
+                self._turn_order_dock = QDockWidget("Turn Order", self)
+                self._turn_order_dock.setAllowedAreas(Qt.AllDockWidgetAreas)
+                self._turn_order_dock.setFeatures(
+                    QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable
+                )
+                self._turn_order_dock.setWidget(self._player_turn_order)
+                self.addDockWidget(Qt.TopDockWidgetArea, self._turn_order_dock)
+            self._turn_order_dock.setVisible(True)
+        else:
+            if self._turn_order_dock is not None:
+                self._turn_order_dock.setVisible(False)
+
+    def update_turn_order(self, pixmaps: list):
+        """Push fresh icon pixmaps to the player-screen turn order strip."""
+        if self._turn_order_dock is not None and self._turn_order_dock.isVisible():
+            self._player_turn_order.update_icons(pixmaps)
+
+    # ── Current turn info panel ─────────────────────────────────────────────
+
+    def set_current_turn_visible(self, visible: bool):
+        """Show or hide a read-only current-turn info card on the player screen."""
+        if visible:
+            if self._cur_turn_dock is None:
+                self._player_cur_turn = _PlayerCurrentTurnWidget()
+                self._cur_turn_dock = QDockWidget("Current Turn", self)
+                self._cur_turn_dock.setAllowedAreas(Qt.AllDockWidgetAreas)
+                self._cur_turn_dock.setFeatures(
+                    QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable
+                )
+                self._cur_turn_dock.setWidget(self._player_cur_turn)
+                self.addDockWidget(Qt.TopDockWidgetArea, self._cur_turn_dock)
+                if self._turn_order_dock is not None:
+                    self.splitDockWidget(
+                        self._turn_order_dock, self._cur_turn_dock, Qt.Horizontal
+                    )
+            self._cur_turn_dock.setVisible(True)
+        else:
+            if self._cur_turn_dock is not None:
+                self._cur_turn_dock.setVisible(False)
+
+    def update_current_turn(self, actor):
+        """Push actor name + icon to the player-screen current-turn card."""
+        if self._cur_turn_dock is not None and self._cur_turn_dock.isVisible():
+            self._player_cur_turn.set_actor(actor)
+
+    # ── Layout helpers ──────────────────────────────────────────────────────
 
     def _fit(self):
         """Scale the view so the whole scene is visible."""
@@ -2681,6 +2963,11 @@ class MapWidget(QMainWindow):
             QDockWidget.DockWidgetClosable
         )
         self.addDockWidget(Qt.TopDockWidgetArea, turn_order_dock)
+        turn_order_dock.setContextMenuPolicy(Qt.CustomContextMenu)
+        turn_order_dock.customContextMenuRequested.connect(
+            lambda pos: self._player_dock_menu(pos, turn_order_dock, "turn_order")
+        )
+        self._turn_order_dock_ref = turn_order_dock
 
         # ------------------------------------------------------------------
         # DOCK: TURN ACTION PANEL (right)
@@ -2705,6 +2992,37 @@ class MapWidget(QMainWindow):
         )
         action_dock.setMinimumWidth(250)
         self.addDockWidget(Qt.RightDockWidgetArea, action_dock)
+        action_dock.setContextMenuPolicy(Qt.CustomContextMenu)
+        action_dock.customContextMenuRequested.connect(
+            lambda pos: self._player_dock_menu(pos, action_dock, "cur_turn")
+        )
+
+        # ------------------------------------------------------------------
+        # DOCK: PARTY HEALTH (top, split to the right of Turn Order)
+        # ------------------------------------------------------------------
+        self.party_health_widget = PartyHealthWidget()
+        party_health_dock = QDockWidget("Party Health", self)
+        party_health_dock.setObjectName("PartyHealthDock")
+        party_health_dock.setWidget(self.party_health_widget)
+        party_health_dock.setAllowedAreas(Qt.AllDockWidgetAreas)
+        party_health_dock.setFeatures(
+            QDockWidget.DockWidgetMovable |
+            QDockWidget.DockWidgetFloatable |
+            QDockWidget.DockWidgetClosable
+        )
+        party_health_dock.setMinimumWidth(220)
+        # Place it in the top area, to the right of Turn Order
+        self.addDockWidget(Qt.TopDockWidgetArea, party_health_dock)
+        self.splitDockWidget(turn_order_dock, party_health_dock, Qt.Horizontal)
+        # Right-click dock title -> "Show on Player Screen"
+        party_health_dock.setContextMenuPolicy(Qt.CustomContextMenu)
+        party_health_dock.customContextMenuRequested.connect(
+            lambda pos: self._party_health_dock_menu(pos, party_health_dock)
+        )
+        self._party_health_dock = party_health_dock
+        self._party_health_on_player = False
+        self._turn_order_on_player = False
+        self._cur_turn_on_player = False
 
         self.turnChoices = None
         self.turnChoice = None
@@ -2721,12 +3039,14 @@ class MapWidget(QMainWindow):
         # ------------------------------------------------------------------
         view_menu.addAction(turn_order_dock.toggleViewAction())
         view_menu.addAction(action_dock.toggleViewAction())
+        view_menu.addAction(party_health_dock.toggleViewAction())
 
         # ------------------------------------------------------------------
         # SIGNAL WIRING
         # ------------------------------------------------------------------
         self.controller.log_message.connect(self.turn_action_panel.log)
         self.controller.turn_changed.connect(self._on_turn_changed)
+        self.controller.hp_changed.connect(self._on_hp_changed)
         self.controller.actor_died.connect(self._on_actor_died)
         self.controller.encounter_ended.connect(self._on_encounter_ended)
         self.controller.persistent_spell_created.connect(self._on_persistent_spell_created)
@@ -2852,6 +3172,57 @@ class MapWidget(QMainWindow):
     def _on_actor_died(self, actor):
         """Called by SimController.actor_died signal."""
         self.turn_action_panel.log(f'{actor.name} has died!')
+        self.party_health_widget.mark_dead(actor)
+        if self._secondary_map_window is not None and self._secondary_map_window.isVisible():
+            self._secondary_map_window.mark_actor_dead(actor)
+
+    def _on_hp_changed(self, actor, current: int, maximum: int):
+        """Called by SimController.hp_changed signal."""
+        self.party_health_widget.update_actor(actor, current, maximum)
+        if self._secondary_map_window is not None and self._secondary_map_window.isVisible():
+            self._secondary_map_window.update_actor_health(actor, current, maximum)
+
+    def _party_health_dock_menu(self, pos, dock):
+        """Right-click context menu on the Party Health dock title bar."""
+        self._player_dock_menu(pos, dock, "party_health")
+
+    def _player_dock_menu(self, pos, dock, widget_key: str):
+        """Generic right-click 'Show on Player Screen' menu for any DM dock."""
+        state_attr = {
+            "party_health": "_party_health_on_player",
+            "turn_order":   "_turn_order_on_player",
+            "cur_turn":     "_cur_turn_on_player",
+        }[widget_key]
+        current = getattr(self, state_attr)
+        lbl = "✅  Shown on Player Screen" if current else "📺  Show on Player Screen"
+        menu = QMenu(self)
+        act = menu.addAction(lbl)
+        chosen = menu.exec_(dock.mapToGlobal(pos))
+        if chosen != act:
+            return
+        setattr(self, state_attr, not current)
+        new_val = getattr(self, state_attr)
+        win = self._secondary_map_window
+        if win is None or not win.isVisible():
+            return
+        if widget_key == "party_health":
+            win.set_party_health_visible(list(self.myEncounter.totalList), new_val)
+        elif widget_key == "turn_order":
+            win.set_turn_order_visible(new_val)
+        elif widget_key == "cur_turn":
+            win.set_current_turn_visible(new_val)
+            if new_val:
+                actor = self._get_current_actor()
+                if actor:
+                    win.update_current_turn(actor)
+
+    def _get_current_actor(self):
+        """Return the actor whose turn it currently is, or None."""
+        enc = self.myEncounter
+        try:
+            return enc.sortedInitList[enc.curTurn % len(enc.sortedInitList)]
+        except Exception:
+            return None
 
     def _on_encounter_ended(self, winner):
         """Called by SimController.encounter_ended signal."""
@@ -2936,6 +3307,17 @@ class MapWidget(QMainWindow):
                 self._secondary_map_window.destroyed.connect(
                     lambda: self.player_view_button.setChecked(False)
                 )
+                # Restore previously-toggled player screen widgets
+                if self._party_health_on_player:
+                    actors = list(self.myEncounter.totalList)
+                    self._secondary_map_window.set_party_health_visible(actors, True)
+                if self._turn_order_on_player:
+                    self._secondary_map_window.set_turn_order_visible(True)
+                if self._cur_turn_on_player:
+                    self._secondary_map_window.set_current_turn_visible(True)
+                    actor = self._get_current_actor()
+                    if actor:
+                        self._secondary_map_window.update_current_turn(actor)
             else:
                 self._secondary_map_window.raise_()
                 self._secondary_map_window.activateWindow()
@@ -3155,6 +3537,7 @@ class MapWidget(QMainWindow):
         turnOrder = encounter.sortedInitList
         curTurn = [encounter.curTurn][0]
 
+        pixmaps = []
         for i in range(6): # hard set to five for now but this should be length of turn indicator
             player = list(turnOrder)[curTurn]
             pixmap = _get_actor_pixmap(player)
@@ -3164,21 +3547,26 @@ class MapWidget(QMainWindow):
             else:
                 lbl = self.turn_order_widget.next_icons[i-1]
 
-            # ⬇️ SCALE PIXMAP TO LABEL SIZE
             scaled = pixmap.scaled(
                 lbl.width(),
                 lbl.height(),
                 Qt.KeepAspectRatio,
                 Qt.SmoothTransformation
             )
-
             lbl.setPixmap(scaled)
+            pixmaps.append(scaled)
             curTurn += 1
             if curTurn + 1 > len(turnOrder):
                 curTurn = 0
-            
 
-        #print('Current Turn', encounter.curTurn)
+        # Relay to player screen if the widgets are visible there
+        win = self._secondary_map_window
+        if win is not None and win.isVisible():
+            if self._turn_order_on_player:
+                win.update_turn_order(pixmaps)
+            if self._cur_turn_on_player:
+                win.update_current_turn(self._get_current_actor())
+
 
 
     def updateTargets(self, affectedHexes):
@@ -3383,6 +3771,9 @@ class MapWidget(QMainWindow):
         curActor = list(self.myEncounter.sortedInitList)[self.myEncounter.curTurn]
         self.map_view.setCurTurn(curActor)
         self.updateTurnOrder()
+
+        # Populate party health widget now that preCombat has set up actors
+        self.party_health_widget.populate(list(self.myEncounter.totalList))
 
     
         

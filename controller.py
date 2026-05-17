@@ -185,12 +185,24 @@ class SimController(QObject):
         map_obj = self._encounter.map
         spells_before = {id(ps): ps for ps in map_obj.persistent_spells}
 
+        # Snapshot health before so we can emit hp_changed for any damage dealt
+        all_actors = list(self._encounter.totalList)
+        health_before = {a.name: (int(a.health), int(a.maxHealth)) for a in all_actors}
+
         self._install_roll_provider(actor)
         try:
             doAction(actor, map_obj, turn_choice)
             self._encounter.removeDeadActors()
         finally:
             self._clear_roll_provider()
+
+        # Emit hp_changed for every actor whose health changed
+        for a in all_actors:
+            old_hp, old_max = health_before[a.name]
+            new_hp = int(a.health)
+            new_max = int(a.maxHealth)
+            if new_hp != old_hp or new_max != old_max:
+                self.hp_changed.emit(a, new_hp, new_max)
 
         # Detect newly created persistent spells
         for ps in map_obj.persistent_spells:
@@ -215,6 +227,9 @@ class SimController(QObject):
         Manual roll provider is installed for the current actor's legendary reactions.
         """
         map_obj = self._encounter.map
+        all_actors = list(self._encounter.totalList)
+        health_before = {a.name: (int(a.health), int(a.maxHealth)) for a in all_actors}
+
         self._encounter.removeDeadActors()
 
         for enemy in map_obj.enemy:
@@ -245,6 +260,14 @@ class SimController(QObject):
         for ps_id, ps in spells_before2.items():
             if ps_id not in spells_after2:
                 self.persistent_spell_ended.emit(ps)
+
+        # Emit hp_changed for any actor whose health changed during end_turn / calcTurn
+        for a in all_actors:
+            old_hp, old_max = health_before[a.name]
+            new_hp = int(a.health)
+            new_max = int(a.maxHealth)
+            if new_hp != old_hp or new_max != old_max:
+                self.hp_changed.emit(a, new_hp, new_max)
 
         if turns:
             self.turn_changed.emit(turns[0])
