@@ -2782,6 +2782,24 @@ class MapWidget(QMainWindow):
         else:
             self.turn_action_panel.clear_concentration()
 
+    def _rebuild_persistent_zones(self):
+        """Clear all GUI persistent-zone state and repaint from the engine's source of truth.
+
+        Called after undo (or any full encounter restore) so the coloured hex zones
+        and concentration label always match map.persistent_spells.
+        """
+        # Wipe every zone the GUI currently knows about
+        for spell_name in list(self.map_view._persistent_zones.keys()):
+            self.map_view.remove_persistent_zone(spell_name)
+
+        # Repaint from what the engine actually has
+        active_zones = getattr(self.myEncounter.map, 'persistent_spells', [])
+        for ps in active_zones:
+            self.map_view.add_persistent_zone(ps.spell_name, ps.affected_hex_indices)
+
+        # Sync the concentration label
+        self._refresh_concentration_label()
+
     # ------------------------------------------------------------------
 
     def saveEncounter(self):
@@ -2812,6 +2830,11 @@ class MapWidget(QMainWindow):
         self.myEncounter.graphicsViewer = self.map_view
         self.myEncounter.map.graphicsViewer = self.map_view
         self.myEncounter.map.combatLog = self.turn_action_panel.log
+
+        # Point the controller at the restored encounter so subsequent actions
+        # (take_action, move_actor, etc.) operate on the correct state.
+        self.controller._encounter = self.myEncounter
+
         self.rebuildFromEncounter()
         print('Undo stack length', len(self.undo_stack))
 
@@ -2830,10 +2853,12 @@ class MapWidget(QMainWindow):
         
         newMoveHexes = calcMoveHexes(self.actor, self.myEncounter.map)
         self.map_view.setCurMoveCoords(newMoveHexes)
-        # i need to now whether the undo was a 
+
+        # Resync persistent spell zones — clear GUI state then repaint from engine
+        self._rebuild_persistent_zones()
+
         self.turn_action_panel.take_turn_button.setEnabled(True)
         self.turn_action_panel.action_dropdown.setEnabled(True)
-        pass
 
 
     def eventFilter(self, obj, event):
