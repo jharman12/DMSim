@@ -231,9 +231,26 @@ class CustomGraphicsView(QGraphicsView):
         self.coneFill = QColor(255, 0, 0, 50)
         self.wallFill = QColor(80, 50, 20, 220)   # dark brown — always on top
         self.persistFill = QColor(255, 140, 0, 130)  # orange — persistent spell zones
+        self.distStartFill = QColor(0, 220, 220, 160)   # cyan — distance start hex
+        self.distPathFill = QColor(180, 180, 180, 80)   # dim grey — path route
         self.setResizeAnchor(QGraphicsView.AnchorViewCenter)
 
         self.affected = None
+
+        # Distance-calc mode state
+        self._dist_mode = False
+        self._dist_start_idx = None
+        self._dist_path_indices: list = []
+
+        # Overlay label (bottom-left) for displaying calculated distance
+        self._dist_label = QLabel("", self)
+        self._dist_label.setStyleSheet(
+            "background: rgba(20,20,30,200); color: #e0e0e0; "
+            "font-size: 15px; font-weight: bold; padding: 6px 10px; "
+            "border-radius: 6px;"
+        )
+        self._dist_label.setVisible(False)
+        self._dist_label.setAttribute(Qt.WA_TransparentForMouseEvents)
 
     def setCurTurn(self, actor):
         self.curActor = actor
@@ -268,6 +285,138 @@ class CustomGraphicsView(QGraphicsView):
         if spell_name in self._persistent_zones:
             del self._persistent_zones[spell_name]
         # Refresh: reset + reapply movement + remaining zones + walls
+        self.setHexColors(self.defaultFill, list(range(len(self.hex_items))))
+        if self.curMoveCoords:
+            self.setHexColors(self.moveFill, self.curMoveCoords)
+        for idxs in self._persistent_zones.values():
+            self.setHexColors(self.persistFill, idxs)
+        if self._wall_indices:
+            self.setHexColors(self.wallFill, list(self._wall_indices))
+
+    # ------------------------------------------------------------------
+    # Distance-calc mode
+    # ------------------------------------------------------------------
+
+    def _scene_pos_to_hex_idx(self, scene_pos) -> int | None:
+        """Return the hex index nearest to scene_pos using the full hex KD-tree.
+        Works regardless of whether a character icon is on top of the hex."""
+        if not self.hex_tree or not self.hex_centers_base:
+            return None
+        if self.map_item is None:
+            return None
+        map_offset = self.map_item.pos()
+        local_x = scene_pos.x() - map_offset.x()
+        local_y = scene_pos.y() - map_offset.y()
+        _, idx = self.hex_tree.query((local_x, local_y))
+        if idx < len(self.hex_items):
+            return idx
+        return None
+
+    def set_distance_mode(self, active: bool):
+        """Enter or exit distance-calculation mode."""
+        self._dist_mode = active
+        if not active:
+            # Clear start highlight and path
+            if self._dist_start_idx is not None:
+                self.setHexColors(self.defaultFill, [self._dist_start_idx])
+                if self.curMoveCoords:
+                    if self._dist_start_idx in self.curMoveCoords:
+                        self.setHexColors(self.moveFill, [self._dist_start_idx])
+            if self._dist_path_indices:
+                self._refresh_hex_colors()
+            self._dist_start_idx = None
+            self._dist_path_indices = []
+            self._dist_label.setVisible(False)
+            self.unsetCursor()
+        else:
+            # Cancel any other exclusive modes
+            self.wall_mode = False
+            self.spellAreaCheck = False
+            self.setCursor(Qt.CrossCursor)
+            self._dist_start_idx = None
+            self._dist_path_indices = []
+            self._dist_label.setVisible(False)
+
+    def _find_path(self, start_idx: int, end_idx: int) -> list:
+        """BFS returning the list of hex indices on the shortest wall-aware path,
+        or [] if unreachable. Walls block traversal."""
+        map_obj = getattr(self.encounter, 'map', None)
+        if map_obj is None:
+            return []
+
+        coords = list(map_obj.arrayCenters)
+        n = len(coords)
+        walls = getattr(map_obj, 'walls', set())
+
+        def _hex_dist(a, b):
+            drow = abs(a[1] - b[1])
+            dcol = abs(a[0] - b[0])
+            return dcol + max(0, (drow - dcol) / 2)
+
+        neighbors = [
+            [j for j in range(n) if i != j and _hex_dist(coords[i], coords[j]) == 1]
+            for i in range(n)
+        ]
+
+        # BFS with parent tracking — no movement limit, walls block
+        parent = {start_idx: None}
+        queue = [start_idx]
+        while queue:
+            cur = queue.pop(0)
+            if cur == end_idx:
+                break
+            for nb in neighbors[cur]:
+                if nb not in parent and nb not in walls:
+                    parent[nb] = cur
+                    queue.append(nb)
+
+        if end_idx not in parent:
+            return []
+
+        # Reconstruct path
+        path = []
+        node = end_idx
+        while node is not None:
+            path.append(node)
+            node = parent[node]
+        path.reverse()
+        return path
+
+    def _show_dist_path(self, path: list, start_idx: int, end_idx: int):
+        """Highlight the path and show the distance overlay in the bottom-left."""
+        self._dist_path_indices = list(path)
+
+        # Re-render base colors then overlay path
+        self._refresh_hex_colors()
+        if path:
+            # Dim path (exclude start/end for special colors)
+            mid = [i for i in path if i != start_idx and i != end_idx]
+            if mid:
+                self.setHexColors(self.distPathFill, mid)
+            self.setHexColors(self.distStartFill, [start_idx])
+            self.setHexColors(QColor(0, 220, 100, 180), [end_idx])  # green end
+
+        hexes = len(path) - 1 if path else 0
+        feet = hexes * 5
+        if path:
+            text = f"📏  {feet} ft  ({hexes} hexes)"
+        else:
+            text = "📏  No path"
+        self._dist_label.setText(text)
+        self._dist_label.adjustSize()
+        self._position_dist_label()
+        self._dist_label.setVisible(True)
+
+    def _position_dist_label(self):
+        """Place the distance label in the bottom-left of the view."""
+        margin = 10
+        lbl = self._dist_label
+        x = margin
+        y = self.height() - lbl.height() - margin
+        lbl.move(x, y)
+
+    def _refresh_hex_colors(self):
+        """Reset all hexes and re-apply movement, zones, walls."""
         self.setHexColors(self.defaultFill, list(range(len(self.hex_items))))
         if self.curMoveCoords:
             self.setHexColors(self.moveFill, self.curMoveCoords)
@@ -575,6 +724,21 @@ class CustomGraphicsView(QGraphicsView):
             item = self.itemAt(event.pos())
             self.selected_item = None
 
+            # Distance-calc mode: two-click flow — accepts hex or actor clicks
+            if self._dist_mode:
+                idx = self._scene_pos_to_hex_idx(self.mapToScene(event.pos()))
+                if idx is not None:
+                    if self._dist_start_idx is None:
+                        # First click — mark start
+                        self._dist_start_idx = idx
+                        self._refresh_hex_colors()
+                        self.setHexColors(self.distStartFill, [idx])
+                    else:
+                        # Second click — compute and display path
+                        path = self._find_path(self._dist_start_idx, idx)
+                        self._show_dist_path(path, self._dist_start_idx, idx)
+                return
+
             # Wall-placement mode: toggle the clicked hex as a wall
             if self.wall_mode and item in self.hex_items:
                 idx = self.hex_items.index(item)
@@ -599,6 +763,11 @@ class CustomGraphicsView(QGraphicsView):
                 self.selected_item = item
 
         super().mousePressEvent(event)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if self._dist_label.isVisible():
+            self._position_dist_label()
 
     def handleSpellAreaCheck(self, mouse_pos):
         # need to pass hex distance and spell range through here
@@ -1637,8 +1806,12 @@ class MapWidget(QMainWindow):
         top_button_row = QHBoxLayout()
         top_button_row.setSpacing(10)
 
-        self.distance_button = QPushButton("Distance Calc")
+        self.distance_button = QPushButton("📏 Distance Calc")
         self.distance_button.setCheckable(True)
+        self.distance_button.setToolTip(
+            "Click to enter distance mode — click a start hex, then an end hex to measure the path"
+        )
+        self.distance_button.clicked.connect(self._toggle_distance_mode)
         top_button_row.addWidget(self.distance_button)
 
         self.wall_button = QPushButton("🧱 Walls")
@@ -1839,12 +2012,26 @@ class MapWidget(QMainWindow):
 
     def _toggle_wall_mode(self, checked: bool):
         """Enable or disable wall-placement mode on the map view."""
+        if checked:
+            # Deactivate distance mode if active
+            self.distance_button.setChecked(False)
+            self.map_view.set_distance_mode(False)
         self.map_view.wall_mode = checked
-        # Visual cue: change cursor so the user knows they're placing walls
         if checked:
             self.map_view.setCursor(Qt.CrossCursor)
         else:
             self.map_view.unsetCursor()
+
+    def _toggle_distance_mode(self, checked: bool):
+        """Enable or disable distance-measurement mode on the map view."""
+        if checked:
+            # Deactivate wall mode if active
+            self.wall_button.setChecked(False)
+            self.map_view.wall_mode = False
+            self.map_view.unsetCursor()
+            # Deactivate spell targeting too
+            self._set_target_mode(False)
+        self.map_view.set_distance_mode(checked)
 
     def _on_walls_changed(self, wall_indices: set):
         """Sync wall indices from the view into the engine map."""
@@ -1953,10 +2140,8 @@ class MapWidget(QMainWindow):
             self.turn_action_panel.buildSpellSlots(self.actor)
 
         # Buttons above map
-        
         set_font(self.undo_button, self.TextScale.size(self.TextScale.SM))
         set_font(self.distance_button, self.TextScale.size(self.TextScale.SM))
-        set_font(self.spell_button, self.TextScale.size(self.TextScale.SM))
 
     def setAllFonts(self):
         self.turn_order_widget.applyFonts(self.TextScale)
@@ -2128,6 +2313,9 @@ class MapWidget(QMainWindow):
     def endTurnButton(self):
         self._set_target_mode(False)
         self.map_view.affected = None
+        # Clear distance mode on new turn
+        self.distance_button.setChecked(False)
+        self.map_view.set_distance_mode(False)
 
         turns = self.controller.end_turn(self.actor)
         if turns is not None:
