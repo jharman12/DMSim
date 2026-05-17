@@ -18,3 +18,4 @@ Done 7.) Make the right click pop up window that is displayed when right clickin
 16.) Make it so manual roll and manual action lists you can click on the actor name to check them as well.
 17.) Dash action has the actor not stop at the current hex that they are on. I believe its because its calling nearest free hex and seeing itself on the hex that it is on.
 18.) undo turn needs to work with persistent spells.
+19.) in right click window add optional button to set stats (to handle dm adjudication outside of the engine)

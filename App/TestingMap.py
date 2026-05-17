@@ -1819,6 +1819,8 @@ class MapWidget(QMainWindow):
         """Called by SimController.turn_changed signal when the active actor changes."""
         self.map_view.setCurTurn(actor)
         self.updateTurnOrder()
+        # Sync concentration label to actual engine state
+        self._refresh_concentration_label()
 
     def _on_actor_died(self, actor):
         """Called by SimController.actor_died signal."""
@@ -1851,7 +1853,18 @@ class MapWidget(QMainWindow):
     def _on_persistent_spell_ended(self, ps):
         """Remove the zone and clear concentration label."""
         self.map_view.remove_persistent_zone(ps.spell_name)
-        self.turn_action_panel.clear_concentration()
+        self._refresh_concentration_label()
+
+    def _refresh_concentration_label(self):
+        """Sync the concentration label to actual engine state — clears if no one is concentrating."""
+        if not hasattr(self.myEncounter, 'map') or self.myEncounter.map is None:
+            return
+        active_zones = getattr(self.myEncounter.map, 'persistent_spells', [])
+        if active_zones:
+            ps = active_zones[0]  # show the first active concentration spell
+            self.turn_action_panel.set_concentration(ps.caster.name, ps.spell_name)
+        else:
+            self.turn_action_panel.clear_concentration()
 
     # ------------------------------------------------------------------
 

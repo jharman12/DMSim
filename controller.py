@@ -183,7 +183,7 @@ class SimController(QObject):
         Emits persistent_spell_created / persistent_spell_ended as appropriate.
         """
         map_obj = self._encounter.map
-        spells_before = set(id(ps) for ps in map_obj.persistent_spells)
+        spells_before = {id(ps): ps for ps in map_obj.persistent_spells}
 
         self._install_roll_provider(actor)
         try:
@@ -198,10 +198,10 @@ class SimController(QObject):
                 self.persistent_spell_created.emit(ps)
 
         # Detect spells that ended during this action (concentration broken by damage, etc.)
-        spells_after = set(id(ps) for ps in map_obj.persistent_spells)
-        for ps_id in spells_before - spells_after:
-            # We can't easily recover the object, but the GUI will reconcile via signal
-            pass
+        spells_after = {id(ps) for ps in map_obj.persistent_spells}
+        for ps_id, ps in spells_before.items():
+            if ps_id not in spells_after:
+                self.persistent_spell_ended.emit(ps)
 
     def end_turn(self, actor):
         """
@@ -227,15 +227,25 @@ class SimController(QObject):
                 finally:
                     self._clear_roll_provider()
 
-        spells_before = set(id(ps) for ps in map_obj.persistent_spells)
+        spells_before = {id(ps): ps for ps in map_obj.persistent_spells}
         self._encounter.nextTurn()
         actor.speed = int(actor.maxSpeed)
 
         # Emit signals for any persistent spells that expired during nextTurn (round wrap)
-        spells_after = set(id(ps) for ps in map_obj.persistent_spells)
-        # (expired spells have already been removed from map_obj by tick_persistent_spells)
+        spells_after = {id(ps) for ps in map_obj.persistent_spells}
+        for ps_id, ps in spells_before.items():
+            if ps_id not in spells_after:
+                self.persistent_spell_ended.emit(ps)
 
+        # Snapshot again before calcTurn — auto-turns (monsters) can break concentration
+        spells_before2 = {id(ps): ps for ps in map_obj.persistent_spells}
         turns = self._encounter.calcTurn()
+
+        spells_after2 = {id(ps) for ps in map_obj.persistent_spells}
+        for ps_id, ps in spells_before2.items():
+            if ps_id not in spells_after2:
+                self.persistent_spell_ended.emit(ps)
+
         if turns:
             self.turn_changed.emit(turns[0])
         return turns
