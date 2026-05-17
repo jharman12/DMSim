@@ -14,7 +14,7 @@ Done 11.) Outside of the encounter window, create a spell creation tab that will
 Done 12.) Add a default image to the map in the encounter builder if one is not selected.
 Skip 13.) In the encounter builder add a build that autogenerates an encounter for the given party bassed off of selected difficulty. This should use the non-interactive encounter simulation and score how well the party is expected to do.
 14.) Fix actor hex icon shifting and not being centered over time. Also, the red outline indicating who's turn it is on the map will some times not disappear correctly. I believe that both issues is caused by the same problem. Can you investigate and find a solution.
-15.) Have a button to pop up secondary map display that the user could show players on secondary monitor. This display should only mimic the current map but should not be able to be interacted with.
+15.) Have a button to pop up secondary map display that the user could show players on secondary monitor. This display should only mimic the current map but should not be able to be interacted with. Also add a "Fog of war" feature on the main map display that will cover up selected hexes on the player display. This should act like the wall button with a tooltip pop-up for create and delete fog. On the main display, the fog should be a very dim grey and should not prevent the user from interacting with actors on the map.
 16.) Make it so manual roll and manual action lists you can click on the actor name to check them as well.
 17.) Dash action has the actor not stop at the current hex that they are on. I believe its because its calling nearest free hex and seeing itself on the hex that it is on.
 18.) undo turn needs to work with persistent spells.
@@ -23,3 +23,4 @@ Skip 13.) In the encounter builder add a build that autogenerates an encounter f
 21.) Add a new type from task 3 that is the party members current health. These should show the party members name, icon, heatlh bar, and health numbers.
 22.) Add bonus actions to turn selector and engine. Example: Healing word is a combat spell that takes a bonus action to cast, but the current logic does not allow for this. The engine and GUI should allow for spells casted as a bonus action and know that you cannot cast another spell afterwards, but still have an action to attack or dash.
 23.) Fix the character creation tab. Right now the character creation tab does not work appropriately. If you select a prebuilt character, it will crash. This new tab should include everything from the newchar.json as selections. Similarly to the spell creation tool, the tab should not allow for saving a character that will break the engine/GUI logic.
+

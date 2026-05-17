@@ -126,6 +126,7 @@ from dialogs import ManualRollDialog, ManualRollersDialog, ManualActionsDialog
 
 _UNKNOWN_IMAGE = str(_root / "App" / "unknown.jpg")
 _DEFAULT_MAP = str(_root / "App" / "Maps" / "TestingMap.webp")
+_OUTLINE_THICKNESS = 3   # pixels added per side by addRedOutline
 
 
 def _get_actor_pixmap(actor) -> "QPixmap":
@@ -198,6 +199,7 @@ class CustomGraphicsView(QGraphicsView):
         self.encounter = encounter
         self.curActor = None
         self.curMoveCoords = None
+        self._clean_pixmaps: dict = {}   # QGraphicsPixmapItem -> outline-free QPixmap
 
         self.wall_mode = False
         self._wall_indices: set = set()
@@ -292,7 +294,30 @@ class CustomGraphicsView(QGraphicsView):
         self._dist_label.setAttribute(Qt.WA_TransparentForMouseEvents)
 
     def setCurTurn(self, actor):
+        # Remove outline from the previous actor and restore its centered position
+        if self.curActor is not None and self.curActor in self.character_objs:
+            old_idx = self.character_objs.index(self.curActor)
+            old_item = self.character_items[old_idx]
+            clean = self._clean_pixmaps.get(old_item)
+            if clean is not None:
+                old_item.setPixmap(clean)
+                # Undo the position shift that was applied when the outline was added
+                pos = old_item.pos()
+                old_item.setPos(pos.x() + _OUTLINE_THICKNESS, pos.y() + _OUTLINE_THICKNESS)
+
         self.curActor = actor
+
+        # Apply outline to the new actor and shift its position to stay centered
+        if actor is not None and actor in self.character_objs:
+            new_idx = self.character_objs.index(actor)
+            new_item = self.character_items[new_idx]
+            clean = self._clean_pixmaps.get(new_item)
+            if clean is not None:
+                outlined = self.addRedOutline(clean)
+                new_item.setPixmap(outlined)
+                # Outline adds thickness pixels on each side; shift up-left to keep center
+                pos = new_item.pos()
+                new_item.setPos(pos.x() - _OUTLINE_THICKNESS, pos.y() - _OUTLINE_THICKNESS)
 
     def setCurMoveCoords(self, indexes):
         self.curMoveCoords = indexes
@@ -800,6 +825,7 @@ class CustomGraphicsView(QGraphicsView):
         character_item = self.scene.addPixmap(pixmap)
         self.character_objs.append(character)
         self.character_items.append(character_item)
+        self._clean_pixmaps[character_item] = pixmap   # store original for centering
         character_item.setZValue(2)
         if len(self.hex_items) > 0:
             for hex in self.hex_items:
@@ -1000,9 +1026,22 @@ class CustomGraphicsView(QGraphicsView):
                             snap_center_local[1] + map_offset.y()
                         )
 
-                        character_size = self.selected_item.boundingRect().size()
-                        snap_x = snap_center_scene[0] - character_size.width() / 2
-                        snap_y = snap_center_scene[1] - character_size.height() / 2
+                        # Use the clean (no-outline) pixmap size for accurate centering
+                        clean = self._clean_pixmaps.get(self.selected_item)
+                        if clean is not None:
+                            icon_w = clean.width()
+                            icon_h = clean.height()
+                        else:
+                            icon_w = self.selected_item.boundingRect().width()
+                            icon_h = self.selected_item.boundingRect().height()
+                        snap_x = snap_center_scene[0] - icon_w / 2
+                        snap_y = snap_center_scene[1] - icon_h / 2
+                        # Compensate if this item currently has the outline applied
+                        if self.selected_item in self._clean_pixmaps:
+                            actual_w = self.selected_item.boundingRect().width()
+                            if actual_w > icon_w:
+                                snap_x -= _OUTLINE_THICKNESS
+                                snap_y -= _OUTLINE_THICKNESS
                         self.selected_item.setPos(snap_x, snap_y)
 
                 else:
@@ -1023,10 +1062,21 @@ class CustomGraphicsView(QGraphicsView):
         hexArrays = np.array(hexCenters) + np.array([delta_x, delta_y]) # self.arrayCenters is original coord. add delta
         snap_coord = hexArrays[newIndex] # find that coord
 
-        character_size = pixmap.boundingRect().size()
-        snap_x = snap_coord[0] - character_size.width() / 2
-        snap_y = snap_coord[1] - character_size.height() / 2
-        #print(snap_x, snap_y)
+        # Use the clean (no-outline) pixmap size for accurate centering
+        clean = self._clean_pixmaps.get(pixmap)
+        if clean is not None:
+            icon_w = clean.width()
+            icon_h = clean.height()
+        else:
+            icon_w = pixmap.boundingRect().width()
+            icon_h = pixmap.boundingRect().height()
+        snap_x = snap_coord[0] - icon_w / 2
+        snap_y = snap_coord[1] - icon_h / 2
+        # Compensate if outline is currently applied
+        actual_w = pixmap.boundingRect().width()
+        if clean is not None and actual_w > icon_w:
+            snap_x -= _OUTLINE_THICKNESS
+            snap_y -= _OUTLINE_THICKNESS
         pixmap.setPos(snap_x, snap_y)  # snap to this coord
 
         # this might be kinda hard... 
@@ -1280,8 +1330,11 @@ class CustomGraphicsView(QGraphicsView):
     def setCharsToHexes(self):
         # Iterate over character items
         for character_item in self.character_items:
+            # Use the stored clean pixmap if available (avoids scaling an outlined pixmap)
+            source_pixmap = self._clean_pixmaps.get(character_item, character_item.pixmap())
+
             # Resize the character's image to fit within the hexagon
-            character_pixmap = character_item.pixmap().scaled(self.hex_size.toSize(), Qt.KeepAspectRatio)
+            character_pixmap = source_pixmap.scaled(self.hex_size.toSize(), Qt.KeepAspectRatio)
 
             # Create a painter path for the character image
             character_path = QPainterPath()
@@ -1297,6 +1350,9 @@ class CustomGraphicsView(QGraphicsView):
             painter.setClipPath(character_path)
             painter.drawPixmap(combined_pixmap.rect(), character_pixmap)
             painter.end()
+
+            # Store the clean clipped pixmap BEFORE any outline is applied
+            self._clean_pixmaps[character_item] = combined_pixmap
 
             # Set the combined pixmap as the pixmap for the character item
             character_item.setPixmap(combined_pixmap)
@@ -1367,25 +1423,19 @@ class CustomGraphicsView(QGraphicsView):
 
     def remove_red_outline(self, pixmap):
         """
-        Removes a 1-pixel red outline previously drawn around the pixmap.
-        Assumes the outline was drawn as a rectangle around the border.
+        Removes the red outline previously drawn around the pixmap.
+        Crops by _OUTLINE_THICKNESS pixels on each side.
         """
-        #print('trying to remove red Outline')
         if pixmap.isNull():
-            print("pixmap is NULL")
             return pixmap
 
-        # the outline thickness you used earlier
-        outline = 4
-
-        # Crop the pixmap to remove the border
+        outline = _OUTLINE_THICKNESS
         cropped = pixmap.copy(
             outline,
             outline,
             pixmap.width() - outline * 2,
             pixmap.height() - outline * 2
         )
-
         return cropped
 
     def removeAllActors(self):
@@ -1394,9 +1444,7 @@ class CustomGraphicsView(QGraphicsView):
         
         self.character_items.clear()
         self.character_objs.clear()
-
-        #self.character_items = []
-        #self.character_objs = []
+        self._clean_pixmaps.clear()
 
     def loadFromEncounter(self, myEncounter):
         
@@ -2613,21 +2661,15 @@ class MapWidget(QMainWindow):
         self._record_turn_start(self.actor)
 
     def testingTheory(self):
-        
         # should populate turn_order_widget
         # create the initial movement grids highlight 
 
         self.myEncounter.preCombat(self.map_view)
         self.myEncounter.map.combatLog = self.turn_action_panel.log
+        # Red outline is now managed by setCurTurn — trigger it for the starting actor
         curActor = list(self.myEncounter.sortedInitList)[self.myEncounter.curTurn]
-        index = self.map_view.character_objs.index(curActor)
-        item = self.map_view.character_items[index] 
-        pixMap = item.pixmap()
-        outlined = self.map_view.addRedOutline(pixmap=pixMap)
-        item.setPixmap(outlined)
+        self.map_view.setCurTurn(curActor)
         self.updateTurnOrder()
-        #removeOutline = self.map_view.remove_red_outline(pixMap)
-        #item.setPixmap(removeOutline)
 
     
         
