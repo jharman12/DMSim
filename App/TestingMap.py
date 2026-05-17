@@ -1744,6 +1744,11 @@ class GroupedComboBox(QComboBox):
             return bool(item.data(Qt.UserRole+1))
         return False
 
+    def clear(self):
+        """Override to reliably clear the custom model."""
+        self.model.clear()
+        super().clear()
+
 
 # ── Party Health Widget ──────────────────────────────────────────────────────
 
@@ -2175,82 +2180,145 @@ class TurnActionPanel(QWidget):
 
         main_layout.addLayout(health_layout)
 
-       # ================= SPELL SLOTS (SCROLLABLE) =================
+       # ================= 3-WAY SPLITTER =================
+        # Pane 1: Spell Slots
+        spell_pane = QWidget()
+        spell_pane_layout = QVBoxLayout(spell_pane)
+        spell_pane_layout.setContentsMargins(0, 0, 0, 0)
+        spell_pane_layout.setSpacing(4)
+
         self.spell_slot_title = QLabel("Spell Slots")
         self.spell_slot_title.setStyleSheet("font-weight: bold; margin-top: 6px;")
-        main_layout.addWidget(self.spell_slot_title)
+        spell_pane_layout.addWidget(self.spell_slot_title)
 
         self.spell_slot_scroll = QScrollArea()
         self.spell_slot_scroll.setWidgetResizable(True)
-        self.spell_slot_scroll.setMinimumHeight(100)
+        self.spell_slot_scroll.setMinimumHeight(40)
         self.spell_slot_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-
-        # Inner container
         self.spell_slot_container = QWidget()
         self.spell_slot_layout = QVBoxLayout(self.spell_slot_container)
         self.spell_slot_layout.setContentsMargins(4, 4, 4, 4)
         self.spell_slot_layout.setSpacing(6)
-
         self.spell_slot_scroll.setWidget(self.spell_slot_container)
-        main_layout.addWidget(self.spell_slot_scroll, stretch= 1)
-
-        # Track widgets
+        spell_pane_layout.addWidget(self.spell_slot_scroll)
         self.spell_slot_widgets = {}
 
+        # Pane 2: Action + Bonus Action groups
+        actions_pane = QWidget()
+        actions_pane_layout = QVBoxLayout(actions_pane)
+        actions_pane_layout.setContentsMargins(0, 0, 0, 0)
+        actions_pane_layout.setSpacing(4)
 
-        # -------------------------------
-        # ACTION DROP-DOWN
-        # -------------------------------
+        action_group = QGroupBox("⚔ Action")
+        action_group.setStyleSheet(
+            "QGroupBox { border: 1px solid #555; border-radius: 4px; margin-top: 20px; padding-top: 6px; }"
+            "QGroupBox::title { subcontrol-origin: margin; subcontrol-position: top left; left: 8px; top: -2px; color: #ccc; }"
+        )
+        action_group_layout = QVBoxLayout(action_group)
+        action_group_layout.setContentsMargins(6, 4, 6, 4)
+        action_group_layout.setSpacing(4)
+
         actionBox = QHBoxLayout()
         self.actionLbl = QLabel('Action:')
         actionBox.addWidget(self.actionLbl)
         self.action_dropdown = GroupedComboBox()
-        self.action_dropdown.addItems(["Attack", "Cast Spell", "Dash", "Use Item"])  # placeholder actions
+        self.action_dropdown.addItems(["Attack", "Cast Spell", "Dash", "Use Item"])
         actionBox.addWidget(self.action_dropdown, 1)
-        main_layout.addLayout(actionBox)
+        action_group_layout.addLayout(actionBox)
 
-        # -------------------------------
-        # Select Target button
-        # -------------------------------
         self.select_target_button = QPushButton("🎯 Select Target")
         self.select_target_button.setCheckable(True)
-        self.select_target_button.setToolTip(
-            "Click to enter target-selection mode, then click a hex on the map"
-        )
+        self.select_target_button.setToolTip("Click to enter target-selection mode, then click a hex on the map")
         self.select_target_button.setStyleSheet(
             "QPushButton:checked { background-color: #8b1a1a; color: #ffffff; border: 2px solid #ff4444; border-radius: 4px; }"
         )
-        main_layout.addWidget(self.select_target_button)
+        action_group_layout.addWidget(self.select_target_button)
 
-        # -------------------------------
-        # Targets input
-        # -------------------------------
         targets_layout = QHBoxLayout()
         self.targets_title_label = QLabel("Targets:")
         targets_layout.addWidget(self.targets_title_label)
         self.targets_label = QLabel("")
         self.targets_label.setWordWrap(True)
         targets_layout.addWidget(self.targets_label)
-        main_layout.addLayout(targets_layout)
+        action_group_layout.addLayout(targets_layout)
 
-        # -------------------------------
-        # Move coords input
-        # -------------------------------
-        
         self.move_Action_layout = QHBoxLayout()
         self.move_input = QPushButton('Move')
-        
         self.move_Action_layout.addWidget(self.move_input)
-
-        
-
-        # -------------------------------
-        # Take Turn button
-        # -------------------------------
         self.take_turn_button = QPushButton("Take Turn")
-        #self.take_turn_button.clicked.connect(self.take_turn)
         self.move_Action_layout.addWidget(self.take_turn_button)
-        main_layout.addLayout(self.move_Action_layout)
+        action_group_layout.addLayout(self.move_Action_layout)
+
+        actions_pane_layout.addWidget(action_group)
+
+        bonus_group = QGroupBox("⚡ Bonus Action")
+        bonus_group.setStyleSheet(
+            "QGroupBox { border: 1px solid #6030a0; border-radius: 4px; margin-top: 20px; padding-top: 6px; }"
+            "QGroupBox::title { subcontrol-origin: margin; subcontrol-position: top left; left: 8px; top: -2px; color: #c080ff; }"
+        )
+        bonus_group_layout = QVBoxLayout(bonus_group)
+        bonus_group_layout.setContentsMargins(6, 4, 6, 4)
+        bonus_group_layout.setSpacing(4)
+
+        bonusActionBox = QHBoxLayout()
+        self.bonusActionLbl = QLabel('Bonus Action:')
+        bonusActionBox.addWidget(self.bonusActionLbl)
+        self.bonus_action_dropdown = GroupedComboBox()
+        self.bonus_action_dropdown.addItems(["—"])
+        bonusActionBox.addWidget(self.bonus_action_dropdown, 1)
+        bonus_group_layout.addLayout(bonusActionBox)
+
+        self.select_bonus_target_button = QPushButton("🎯 Select Bonus Target")
+        self.select_bonus_target_button.setCheckable(True)
+        self.select_bonus_target_button.setToolTip("Click to enter target-selection mode for the bonus action, then click a hex on the map")
+        self.select_bonus_target_button.setStyleSheet(
+            "QPushButton:checked { background-color: #4a1a6e; color: #ffffff; border: 2px solid #c080ff; border-radius: 4px; }"
+        )
+        bonus_group_layout.addWidget(self.select_bonus_target_button)
+
+        bonus_targets_layout = QHBoxLayout()
+        self.bonus_targets_title_label = QLabel("Bonus Targets:")
+        bonus_targets_layout.addWidget(self.bonus_targets_title_label)
+        self.bonus_targets_label = QLabel("")
+        self.bonus_targets_label.setWordWrap(True)
+        bonus_targets_layout.addWidget(self.bonus_targets_label)
+        bonus_group_layout.addLayout(bonus_targets_layout)
+
+        self.bonus_take_turn_button = QPushButton("⚡ Use Bonus Action")
+        self.bonus_take_turn_button.setStyleSheet(
+            "QPushButton { background-color: #2a1a3e; color: #c080ff; border: 1px solid #6030a0; "
+            "border-radius: 4px; padding: 4px; }"
+            "QPushButton:hover { background-color: #3a2050; }"
+            "QPushButton:disabled { background-color: #1a1a2e; color: #555; border-color: #333; }"
+        )
+        bonus_group_layout.addWidget(self.bonus_take_turn_button)
+
+        actions_pane_layout.addWidget(bonus_group)
+        actions_pane_layout.addStretch()
+
+        # Pane 3: Game Log
+        log_pane = QWidget()
+        log_pane_layout = QVBoxLayout(log_pane)
+        log_pane_layout.setContentsMargins(0, 0, 0, 0)
+        log_pane_layout.setSpacing(4)
+        self.game_log_label = QLabel("Game Log")
+        self.game_log_label.setStyleSheet("font-weight: bold;")
+        log_pane_layout.addWidget(self.game_log_label)
+        self.turn_log = TurnLogWidget()
+        self.turn_log.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        log_pane_layout.addWidget(self.turn_log)
+
+        # 3-way splitter: Spell Slots | Actions | Game Log
+        self._slot_log_splitter = QSplitter(Qt.Vertical)
+        self._slot_log_splitter.addWidget(spell_pane)
+        self._slot_log_splitter.addWidget(actions_pane)
+        self._slot_log_splitter.addWidget(log_pane)
+        self._slot_log_splitter.setStretchFactor(0, 1)
+        self._slot_log_splitter.setStretchFactor(1, 0)
+        self._slot_log_splitter.setStretchFactor(2, 2)
+        self._slot_log_splitter.setSizes([120, 220, 200])
+        self._slot_log_splitter.setChildrenCollapsible(False)
+        main_layout.addWidget(self._slot_log_splitter, stretch=1)
 
         # -------------------------------
         # End Turn button
@@ -2277,18 +2345,6 @@ class TurnActionPanel(QWidget):
         self.restrained_label.setVisible(False)
         main_layout.addWidget(self.restrained_label)
 
-        # ---------------- GAME LOG ----------------
-        self.game_log_label = QLabel("Game Log")
-        self.game_log_label.setStyleSheet("font-weight: bold;")
-        main_layout.addWidget(self.game_log_label)
-
-        self.turn_log = TurnLogWidget()
-        self.turn_log.setMinimumHeight(200)
-        self.turn_log.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        main_layout.addWidget(self.turn_log, stretch=2)
-
-
-        #main_layout.addStretch(1)
         self.setLayout(final_layout)
 
     def applyFonts(self, textScale):
@@ -2300,6 +2356,11 @@ class TurnActionPanel(QWidget):
         
         set_font(self.actionLbl, textScale.size(textScale.SM))
         set_font(self.action_dropdown, textScale.size(textScale.SM))
+        set_font(self.bonusActionLbl, textScale.size(textScale.SM))
+        set_font(self.bonus_action_dropdown, textScale.size(textScale.SM))
+        set_font(self.select_bonus_target_button, textScale.size(textScale.SM))
+        set_font(self.bonus_targets_title_label, textScale.size(textScale.SM))
+        set_font(self.bonus_targets_label, textScale.size(textScale.SM))
         set_font(self.targets_title_label, textScale.size(textScale.SM))
         set_font(self.targets_label, textScale.size(textScale.SM))
 
@@ -2307,6 +2368,7 @@ class TurnActionPanel(QWidget):
         set_font(self.endTurnButton, textScale.size(textScale.SM))
         set_font(self.move_input, textScale.size(textScale.SM))
         set_font(self.take_turn_button, textScale.size(textScale.SM))
+        set_font(self.bonus_take_turn_button, textScale.size(textScale.SM))
 
         set_font(self.game_log_label, textScale.size(textScale.MD), QFont.Bold)
         # TurnLogWidget uses fixed internal CSS; no font scaling needed
@@ -2479,9 +2541,13 @@ class TurnActionPanel(QWidget):
         self.health_bar.setValue(int(actor.health))
         self.health_label.setText(f"{actor.health} / {actor.maxHealth}")
 
+        # Separate action and bonus action choices
+        action_choices = [x for x in turnChoices if getattr(x, 'action_type', 'action') == 'action']
+        bonus_choices  = [x for x in turnChoices if getattr(x, 'action_type', 'action') == 'bonus_action']
+
         # Update action dropdown
-        actions = [x.name for x in turnChoices]
-        self.action_dropdown.clear() 
+        actions = [x.name for x in action_choices]
+        self.action_dropdown.clear()
         # add weapon to actions
         self.action_dropdown.addHeader('Wepons*******')
         for weap in actor.weaponList:
@@ -2493,26 +2559,21 @@ class TurnActionPanel(QWidget):
         # add spells to dropdown
         spells = actor.spells  # dictionary of spells
         # Monster spells: {name: [count, spell_dict]}  Player spells: {name: spell_dict}
-        # Normalise to a plain dict for level grouping.
         def _spell_dict(data):
             return data[1] if isinstance(data, list) else data
 
-        # Build dictionary grouping spell names by level:
-        #   { 0: [...], 1: [...], ... }
+        # Build dictionary grouping spell names by level
         level_groups = {}
         for spell_name, data in spells.items():
             lvl = _spell_dict(data).get("lvl", 0)
             level_groups.setdefault(lvl, []).append(spell_name)
 
-        # Loop levels in ascending order
+        # Loop levels in ascending order (action dropdown only — action_type == 'action')
         for lvl in sorted(level_groups.keys()):
             if any(x in actions for x in level_groups[lvl]):
-                # Add header
                 header_text = f"\nLevel {lvl} Spells"
                 self.action_dropdown.addHeader(header_text)
-
-                # Add spell items underneath
-                for spell_name in sorted(level_groups[lvl]):   # alphabetical
+                for spell_name in sorted(level_groups[lvl]):
                     if spell_name in actions:
                         self.action_dropdown.addItemToGroup(spell_name, data=_spell_dict(spells[spell_name]))
                         actions.remove(spell_name)
@@ -2520,10 +2581,40 @@ class TurnActionPanel(QWidget):
         for item in actions:
             self.action_dropdown.addItemToGroup(item, data=item)
 
-        # Set selected action if provided
+        # ---- Bonus action dropdown ----
+        self.bonus_action_dropdown.clear()
+        b_names = [x.name for x in bonus_choices]
+        if b_names:
+            self.bonus_action_dropdown.addHeader('Bonus Spells*******')
+            for spell_name, data in spells.items():
+                if spell_name in b_names:
+                    self.bonus_action_dropdown.addItemToGroup(spell_name, data=_spell_dict(spells[spell_name]))
+                    b_names.remove(spell_name)
+            # remaining (non-spell) bonus actions
+            for item in b_names:
+                self.bonus_action_dropdown.addItemToGroup(item, data=item)
+            self.bonus_action_dropdown.setEnabled(True)
+            self.bonus_take_turn_button.setEnabled(True)
+            # Auto-select first real (non-header) item so the label isn't stuck on the header
+            for i in range(self.bonus_action_dropdown.count()):
+                if not self.bonus_action_dropdown.isHeader(i):
+                    self.bonus_action_dropdown.setCurrentIndex(i)
+                    break
+        else:
+            self.bonus_action_dropdown.addItem("—")
+            self.bonus_action_dropdown.setEnabled(False)
+            self.bonus_take_turn_button.setEnabled(False)
+
+        # Set selected action — point at the correct dropdown based on action_type
         selected_action = turnChoice.name
-        index = self.action_dropdown.findText(selected_action)
-        self.action_dropdown.setCurrentIndex(index)
+        if getattr(turnChoice, 'action_type', 'action') == 'bonus_action':
+            index = self.bonus_action_dropdown.findText(selected_action)
+            if index >= 0:
+                self.bonus_action_dropdown.setCurrentIndex(index)
+        else:
+            index = self.action_dropdown.findText(selected_action)
+            if index >= 0:
+                self.action_dropdown.setCurrentIndex(index)
 
         # Update targets input
         #targets = str(turnChoice.targets)
@@ -2974,10 +3065,13 @@ class MapWidget(QMainWindow):
         # ------------------------------------------------------------------
         self.turn_action_panel = TurnActionPanel()
         self.turn_action_panel.take_turn_button.clicked.connect(self.takeTurnButton)
+        self.turn_action_panel.bonus_take_turn_button.clicked.connect(self.bonusTurnButton)
         self.turn_action_panel.move_input.clicked.connect(self.moveButton)
         self.turn_action_panel.endTurnButton.clicked.connect(self.endTurnButton)
         self.turn_action_panel.action_dropdown.currentTextChanged.connect(self.actionChanged)
+        self.turn_action_panel.bonus_action_dropdown.currentTextChanged.connect(self.bonusActionChanged)
         self.turn_action_panel.select_target_button.clicked.connect(self.spellButton_pressed)
+        self.turn_action_panel.select_bonus_target_button.clicked.connect(self.bonusSpellButton_pressed)
         self.turn_action_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.turn_action_panel.turn_log.undo_requested.connect(self._undo_to_serial)
 
@@ -3027,6 +3121,10 @@ class MapWidget(QMainWindow):
         self.turnChoices = None
         self.turnChoice = None
         self.actor = None
+        self._action_used = False
+        self._bonus_action_used = False
+        self._targeting_bonus = False   # True when "Select Bonus Target" mode is active
+        self._bonus_choice = None       # The bonus action myAction object being targeted
 
         self._secondary_map_window = None   # SecondaryMapWindow instance
 
@@ -3493,6 +3591,10 @@ class MapWidget(QMainWindow):
         # Resync persistent spell zones — clear GUI state then repaint from engine
         self._rebuild_persistent_zones()
 
+        # Reset action economy
+        self._action_used = False
+        self._bonus_action_used = False
+        self._bonus_choice = None
         self.turn_action_panel.take_turn_button.setEnabled(True)
         self.turn_action_panel.action_dropdown.setEnabled(True)
 
@@ -3593,18 +3695,26 @@ class MapWidget(QMainWindow):
 
         if not targetsHit and not all_area_coords:
             self.turn_action_panel.log("⚠️ No valid targets in selection — try a different hex.")
-            # Leave targeting mode off but don't update turnChoice
             self._set_target_mode(False)
             return
 
-        self.turnChoice.targets = targetsHit
-        self.turnChoice.area_coords = all_area_coords
-
         targetNames = [arrayCenters[coord].name for coord in targetsHit]
         targetString = ', '.join(targetNames) if targetNames else '(no actors hit — miss)'
-        self.turn_action_panel.targets_label.setText(targetString)
-        if not targetsHit:
-            self.turn_action_panel.log("⚔️ No actors at target location — action will miss.")
+
+        if self._targeting_bonus:
+            # Write targets onto the bonus action choice object
+            if self._bonus_choice is not None:
+                self._bonus_choice.targets = targetsHit
+                self._bonus_choice.area_coords = all_area_coords
+            self.turn_action_panel.bonus_targets_label.setText(targetString)
+            if not targetsHit:
+                self.turn_action_panel.log("⚔️ No actors at bonus target location — action will miss.")
+        else:
+            self.turnChoice.targets = targetsHit
+            self.turnChoice.area_coords = all_area_coords
+            self.turn_action_panel.targets_label.setText(targetString)
+            if not targetsHit:
+                self.turn_action_panel.log("⚔️ No actors at target location — action will miss.")
 
         # Targeting mode complete — deactivate the button
         self._set_target_mode(False)
@@ -3619,10 +3729,12 @@ class MapWidget(QMainWindow):
         self._setup_target_params()
         self._set_target_mode(True)
 
-    def _set_target_mode(self, active: bool):
+    def _set_target_mode(self, active: bool, bonus: bool = False):
         """Turn targeting mode on or off and sync the button state."""
         self.map_view.spellAreaCheck = True if active else False
-        self.turn_action_panel.select_target_button.setChecked(active)
+        self._targeting_bonus = bonus if active else False
+        self.turn_action_panel.select_target_button.setChecked(active and not bonus)
+        self.turn_action_panel.select_bonus_target_button.setChecked(active and bonus)
         if not active:
             # Clear targeting highlight on the player view
             self.map_view.target_area_changed.emit(set())
@@ -3630,10 +3742,69 @@ class MapWidget(QMainWindow):
     def spellButton_pressed(self):
         if self.map_view.curActor is None:
             return
-        # Toggle targeting mode
-        currently_on = bool(self.map_view.spellAreaCheck)
+        # Toggle targeting mode (for main action)
+        currently_on = bool(self.map_view.spellAreaCheck) and not self._targeting_bonus
         self._setup_target_params()
-        self._set_target_mode(not currently_on)
+        self._set_target_mode(not currently_on, bonus=False)
+
+    def bonusSpellButton_pressed(self):
+        """Enter target-selection mode for the bonus action."""
+        if self.map_view.curActor is None:
+            return
+        currAction = self.turn_action_panel.bonus_action_dropdown.currentText()
+        if not currAction or currAction == '—':
+            return
+        # Toggle bonus targeting mode
+        currently_on = bool(self.map_view.spellAreaCheck) and self._targeting_bonus
+        self._setup_bonus_target_params(currAction)
+        self._set_target_mode(not currently_on, bonus=True)
+
+    def _setup_bonus_target_params(self, action_name: str):
+        """Configure map-view area parameters for the selected bonus action."""
+        actor = self.map_view.curActor
+        if actor is None:
+            return
+
+        self.map_view.spellAreaType = None
+        self.map_view.spellRange = None
+        self.map_view.spellDistance = None
+        self.map_view.spell_centers = []
+        self.map_view.spell_tree = None
+        self.map_view.spell_index = []
+
+        spell_data = None
+        if action_name in actor.spells:
+            raw = actor.spells[action_name]
+            spell_data = raw[1] if isinstance(raw, list) else raw
+
+        if spell_data is not None:
+            area = spell_data.get('area', '')
+            if 'cone' in area:
+                self.map_view.spellAreaType = 'cone'
+                self.map_view.spellDistance = int(int(re.findall(r'\d+', area)[0]) / 5)
+            elif 'sphere' in area:
+                self.map_view.spellAreaType = 'sphere'
+                self.map_view.spellRange = int(int(re.findall(r'\d+', spell_data['range'])[0]) / 5)
+                self.map_view.spellDistance = int(int(re.findall(r'\d+', area)[0]) / 5)
+                self.map_view.calcSpellLimit(self.map_view.spellRange)
+            elif 'line' in area:
+                self.map_view.spellAreaType = 'line'
+                self.map_view.spellDistance = int(int(re.findall(r'\d+', area)[0]) / 5)
+            elif 'square' in area:
+                self.map_view.spellAreaType = 'square'
+                self.map_view.spellRange = int(int(re.findall(r'\d+', spell_data['range'])[0]) / 5)
+                self.map_view.spellDistance = int(int(re.findall(r'\d+', area)[0]) / 5)
+                self.map_view.calcSpellLimit(self.map_view.spellRange)
+            else:
+                self.map_view.spellAreaType = 'single'
+                self.map_view.spellRange = int(int(re.findall(r'\d+', spell_data['range'])[0]) / 5)
+                self.map_view.spellDistance = 0
+                self.map_view.calcSpellLimit(self.map_view.spellRange)
+
+        # Build the _bonus_choice object so updateTargets has somewhere to write targets
+        matches = [x for x in self.turnChoices if x.name == action_name
+                   and getattr(x, 'action_type', 'action') == 'bonus_action']
+        self._bonus_choice = matches[0] if matches else None
 
     def _setup_target_params(self):
         """Configure spell/weapon area parameters on the map view for the current action."""
@@ -3726,6 +3897,11 @@ class MapWidget(QMainWindow):
 
         self.turn_action_panel.buildSpellSlots(self.actor)
         self.updateTurnOrder()
+
+        # Reset action economy for the new turn
+        self._action_used = False
+        self._bonus_action_used = False
+        self._bonus_choice = None
         self.turn_action_panel.take_turn_button.setEnabled(True)
         self.turn_action_panel.action_dropdown.setEnabled(True)
 
@@ -3742,10 +3918,94 @@ class MapWidget(QMainWindow):
             self.turnChoice.type = [x.type for x in self.turnChoices if x.name == currAction][0]
             self.turnChoice.name = currAction
             self.controller.take_action(self.actor, self.turnChoice)
+            self.actor.hasAction = False
+            self._action_used = True
             self.turn_action_panel.take_turn_button.setEnabled(False)
             self.turn_action_panel.action_dropdown.setEnabled(False)
             self.turn_action_panel.buildSpellSlots(self.actor)
-        
+            # One-spell rule: if action was a level 1+ spell, disable bonus action spells
+            self._apply_one_spell_rule()
+
+    def bonusTurnButton(self):
+        """Execute the selected bonus action."""
+        hexIndex = self.map_view.getCurActorHexIndex()
+        if self.turnChoices is None or self.actor is None:
+            return
+        currAction = self.turn_action_panel.bonus_action_dropdown.currentText()
+        if not currAction or currAction == '—':
+            return
+        # Use _bonus_choice if already built by target selection, otherwise find it
+        bonus_choice = self._bonus_choice
+        if bonus_choice is None or bonus_choice.name != currAction:
+            matches = [x for x in self.turnChoices if x.name == currAction
+                       and getattr(x, 'action_type', 'action') == 'bonus_action']
+            if not matches:
+                return
+            bonus_choice = matches[0]
+        if hexIndex is not None:
+            currLocation = list(self.myEncounter.map.arrayCenters)[hexIndex]
+            bonus_choice.moveCoord = currLocation
+        self.controller.take_action(self.actor, bonus_choice)
+        self.actor.hasBonusAction = False
+        self._bonus_action_used = True
+        self._bonus_choice = None
+        self.turn_action_panel.bonus_take_turn_button.setEnabled(False)
+        self.turn_action_panel.bonus_action_dropdown.setEnabled(False)
+        self.turn_action_panel.buildSpellSlots(self.actor)
+        # One-spell rule: if bonus action was a spell, restrict action dropdown to cantrips/non-spells
+        self._apply_one_spell_rule()
+
+    def _apply_one_spell_rule(self):
+        """Enforce D&D 5e one-spell-per-turn rule between actions and bonus actions."""
+        if self.turnChoices is None:
+            return
+        # Determine if a bonus action SPELL was used
+        bonus_spell_used = self._bonus_action_used and any(
+            x.name == self.turn_action_panel.bonus_action_dropdown.currentText()
+            and x.type in ('Sdmg', 'cc', 'heal')
+            for x in self.turnChoices
+            if getattr(x, 'action_type', 'action') == 'bonus_action'
+        )
+        # Determine if an action-slot LEVEL 1+ spell was used
+        action_spell_used = self._action_used and any(
+            x.name == self.turn_action_panel.action_dropdown.currentText()
+            and x.type in ('Sdmg', 'cc', 'heal')
+            and self.actor.spells.get(x.name, {}).get('lvl', 0) >= 1
+                if isinstance(self.actor.spells.get(x.name), dict) else False
+            for x in self.turnChoices
+            if getattr(x, 'action_type', 'action') == 'action'
+        )
+        # If bonus spell used → disable non-cantrip action spells if action not yet used
+        if bonus_spell_used and not self._action_used:
+            for x in self.turnChoices:
+                if (getattr(x, 'action_type', 'action') == 'action'
+                        and x.type in ('Sdmg', 'cc', 'heal')):
+                    spell_data = self.actor.spells.get(x.name)
+                    lvl = spell_data.get('lvl', 0) if isinstance(spell_data, dict) else 0
+                    if lvl >= 1:
+                        # Grey out non-cantrip spells in action dropdown
+                        idx = self.turn_action_panel.action_dropdown.findText(x.name)
+                        if idx >= 0:
+                            self.turn_action_panel.action_dropdown.model.item(idx).setEnabled(False)
+        # If action-level spell used → disable bonus action spell dropdown if not yet used
+        if action_spell_used and not self._bonus_action_used:
+            self.turn_action_panel.bonus_take_turn_button.setEnabled(False)
+            self.turn_action_panel.bonus_action_dropdown.setEnabled(False)
+
+    def bonusActionChanged(self, text):
+        """Update target params when the bonus action dropdown changes."""
+        if not text or text == '—':
+            return
+        # Reuse _setup_target_params logic: feed the bonus action dropdown selection
+        # temporarily into the action dropdown so it can be handled, then restore.
+        prev = self.turn_action_panel.action_dropdown.currentText()
+        idx = self.turn_action_panel.action_dropdown.findText(text)
+        if idx < 0:
+            # Item only in bonus dropdown — add temporarily for target setup
+            self.map_view.spellAreaType = None
+            self.map_view.spellRange = None
+            self.map_view.spellDistance = None
+
     def run_command(self):
         self.turn_action_panel.log('Starting Combat!')
         # Snapshot BEFORE calcTurn so serial 1 covers the first turn header logged below

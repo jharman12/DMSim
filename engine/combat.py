@@ -28,6 +28,7 @@ class myAction:
     targets: list
     castCoord: Optional[tuple] = None
     area_coords: list = None  # all hex coords in the spell area (including empty hexes)
+    action_type: str = 'action'  # 'action' or 'bonus_action'
 
 
 def removeDeadActors(map_obj, sortedInitList):
@@ -275,15 +276,18 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
             myEffect = actor.spells[spell][1]['effect']
             myDice = actor.spells[spell][1]['dice']
             myRange = actor.spells[spell][1]['range']
+            _spell_atype = 'action'
         else:
+            _spell_time = actor.spells[spell].get('time', '1 Action')
             if (actor.spells[spell]['combat'] == 'n'
                     or 0 >= actor.spellSlots[str(actor.spells[spell]['lvl'])]
-                    or actor.spells[spell]['time'] != "1 Action"):
+                    or _spell_time not in ("1 Action", "1 Bonus Action")):
                 continue
             myArea = actor.spells[spell]['area']
             myEffect = actor.spells[spell]['effect']
             myDice = actor.spells[spell]['dice']
             myRange = actor.spells[spell]['range']
+            _spell_atype = 'bonus_action' if _spell_time == '1 Bonus Action' else 'action'
 
         avgDmg = 0
 
@@ -291,16 +295,35 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
             if myArea != '':
                 pass  # area healing not yet implemented
             else:
-                hexLimit = (int(re.findall(r'\d+', myRange)[0]) / 5) + actor.speed / 5
-                anyOpenSpot = [
-                    x for x in distanceMatrix
-                    if x[0] <= actor.speed / 5 and x[1] <= int(re.findall(r'\d+', myRange)[0]) / 5
+                spellRange = int(re.findall(r'\d+', myRange)[0]) / 5
+
+                # Build a distance matrix relative to the closest ally, not the closest enemy
+                allyDistances = [map_obj.distanceCalc(myIndex, i) for i in partyList]
+                if allyDistances:
+                    closestAllyIndex = partyList[allyDistances.index(min(allyDistances))]
+                else:
+                    closestAllyIndex = myIndex
+                allyDistanceMatrix = [
+                    (map_obj.distanceCalc(myIndex, index), map_obj.distanceCalc(closestAllyIndex, index))
+                    for index in range(len(list(map_obj.arrayCenters)))
+                    if map_obj.arrayCenters[list(map_obj.arrayCenters)[index]] == ''
                 ]
-                if len(anyOpenSpot) == 0:
+
+                anyOpenSpot = [
+                    x for x in allyDistanceMatrix
+                    if x[0] <= actor.speed / 5 and x[1] <= spellRange
+                ]
+                # Also allow casting if an ally is already within range from current position
+                allyInRange = any(
+                    map_obj.distanceCalc(myIndex, i) <= spellRange + actor.speed / 5
+                    for i in partyList
+                )
+                if len(anyOpenSpot) == 0 and not allyInRange:
                     turnChoices.append(myAction(
                         name=spell, type='heal', mod=0, numHit=0,
                         currCoord=list(map_obj.arrayCenters)[myIndex],
-                        moveCoord=list(map_obj.arrayCenters)[myIndex], targets=[]
+                        moveCoord=list(map_obj.arrayCenters)[myIndex], targets=[],
+                        action_type=_spell_atype
                     ))
                     continue
                 dice = myDice
@@ -314,6 +337,7 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                     diceDmg = int(re.findall(r'\d+', di)[1])
                     avgDmg += 0.5 + diceCount * diceDmg / 2
 
+                hexLimit = spellRange + actor.speed / 5
                 lowestMissingHealth = [0, [myCoord]]
                 for index in partyList:
                     if map_obj.distanceCalc(myIndex, index) <= hexLimit:
@@ -325,7 +349,7 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                                 [i for i in map_obj.arrayCenters if map_obj.arrayCenters[i] == person]
                             ]
 
-                reachLimit = int(re.findall(r'\d+', myRange)[0]) / 5
+                reachLimit = spellRange
                 if lowestMissingHealth[1][0] != myCoord:
                     moveToCoord = coordWithinReach(myCoord, lowestMissingHealth[1][0], reachLimit, map_obj)
                 else:
@@ -334,7 +358,8 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                 turnChoices.append(myAction(
                     name=spell, type='heal', mod=lowestMissingHealth[0], numHit=1,
                     currCoord=list(map_obj.arrayCenters)[myIndex],
-                    moveCoord=moveToCoord, targets=lowestMissingHealth[1]
+                    moveCoord=moveToCoord, targets=lowestMissingHealth[1],
+                    action_type=_spell_atype
                 ))
 
         if myArea != '':
@@ -376,7 +401,8 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                     turnChoices.append(myAction(
                         name=spell, type='Sdmg', mod=0, numHit=0,
                         currCoord=list(map_obj.arrayCenters)[myIndex],
-                        moveCoord=list(map_obj.arrayCenters)[myIndex], targets=[]
+                        moveCoord=list(map_obj.arrayCenters)[myIndex], targets=[],
+                        action_type=_spell_atype
                     ))
                 else:
                     reachLimit = int(re.findall(r'\d+', myRange)[0]) / 5
@@ -384,7 +410,8 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                     turnChoices.append(myAction(
                         name=spell, type='Sdmg', mod=numToHit[0] * avgDmg, numHit=numToHit[0],
                         currCoord=list(map_obj.arrayCenters)[myIndex],
-                        moveCoord=moveToCoord, castCoord=numToHit[2], targets=numToHit[3]
+                        moveCoord=moveToCoord, castCoord=numToHit[2], targets=numToHit[3],
+                        action_type=_spell_atype
                     ))
 
             elif myEffect in conditionsList:
@@ -392,7 +419,8 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                     turnChoices.append(myAction(
                         name=spell, type='cc', mod=0, numHit=0,
                         currCoord=list(map_obj.arrayCenters)[myIndex],
-                        moveCoord=list(map_obj.arrayCenters)[myIndex], targets=[]
+                        moveCoord=list(map_obj.arrayCenters)[myIndex], targets=[],
+                        action_type=_spell_atype
                     ))
                 else:
                     reachLimit = int(re.findall(r'\d+', myRange)[0]) / 5
@@ -400,7 +428,8 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                     turnChoices.append(myAction(
                         name=spell, type='cc', mod=numToHit[0] * avgDmg * 20, numHit=numToHit[0],
                         currCoord=list(map_obj.arrayCenters)[myIndex],
-                        moveCoord=moveToCoord, castCoord=numToHit[2], targets=numToHit[3]
+                        moveCoord=moveToCoord, castCoord=numToHit[2], targets=numToHit[3],
+                        action_type=_spell_atype
                     ))
         else:
             hexLimit = (int(re.findall(r'\d+', myRange)[0]) / 5) + actor.speed / 5
@@ -413,14 +442,16 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                 turnChoices.append(myAction(
                     name=spell, type='Sdmg', mod=0, numHit=0,
                     currCoord=list(map_obj.arrayCenters)[myIndex],
-                    moveCoord=list(map_obj.arrayCenters)[myIndex], targets=[]
+                    moveCoord=list(map_obj.arrayCenters)[myIndex], targets=[],
+                    action_type=_spell_atype
                 ))
                 continue
             if len(distance_hits) == 0:
                 turnChoices.append(myAction(
                     name=spell, type='Sdmg', mod=0, numHit=0,
                     currCoord=list(map_obj.arrayCenters)[myIndex],
-                    moveCoord=list(map_obj.arrayCenters)[myIndex], targets=[]
+                    moveCoord=list(map_obj.arrayCenters)[myIndex], targets=[],
+                    action_type=_spell_atype
                 ))
             elif myEffect in dmgTypes:
                 dice = myDice
@@ -443,7 +474,8 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                 turnChoices.append(myAction(
                     name=spell, type='Sdmg', mod=avgDmg, numHit=1,
                     currCoord=list(map_obj.arrayCenters)[myIndex],
-                    moveCoord=moveToCoord, targets=[closestCoord]
+                    moveCoord=moveToCoord, targets=[closestCoord],
+                    action_type=_spell_atype
                 ))
             elif myEffect in conditionsList:
                 reachLimit = int(re.findall(r'\d+', myRange)[0]) / 5
@@ -460,7 +492,8 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                 turnChoices.append(myAction(
                     name=spell, type='cc', mod=1, numHit=1,
                     currCoord=list(map_obj.arrayCenters)[myIndex],
-                    moveCoord=moveToCoord, targets=[closestCoord]
+                    moveCoord=moveToCoord, targets=[closestCoord],
+                    action_type=_spell_atype
                 ))
 
     # --- Break Free (Restrained) ---

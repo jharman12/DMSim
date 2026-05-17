@@ -54,9 +54,11 @@ class Monster(Actor):
         self.legActionWeapon = legAction[1]
         self.reaction = 1
         self.alive = 1
-        self.status = []  # Track character status conditions (like death saves)
-        self.deathSaves = {'fail': [], 'pass': []}  # Track death saving throws
-        self.twoAttacks = 0  # Monsters don't have the Two-Weapon Fighting feature by default
+        self.status = []
+        self.deathSaves = {'fail': [], 'pass': []}
+        self.twoAttacks = 0
+        self.hasAction = True
+        self.hasBonusAction = True
         self.AvgdmgCalc()
 
     def AvgdmgCalc(self):

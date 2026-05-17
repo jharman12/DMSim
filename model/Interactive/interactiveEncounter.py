@@ -38,6 +38,8 @@ class interactiveEncounter:
             # Ensure every actor has maxSpeed so end_turn can restore it correctly.
             if not hasattr(actor, 'maxSpeed'):
                 actor.maxSpeed = actor.speed
+            actor.hasAction = True
+            actor.hasBonusAction = True
             # Snapshot monster spell use counts so the GUI can show max checkboxes correctly.
             if not getattr(actor, 'is_player', False):
                 actor._spell_max_uses = {
@@ -119,6 +121,10 @@ class interactiveEncounter:
         dprint(self.sortedInitList, self.curTurn)
         actor = list(self.sortedInitList)[self.curTurn]
         self.map.combatLog('Current Turn:' + str(self.curTurn) + '\n\t' + actor.name)
+
+        # Reset per-turn action economy
+        actor.hasAction = True
+        actor.hasBonusAction = True
 
         for healthCheck in list(self.sortedInitList.keys()):
             dprint('\t\t', healthCheck.name, healthCheck.health)

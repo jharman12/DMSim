@@ -62,6 +62,8 @@ class Player(Actor):
         self.legActions = 0
         self.maxLegActions = 0
         self.legActionWeapon = ''
+        self.hasAction = True
+        self.hasBonusAction = True
         
         # find character proficiency
         if self.lvl >= 1:
