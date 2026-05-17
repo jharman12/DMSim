@@ -185,6 +185,8 @@ def set_font(widget, size, weight=QFont.Normal, monospace=False):
 class CustomGraphicsView(QGraphicsView):
     affectedSaved = pyqtSignal(list)
     walls_changed = pyqtSignal(set)   # emitted with the new wall index set
+    fog_changed = pyqtSignal(set)     # emitted with updated fog index set
+    target_area_changed = pyqtSignal(set)  # emitted with highlighted hex indices (empty = cleared)
 
     def __init__(self, encounter):
         super().__init__()
@@ -237,6 +239,60 @@ class CustomGraphicsView(QGraphicsView):
         self._wall_toolbar.setVisible(False)
         self._wall_toolbar.setAttribute(Qt.WA_TransparentForMouseEvents, False)
 
+        # Fog of war state
+        self.fog_mode = False
+        self._fog_indices: set = set()
+        self._fog_drag_adding: bool = True
+        self._fog_dm_items: dict = {}   # hex_idx -> QGraphicsPolygonItem child overlay
+        # Brush size in hex-radii: 0=single, 1=small cluster, 2=medium, 3=large, 4=huge
+        self._fog_brush_radius: int = 0
+
+        # Fog mode overlay toolbar (top-right, shares position with wall toolbar since exclusive)
+        self._fog_toolbar = QFrame(self)
+        self._fog_toolbar.setStyleSheet(
+            "QFrame { background: rgba(30,30,40,220); border: 1px solid #555; border-radius: 6px; }"
+        )
+        ftbl = QHBoxLayout(self._fog_toolbar)
+        ftbl.setContentsMargins(6, 4, 6, 4)
+        ftbl.setSpacing(6)
+
+        self._fog_create_btn = QPushButton("➕ Create")
+        self._fog_create_btn.setCheckable(True)
+        self._fog_create_btn.setChecked(True)
+        self._fog_create_btn.setStyleSheet(
+            "QPushButton { color: #eee; border: 1px solid #555; border-radius: 4px; padding: 3px 8px; }"
+            "QPushButton:checked { background-color: #1a6a1a; color: #ffffff; border: 2px solid #44cc44; }"
+        )
+        self._fog_delete_btn = QPushButton("🗑 Delete")
+        self._fog_delete_btn.setCheckable(True)
+        self._fog_delete_btn.setStyleSheet(
+            "QPushButton { color: #eee; border: 1px solid #555; border-radius: 4px; padding: 3px 8px; }"
+            "QPushButton:checked { background-color: #7a1a1a; color: #ffffff; border: 2px solid #ff4444; }"
+        )
+
+        self._fog_create_btn.clicked.connect(self._fog_mode_create)
+        self._fog_delete_btn.clicked.connect(self._fog_mode_delete)
+
+        # Brush-size selector
+        _size_lbl = QLabel("Size:")
+        _size_lbl.setStyleSheet("color: #ccc; font-size: 12px;")
+        self._fog_size_combo = QComboBox()
+        self._fog_size_combo.addItems(["Small", "Medium", "Large", "Huge"])
+        self._fog_size_combo.setStyleSheet(
+            "QComboBox { color: #eee; background: #2a2a3a; border: 1px solid #555; "
+            "border-radius: 4px; padding: 2px 6px; min-width: 70px; }"
+            "QComboBox QAbstractItemView { color: #eee; background: #2a2a3a; }"
+        )
+        self._fog_size_combo.currentIndexChanged.connect(self._on_fog_size_changed)
+
+        ftbl.addWidget(self._fog_create_btn)
+        ftbl.addWidget(self._fog_delete_btn)
+        ftbl.addWidget(_size_lbl)
+        ftbl.addWidget(self._fog_size_combo)
+        self._fog_toolbar.adjustSize()
+        self._fog_toolbar.setVisible(False)
+        self._fog_toolbar.setAttribute(Qt.WA_TransparentForMouseEvents, False)
+
         self._persistent_zones: dict = {}  # spell_name -> list[hex_index]
 
         # Callback to fetch prev-turn data from MapWidget — set by MapWidget after init
@@ -270,6 +326,7 @@ class CustomGraphicsView(QGraphicsView):
         self.moveFill = QColor(0, 255, 0, 50)
         self.coneFill = QColor(255, 0, 0, 50)
         self.wallFill = QColor(80, 50, 20, 220)   # dark brown — always on top
+        self.fogFill  = QColor(80, 80, 100, 110)  # dim grey-blue — DM fog overlay (semi-transparent)
         self.persistFill = QColor(255, 140, 0, 130)  # orange — persistent spell zones
         self.distStartFill = QColor(0, 220, 220, 160)   # cyan — distance start hex
         self.distPathFill = QColor(180, 180, 180, 80)   # dim grey — path route
@@ -384,6 +441,94 @@ class CustomGraphicsView(QGraphicsView):
         self._wall_drag_adding = False
         self._wall_delete_btn.setChecked(True)
         self._wall_create_btn.setChecked(False)
+
+    # ------------------------------------------------------------------
+    # Fog of war toolbar
+    # ------------------------------------------------------------------
+
+    def show_fog_toolbar(self, visible: bool):
+        """Show or hide the fog mode overlay toolbar."""
+        self._fog_toolbar.setVisible(visible)
+        if visible:
+            self._position_fog_toolbar()
+
+    def _position_fog_toolbar(self):
+        """Place the fog toolbar in the top-right of the view."""
+        self._fog_toolbar.adjustSize()
+        margin = 10
+        x = self.width() - self._fog_toolbar.width() - margin
+        self._fog_toolbar.move(x, margin)
+        self._fog_toolbar.raise_()
+
+    def _fog_mode_create(self):
+        self._fog_drag_adding = True
+        self._fog_create_btn.setChecked(True)
+        self._fog_delete_btn.setChecked(False)
+
+    def _fog_mode_delete(self):
+        self._fog_drag_adding = False
+        self._fog_delete_btn.setChecked(True)
+        self._fog_create_btn.setChecked(False)
+
+    def _on_fog_size_changed(self, index: int):
+        """Map combo index → hex-radius used when painting/erasing fog."""
+        # Small=0 → radius 0 (1 hex), Medium=1 → 1, Large=2 → 2, Huge=3 → 3
+        self._fog_brush_radius = index
+
+    def _fog_hex_cluster(self, center_idx: int) -> list[int]:
+        """Return all hex indices within _fog_brush_radius hexes of center_idx.
+
+        Uses the KD-tree with a pixel-distance cutoff derived from the hex radius
+        so the result is always a compact circular cluster regardless of map scale.
+        """
+        if self._fog_brush_radius == 0 or self.hex_tree is None:
+            return [center_idx]
+        # Each hex step ≈ self.radius * 1.5 in horizontal distance for flat-top grids,
+        # but using 2 * self.radius per step gives a safe over-estimate that matches
+        # distanceCalc behaviour.
+        pixel_radius = self._fog_brush_radius * self.radius * 2.0
+        cx, cy = self.hex_centers_base[center_idx]
+        indices = self.hex_tree.query_ball_point([cx, cy], pixel_radius)
+        return indices
+
+    def _add_fog_hex(self, idx: int):
+        """Add a dim DM fog overlay to hex idx and record it in _fog_indices."""
+        if idx in self._fog_dm_items or idx >= len(self.hex_items):
+            return
+        hex_item = self.hex_items[idx]
+        # Overlay is a child of the hex item so it moves when the map is dragged
+        overlay = QGraphicsPolygonItem(hex_item.polygon(), hex_item)
+        overlay.setBrush(QBrush(self.fogFill))
+        overlay.setPen(QPen(Qt.NoPen))
+        overlay.setZValue(0.5)
+        overlay.setAcceptedMouseButtons(Qt.NoButton)
+        self._fog_dm_items[idx] = overlay
+        self._fog_indices.add(idx)
+
+    def _remove_fog_hex(self, idx: int):
+        """Remove fog from hex idx."""
+        if idx not in self._fog_dm_items:
+            return
+        overlay = self._fog_dm_items.pop(idx)
+        overlay.setParentItem(None)
+        if overlay.scene():
+            overlay.scene().removeItem(overlay)
+        self._fog_indices.discard(idx)
+
+    def _reapply_fog(self):
+        """Re-create fog DM overlays after hex grid is redrawn (preserves _fog_indices)."""
+        self._fog_dm_items.clear()
+        for idx in list(self._fog_indices):
+            if idx < len(self.hex_items):
+                hex_item = self.hex_items[idx]
+                overlay = QGraphicsPolygonItem(hex_item.polygon(), hex_item)
+                overlay.setBrush(QBrush(self.fogFill))
+                overlay.setPen(QPen(Qt.NoPen))
+                overlay.setZValue(0.5)
+                overlay.setAcceptedMouseButtons(Qt.NoButton)
+                self._fog_dm_items[idx] = overlay
+            else:
+                self._fog_indices.discard(idx)
 
     # ------------------------------------------------------------------
     # Distance-calc mode
@@ -918,6 +1063,26 @@ class CustomGraphicsView(QGraphicsView):
                         self.walls_changed.emit(set(self._wall_indices))
                 return
 
+            # Fog-of-war mode: paint/erase fog on click
+            if self.fog_mode:
+                idx = self._scene_pos_to_hex_idx(self.mapToScene(event.pos()))
+                if idx is not None:
+                    cluster = self._fog_hex_cluster(idx)
+                    changed = False
+                    if self._fog_drag_adding:
+                        for cidx in cluster:
+                            if cidx not in self._fog_indices:
+                                self._add_fog_hex(cidx)
+                                changed = True
+                    else:
+                        for cidx in cluster:
+                            if cidx in self._fog_indices:
+                                self._remove_fog_hex(cidx)
+                                changed = True
+                    if changed:
+                        self.fog_changed.emit(set(self._fog_indices))
+                return
+
             if self.spellAreaCheck != None and self.affected != None:
                 self.affectedSaved.emit(self.affected)
                 # updateTargets handler will deactivate target mode via _set_target_mode
@@ -937,6 +1102,8 @@ class CustomGraphicsView(QGraphicsView):
             self._position_dist_label()
         if self._wall_toolbar.isVisible():
             self._position_wall_toolbar()
+        if self._fog_toolbar.isVisible():
+            self._position_fog_toolbar()
 
     def handleSpellAreaCheck(self, mouse_pos):
         # need to pass hex distance and spell range through here
@@ -962,6 +1129,12 @@ class CustomGraphicsView(QGraphicsView):
         if self.spellAreaType == 'single':
             affected = self.getSphereHexes(distance_hexes=self.spellDistance, mouse_pos=mouse_pos, spellRange=self.spellRange)
             self.setHexColors(self.coneFill, affected)
+
+        # Notify the player view so it can show the targeting highlight through fog
+        if self.affected is not None:
+            self.target_area_changed.emit(set(self.affected))
+        else:
+            self.target_area_changed.emit(set())
         
         
         
@@ -989,6 +1162,26 @@ class CustomGraphicsView(QGraphicsView):
                     self._wall_indices.discard(idx)
                     self.setHexColors(self.defaultFill, [idx])
                     self.walls_changed.emit(set(self._wall_indices))
+            return
+
+        # Fog drag-paint: paint/erase fog while LMB held
+        if self.fog_mode and event.buttons() == Qt.LeftButton:
+            idx = self._scene_pos_to_hex_idx(self.mapToScene(event.pos()))
+            if idx is not None:
+                cluster = self._fog_hex_cluster(idx)
+                changed = False
+                if self._fog_drag_adding:
+                    for cidx in cluster:
+                        if cidx not in self._fog_indices:
+                            self._add_fog_hex(cidx)
+                            changed = True
+                else:
+                    for cidx in cluster:
+                        if cidx in self._fog_indices:
+                            self._remove_fog_hex(cidx)
+                            changed = True
+                if changed:
+                    self.fog_changed.emit(set(self._fog_indices))
             return
 
         if event.buttons() == Qt.LeftButton and self.selected_item:
@@ -1327,6 +1520,9 @@ class CustomGraphicsView(QGraphicsView):
         
         self.setHexColors(fill_color, allHexIndexes)
 
+        # Restore fog overlays on the new hex grid
+        self._reapply_fog()
+
     def setCharsToHexes(self):
         # Iterate over character items
         for character_item in self.character_items:
@@ -1382,6 +1578,9 @@ class CustomGraphicsView(QGraphicsView):
    
 
     def clearGrid(self):
+        # Remove fog overlays — they're children of hex items so they go with them,
+        # but we clear the lookup dict so _reapply_fog can recreate them after redraw
+        self._fog_dm_items.clear()
         # Remove only hex grid items
         for item in self.hex_items:
             self.scene.removeItem(item)
@@ -1968,6 +2167,138 @@ class TurnActionPanel(QWidget):
         #self.move_input.setText(move_coords)
 
 
+def _expand_polygon(poly: QPolygonF, padding: float) -> QPolygonF:
+    """Return a copy of poly with each vertex pushed outward from the centroid by `padding` pixels."""
+    cx = sum(poly[i].x() for i in range(poly.count())) / poly.count()
+    cy = sum(poly[i].y() for i in range(poly.count())) / poly.count()
+    points = []
+    for i in range(poly.count()):
+        dx = poly[i].x() - cx
+        dy = poly[i].y() - cy
+        length = math.hypot(dx, dy)
+        if length > 0:
+            scale = (length + padding) / length
+        else:
+            scale = 1.0
+        points.append(QPointF(cx + dx * scale, cy + dy * scale))
+    return QPolygonF(points)
+
+
+class PlayerMapView(QGraphicsView):
+    """Non-interactive view that shares the main scene and paints opaque fog over fogged hexes."""
+
+    # Semi-transparent red colour that mirrors coneFill — used to show targeting through fog
+    _TARGETING_COLOR = QColor(255, 60, 60, 200)
+
+    def __init__(self, scene):
+        super().__init__(scene)
+        self._fog_hex_items: list = []   # reference to CustomGraphicsView.hex_items
+        self._fog_indices: set = set()
+        self._target_indices: set = set()   # hexes currently highlighted for targeting
+
+    def set_hex_items(self, hex_items: list):
+        self._fog_hex_items = hex_items
+
+    def update_fog(self, fog_indices: set):
+        self._fog_indices = set(fog_indices)
+        if self.scene():
+            self.scene().update()
+
+    def update_target_highlight(self, target_indices: set):
+        self._target_indices = set(target_indices)
+        if self.scene():
+            self.scene().update()
+
+    def drawForeground(self, painter, rect):
+        """Paint fully-opaque fog polygons on top of all scene content.
+
+        Each polygon is expanded by a few pixels so actor icons and their
+        red turn-indicator outlines (which extend beyond the hex boundary)
+        are fully hidden.
+
+        Hexes that are currently highlighted for spell/attack targeting are
+        shown through the fog with a red tint — the player can see the area
+        being targeted but not any actors hidden inside the fog.
+        """
+        super().drawForeground(painter, rect)
+        if not self._fog_indices or not self._fog_hex_items:
+            return
+        painter.save()
+        painter.setPen(QPen(Qt.NoPen))
+
+        for idx in self._fog_indices:
+            if idx >= len(self._fog_hex_items):
+                continue
+            hex_item = self._fog_hex_items[idx]
+            poly = hex_item.mapToScene(hex_item.polygon())
+            expanded = _expand_polygon(poly, 10)
+
+            if idx in self._target_indices:
+                # Hex is targeted — draw opaque fog first to hide actors/outlines,
+                # then overlay a bright targeting colour on top so the player sees the area
+                painter.setBrush(QBrush(QColor(20, 20, 30, 255)))
+                painter.drawPolygon(expanded)
+                painter.setBrush(QBrush(self._TARGETING_COLOR))
+                painter.drawPolygon(poly)
+            else:
+                painter.setBrush(QBrush(QColor(20, 20, 30, 255)))
+                painter.drawPolygon(expanded)
+
+        painter.restore()
+
+
+class SecondaryMapWindow(QMainWindow):
+    """Read-only mirror of the encounter map for display on a second screen.
+
+    Shares the same QGraphicsScene as the main CustomGraphicsView so all
+    updates (movement, highlights, outlines) are reflected automatically.
+    The PlayerMapView subclass paints opaque fog over fogged hexes.
+    """
+
+    def __init__(self, scene, hex_items, fog_indices, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Player Map View")
+        self.resize(900, 700)
+
+        self._view = PlayerMapView(scene)
+        self._view.set_hex_items(hex_items)
+        self._view.update_fog(fog_indices)
+        self._view.setRenderHints(
+            QPainter.Antialiasing | QPainter.SmoothPixmapTransform
+        )
+        # Disable all interaction — this window is purely for display
+        self._view.setInteractive(False)
+        self._view.setDragMode(QGraphicsView.NoDrag)
+        self._view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self._view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self._view.setFrameShape(QFrame.NoFrame)
+        self._view.setBackgroundBrush(QBrush(QColor(20, 20, 20)))
+
+        self.setCentralWidget(self._view)
+        self._fit()
+
+    def update_fog(self, fog_indices: set):
+        """Relay fog changes from the main view to the player view."""
+        self._view.update_fog(fog_indices)
+
+    def update_target_highlight(self, target_indices: set):
+        """Relay targeting highlight changes to the player view."""
+        self._view.update_target_highlight(target_indices)
+
+    def _fit(self):
+        """Scale the view so the whole scene is visible."""
+        scene = self._view.scene()
+        if scene:
+            self._view.fitInView(scene.sceneRect(), Qt.KeepAspectRatio)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._fit()
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._fit()
+
 
 class MapWidget(QMainWindow):
     def __init__(self, controller):
@@ -2031,6 +2362,17 @@ class MapWidget(QMainWindow):
         self.wall_button.clicked.connect(self._toggle_wall_mode)
         top_button_row.addWidget(self.wall_button)
 
+        self.fog_button = QPushButton("🌫️ Fog")
+        self.fog_button.setCheckable(True)
+        self.fog_button.setToolTip(
+            "Paint fog of war on hexes — hidden on the player display, dim on the DM view"
+        )
+        self.fog_button.setStyleSheet(
+            "QPushButton:checked { background-color: #2a3a4a; color: #ccccdd; border: 2px solid #7799bb; border-radius: 4px; }"
+        )
+        self.fog_button.clicked.connect(self._toggle_fog_mode)
+        top_button_row.addWidget(self.fog_button)
+
         self.manual_dice_button = QPushButton("🎲 Manual Rollers")
         self.manual_dice_button.setToolTip(
             "Choose which actors roll their own physical dice"
@@ -2046,6 +2388,17 @@ class MapWidget(QMainWindow):
         top_button_row.addWidget(self.manual_actions_button)
 
         top_button_row.addStretch(1)
+
+        self.player_view_button = QPushButton("🖥️ Player View")
+        self.player_view_button.setCheckable(True)
+        self.player_view_button.setToolTip(
+            "Open a read-only map window to show players on a second monitor"
+        )
+        self.player_view_button.setStyleSheet(
+            "QPushButton:checked { background-color: #2a4a8a; color: #ffffff; border: 2px solid #6699ff; border-radius: 4px; }"
+        )
+        self.player_view_button.clicked.connect(self._toggle_player_view)
+        top_button_row.addWidget(self.player_view_button)
 
         self.undo_button = QPushButton("Undo Turn")
         self.undo_button.setCheckable(True)
@@ -2133,6 +2486,8 @@ class MapWidget(QMainWindow):
         self.turnChoice = None
         self.actor = None
 
+        self._secondary_map_window = None   # SecondaryMapWindow instance
+
         # Previous-turn data keyed by actor name
         self._turn_records: dict = {}   # {actor_name: {from_idx, to_idx, log_start, log_end}}
         self._log_turn_start: int = 0   # block count at start of current turn
@@ -2153,6 +2508,8 @@ class MapWidget(QMainWindow):
         self.controller.persistent_spell_created.connect(self._on_persistent_spell_created)
         self.controller.persistent_spell_ended.connect(self._on_persistent_spell_ended)
         self.map_view.walls_changed.connect(self._on_walls_changed)
+        self.map_view.fog_changed.connect(self._on_fog_changed)
+        self.map_view.target_area_changed.connect(self._on_target_area_changed)
 
         self.controller.roll_provider_factory = self._make_roll_provider
 
@@ -2309,6 +2666,10 @@ class MapWidget(QMainWindow):
             # Deactivate distance mode if active
             self.distance_button.setChecked(False)
             self.map_view.set_distance_mode(False)
+            # Deactivate fog mode if active
+            self.fog_button.setChecked(False)
+            self.map_view.fog_mode = False
+            self.map_view.show_fog_toolbar(False)
         self.map_view.wall_mode = checked
         if checked:
             self.map_view.setCursor(Qt.CrossCursor)
@@ -2324,10 +2685,76 @@ class MapWidget(QMainWindow):
             # Deactivate wall mode if active
             self.wall_button.setChecked(False)
             self.map_view.wall_mode = False
+            self.map_view.show_wall_toolbar(False)
             self.map_view.unsetCursor()
+            # Deactivate fog mode if active
+            self.fog_button.setChecked(False)
+            self.map_view.fog_mode = False
+            self.map_view.show_fog_toolbar(False)
             # Deactivate spell targeting too
             self._set_target_mode(False)
         self.map_view.set_distance_mode(checked)
+
+    def _toggle_fog_mode(self, checked: bool):
+        """Enable or disable fog-of-war painting mode."""
+        if checked:
+            # Deactivate wall mode if active
+            self.wall_button.setChecked(False)
+            self.map_view.wall_mode = False
+            self.map_view.show_wall_toolbar(False)
+            # Deactivate distance mode if active
+            self.distance_button.setChecked(False)
+            self.map_view.set_distance_mode(False)
+            # Deactivate spell targeting too
+            self._set_target_mode(False)
+        self.map_view.fog_mode = checked
+        if checked:
+            self.map_view.setCursor(Qt.CrossCursor)
+            self.map_view._fog_mode_create()
+        else:
+            self.map_view.unsetCursor()
+        self.map_view.show_fog_toolbar(checked)
+
+    def _toggle_player_view(self, checked: bool):
+        """Open or close the secondary read-only player map window."""
+        if checked:
+            if self._secondary_map_window is None or not self._secondary_map_window.isVisible():
+                self._secondary_map_window = SecondaryMapWindow(
+                    self.map_view.scene,
+                    self.map_view.hex_items,
+                    self.map_view._fog_indices,
+                    parent=None,
+                )
+                self._secondary_map_window.setAttribute(Qt.WA_DeleteOnClose, False)
+                # Move to second screen if available
+                screens = QApplication.screens()
+                if len(screens) > 1:
+                    geom = screens[1].geometry()
+                    self._secondary_map_window.setGeometry(geom)
+                    self._secondary_map_window.showMaximized()
+                else:
+                    self._secondary_map_window.show()
+                # Uncheck button when user closes the window manually
+                self._secondary_map_window.destroyed.connect(
+                    lambda: self.player_view_button.setChecked(False)
+                )
+            else:
+                self._secondary_map_window.raise_()
+                self._secondary_map_window.activateWindow()
+        else:
+            if self._secondary_map_window is not None:
+                self._secondary_map_window.close()
+                self._secondary_map_window = None
+
+    def _on_fog_changed(self, fog_indices: set):
+        """Relay fog changes to the player view if it's open."""
+        if self._secondary_map_window is not None and self._secondary_map_window.isVisible():
+            self._secondary_map_window.update_fog(fog_indices)
+
+    def _on_target_area_changed(self, target_indices: set):
+        """Relay targeting highlight to the player view if it's open."""
+        if self._secondary_map_window is not None and self._secondary_map_window.isVisible():
+            self._secondary_map_window.update_target_highlight(target_indices)
 
     def _on_walls_changed(self, wall_indices: set):
         """Sync wall indices from the view into the engine map."""
@@ -2507,8 +2934,10 @@ class MapWidget(QMainWindow):
         self.turnChoice.area_coords = all_area_coords
 
         targetNames = [arrayCenters[coord].name for coord in targetsHit]
-        targetString = ', '.join(targetNames) if targetNames else '(area, no actors hit)'
+        targetString = ', '.join(targetNames) if targetNames else '(no actors hit — miss)'
         self.turn_action_panel.targets_label.setText(targetString)
+        if not targetsHit:
+            self.turn_action_panel.log("⚔️ No actors at target location — action will miss.")
 
         # Targeting mode complete — deactivate the button
         self._set_target_mode(False)
@@ -2527,6 +2956,9 @@ class MapWidget(QMainWindow):
         """Turn targeting mode on or off and sync the button state."""
         self.map_view.spellAreaCheck = True if active else False
         self.turn_action_panel.select_target_button.setChecked(active)
+        if not active:
+            # Clear targeting highlight on the player view
+            self.map_view.target_area_changed.emit(set())
 
     def spellButton_pressed(self):
         if self.map_view.curActor is None:
