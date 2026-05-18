@@ -229,6 +229,7 @@
   },
   "Ancient Silver Dragon": {
     "name": "Ancient Silver Dragon",
+    "cr": "23",
     "ac": 22,
     "hp": 487,
     "speed": 40,
@@ -240,7 +241,12 @@
       "Wisdom": 29,
       "Charisma": 9
     },
-    "cr": "23",
+    "turnFactors": {
+      "Melee": 1.0,
+      "Ranged": 0.0,
+      "Ranged Spell": 0.0,
+      "Spell CC": 0.0
+    },
     "weaponList": [
       {
         "name": "Bite",
@@ -282,22 +288,16 @@
         "dmgMod": 0
       }
     ],
-    "multiAttack": {},
-    "turnFactors": {
-      "Melee": 1.0,
-      "Ranged": 0.0,
-      "Ranged Spell": 0.0,
-      "Spell CC": 0.0
-    },
     "spells": {},
     "spellAttackMod": 0,
+    "multiAttack": {},
     "legRes": 0,
     "legActions": [
       0,
       []
     ],
     "image": null,
-    "size": 25
+    "size": 200
   },
   "Androsphinx": {
     "name": "Androsphinx",

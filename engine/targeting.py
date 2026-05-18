@@ -32,22 +32,25 @@ def calcMoveHexes(actor, map_obj, type=None):
 
     Uses BFS (breadth-first search) so walls act as true blockers — the actor
     cannot pass through a wall hex to reach hexes on the other side.
+    For multi-hex actors, only returns destinations where the full footprint fits.
     """
     from collections import deque
+    from engine.size_utils import get_size_cat, can_place_footprint
 
     arrayCenters = map_obj.arrayCenters
     coords = list(arrayCenters)
     n = len(coords)
     walls = getattr(map_obj, 'walls', set())
 
-    actor_coord = next(c for c in arrayCenters if arrayCenters[c] == actor)
+    actor_coord = next(
+        (c for c in arrayCenters if arrayCenters[c] is actor),
+        next((c for c in arrayCenters if arrayCenters[c] == actor), None)
+    )
     start = coords.index(actor_coord)
 
     speed = int(actor.speed / 5)
     limit = speed * 2 if type == 'dash' else speed
 
-    # Precompute neighbours once using the same doubled-height metric as the map.
-    # Two hexes are adjacent if their distance is exactly 1.
     def _hex_dist(a, b):
         drow = abs(a[1] - b[1])
         dcol = abs(a[0] - b[0])
@@ -58,7 +61,6 @@ def calcMoveHexes(actor, map_obj, type=None):
         for i in range(n)
     ]
 
-    # BFS — cost is number of hexes moved
     cost = {start: 0}
     queue = deque([start])
 
@@ -71,10 +73,17 @@ def calcMoveHexes(actor, map_obj, type=None):
                 cost[nb] = cost[cur] + 1
                 queue.append(nb)
 
-    # Only return hexes the actor can actually stand on (empty or self)
+    size_cat = get_size_cat(actor)
+    if size_cat in ('Tiny', 'Small', 'Medium'):
+        return [
+            i for i in cost
+            if arrayCenters[coords[i]] == '' or arrayCenters[coords[i]] is actor
+        ]
+
+    # Multi-hex: only reachable if full footprint can fit at destination
     return [
         i for i in cost
-        if arrayCenters[coords[i]] == '' or arrayCenters[coords[i]] == actor
+        if can_place_footprint(coords[i], size_cat, map_obj, actor)
     ]
 
 
@@ -126,21 +135,22 @@ def moveWithingReach(actor, target, reach, map_obj):
 
 
 def bestSphere(actor, map_obj, radius, reach, targets='enemy'):
+    from engine.size_utils import dedup_actor_list
     reachLimit = (reach + actor.speed) / 5
     setRatio = 4
     hexLimit = radius / 5
     actorCoord = [x for x in map_obj.arrayCenters.keys() if map_obj.arrayCenters[x] == actor][0]
 
     if targets == 'party':
-        enemyList = [list(map_obj.arrayCenters).index(i) for i in map_obj.arrayCenters.keys()
-                     if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.enemy]
-        partyList = [list(map_obj.arrayCenters).index(i) for i in map_obj.arrayCenters.keys()
-                     if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.party]
+        enemyList = dedup_actor_list([list(map_obj.arrayCenters).index(i) for i in map_obj.arrayCenters.keys()
+                     if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.enemy], map_obj)
+        partyList = dedup_actor_list([list(map_obj.arrayCenters).index(i) for i in map_obj.arrayCenters.keys()
+                     if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.party], map_obj)
     else:
-        enemyList = [list(map_obj.arrayCenters).index(i) for i in map_obj.arrayCenters.keys()
-                     if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.party]
-        partyList = [list(map_obj.arrayCenters).index(i) for i in map_obj.arrayCenters.keys()
-                     if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.enemy]
+        enemyList = dedup_actor_list([list(map_obj.arrayCenters).index(i) for i in map_obj.arrayCenters.keys()
+                     if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.party], map_obj)
+        partyList = dedup_actor_list([list(map_obj.arrayCenters).index(i) for i in map_obj.arrayCenters.keys()
+                     if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.enemy], map_obj)
 
     distances = {
         'Enemy': [[map_obj.distanceCalc(c1, list(map_obj.arrayCenters).index(c2)) for c1 in enemyList]

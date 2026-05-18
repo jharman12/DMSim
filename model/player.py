@@ -18,7 +18,7 @@ from model.actor import Actor
 class Player(Actor):
     is_player = True
 
-    def __init__(self, name, lvl, ac, health, modDict, turnFactors, weaponList, type, Image = False, known_spells=None):
+    def __init__(self, name, lvl, ac, health, modDict, turnFactors, weaponList, type, Image=False, known_spells=None, size='Medium'):
         self.name = name
         
         # Support multiclassing: type can be either a string (single class) or dict (multiclass)
@@ -45,7 +45,7 @@ class Player(Actor):
         for key in list(turnFactors.keys()):
             turnFactors[key] = float(turnFactors[key])
         self.turnFactors = turnFactors
-        self.size = 25
+        self.size = size  # D&D 5e size category string ('Medium', 'Large', 'Huge', 'Gargantuan', etc.)
         self.defineSpellSlots()
         # Optional known spells filter (backward compatible when None)
         self.known_spells = set(known_spells) if known_spells else None
@@ -435,7 +435,8 @@ def createPartyList(nameList, path):
                                            for weapon in characters[name]['weapons']], 
                         type = characters[name]['class'],
                         Image= characters[name]['image'],
-                        known_spells=characters[name].get('known_spells'))
+                        known_spells=characters[name].get('known_spells'),
+                        size=characters[name].get('size', 'Medium'))
                         
                         for name in nameList if name in list(characters.keys())]
     return partyList

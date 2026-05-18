@@ -15,6 +15,10 @@ from engine.targeting import (
 from engine.persistent import (
     create_persistent_spell, end_concentration, concentration_save,
 )
+from engine.size_utils import (
+    get_actor_anchor_index, actor_min_distance, nearest_footprint_index,
+    dedup_actor_list, get_actor_footprint_coords,
+)
 
 
 @dataclass
@@ -31,6 +35,21 @@ class myAction:
     action_type: str = 'action'  # 'action' or 'bonus_action'
 
 
+def _unique_actors_from_coords(targets, arrayCenters):
+    """Return a deduplicated list of actors from a list of coords.
+    Multi-hex actors occupy multiple coords; each actor appears only once."""
+    seen: set = set()
+    result = []
+    for coord in targets:
+        occupant = arrayCenters.get(coord, '')
+        if occupant == '':
+            continue
+        if id(occupant) not in seen:
+            seen.add(id(occupant))
+            result.append(occupant)
+    return result
+
+
 def removeDeadActors(map_obj, sortedInitList):
     totalList = map_obj.party + map_obj.enemy
     deadActors = [actor for actor in totalList if not actor.alive]
@@ -40,11 +59,10 @@ def removeDeadActors(map_obj, sortedInitList):
             map_obj.party.remove(deadActor)
         else:
             map_obj.enemy.remove(deadActor)
-        actorCoord = [
-            coord for coord in list(map_obj.arrayCenters)
-            if map_obj.arrayCenters[coord] == deadActor
-        ][0]
-        map_obj.arrayCenters[actorCoord] = ''
+        # Clear all footprint hexes (supports multi-hex actors)
+        for coord in list(map_obj.arrayCenters):
+            if map_obj.arrayCenters[coord] is deadActor:
+                map_obj.arrayCenters[coord] = ''
         del sortedInitList[deadActor]
     return deadActors
 
@@ -90,40 +108,42 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
     if actor in map_obj.enemy:
         aTargets = 'party'
         hTargets = 'enemy'
-        enemyList = [
+        enemyList = dedup_actor_list([
             list(map_obj.arrayCenters).index(i)
             for i in map_obj.arrayCenters.keys()
             if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.enemy
-        ]
-        partyList = [
+        ], map_obj)
+        partyList = dedup_actor_list([
             list(map_obj.arrayCenters).index(i)
             for i in map_obj.arrayCenters.keys()
             if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.party
-        ]
+        ], map_obj)
 
     if actor in map_obj.party:
-        enemyList = [
+        enemyList = dedup_actor_list([
             list(map_obj.arrayCenters).index(i)
             for i in map_obj.arrayCenters.keys()
             if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.party
-        ]
-        partyList = [
+        ], map_obj)
+        partyList = dedup_actor_list([
             list(map_obj.arrayCenters).index(i)
             for i in map_obj.arrayCenters.keys()
             if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.enemy
-        ]
+        ], map_obj)
         hTargets = 'party'
         aTargets = 'enemy'
 
-    myIndex = [
-        list(map_obj.arrayCenters).index(i)
-        for i in map_obj.arrayCenters.keys()
-        if map_obj.arrayCenters[i] == actor
-    ][0]
+    myIndex = get_actor_anchor_index(actor, map_obj)
+    if myIndex is None:
+        myIndex = [
+            list(map_obj.arrayCenters).index(i)
+            for i in map_obj.arrayCenters.keys()
+            if map_obj.arrayCenters[i] is actor
+        ][0]
     closest = 999
     distance = []
     for index in enemyList:
-        dist = map_obj.distanceCalc(myIndex, index)
+        dist = actor_min_distance(myIndex, map_obj.arrayCenters[list(map_obj.arrayCenters)[index]], map_obj)
         distance.append(dist)
         if dist <= closest:
             closest = dist
@@ -131,8 +151,8 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
 
     minDist = min(distance)
     closestGuy = map_obj.arrayCenters[list(map_obj.arrayCenters)[enemyList[distance.index(minDist)]]]
-    closestCoord = [coord for coord in list(map_obj.arrayCenters) if map_obj.arrayCenters[coord] == closestGuy][0]
-    closestIndex = list(map_obj.arrayCenters).index(closestCoord)
+    closestIndex = nearest_footprint_index(myIndex, closestGuy, map_obj)
+    closestCoord = list(map_obj.arrayCenters)[closestIndex]
     distanceMatrix = [
         (map_obj.distanceCalc(myIndex, index), map_obj.distanceCalc(closestIndex, index))
         for index in range(len(list(map_obj.arrayCenters)))
@@ -142,7 +162,7 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
         index for index in range(len(list(map_obj.arrayCenters)))
         if map_obj.distanceCalc(index, myIndex) <= effective_speed / 5
         and (map_obj.arrayCenters[list(map_obj.arrayCenters)[index]] == ''
-             or map_obj.arrayCenters[list(map_obj.arrayCenters)[index]] == actor)
+             or map_obj.arrayCenters[list(map_obj.arrayCenters)[index]] is actor)
     ]
 
     turnChoices = []
@@ -646,7 +666,7 @@ def healSpellTurn(actor, turnChoice, map_obj):
     elif map_obj.arrayCenters[moveCoord] != actor:
         map_obj.moveActor(actor, moveCoord)
 
-    peopleTargeted = [map_obj.arrayCenters[x] for x in turnChoice.targets if map_obj.arrayCenters[x] != '']
+    peopleTargeted = _unique_actors_from_coords(turnChoice.targets, map_obj.arrayCenters)
     spell = actor.spells[turnChoice.name]
 
     if not actor.is_player:
@@ -689,7 +709,7 @@ def castSpellTurn(actor, turnChoice, map_obj):
     elif map_obj.arrayCenters[moveCoord] != actor:
         map_obj.moveActor(actor, moveCoord)
 
-    peopleTargeted = [map_obj.arrayCenters[x] for x in turnChoice.targets if map_obj.arrayCenters[x] != '']
+    peopleTargeted = _unique_actors_from_coords(turnChoice.targets, map_obj.arrayCenters)
     spell = actor.spells[turnChoice.name]
 
     if not actor.is_player:

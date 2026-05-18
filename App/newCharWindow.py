@@ -250,6 +250,7 @@ class CharacterEditor(QWidget):
         self.level_input.setValue(1)
         self.ac_input.setValue(10)
         self.hp_input.setValue(1)
+        self.size_input.setCurrentText('Medium')
         self.image_label.setText("No Image")
         self.image_path = None
 
@@ -301,6 +302,7 @@ class CharacterEditor(QWidget):
         self._update_total_level()
         self.ac_input.setValue(data.get("ac", 10))
         self.hp_input.setValue(data.get("hp", 1))
+        self.size_input.setCurrentText(data.get("size", "Medium"))
 
         self.loadModifiers(data.get("mods", {}))
 
@@ -344,6 +346,10 @@ class CharacterEditor(QWidget):
         self.hp_input = QSpinBox()
         self.hp_input.setRange(0, 500)
 
+        self.size_input = QComboBox()
+        self.size_input.addItems(['Tiny', 'Small', 'Medium', 'Large', 'Huge', 'Gargantuan'])
+        self.size_input.setCurrentText('Medium')
+
         grid.addWidget(QLabel("Name"), 0, 0)
         grid.addWidget(self.name_input, 0, 1)
 
@@ -355,6 +361,9 @@ class CharacterEditor(QWidget):
 
         grid.addWidget(QLabel("Health"), 2, 0)
         grid.addWidget(self.hp_input, 2, 1)
+
+        grid.addWidget(QLabel("Size"), 2, 2)
+        grid.addWidget(self.size_input, 2, 3)
 
         box.setLayout(grid)
         return box
@@ -745,6 +754,7 @@ class CharacterEditor(QWidget):
             "level": total_level,
             "ac": self.ac_input.value(),
             "hp": self.hp_input.value(),
+            "size": self.size_input.currentText(),
             "image": self.image_path,
             "mods": {k: v.value() for k, v in self.mods.items()},
             "weapons": []

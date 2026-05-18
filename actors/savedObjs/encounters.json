@@ -176,5 +176,21 @@
         ],
         "numHexes": 40,
         "mapImage": "App\\Maps\\HelmsDeep.webp"
+    },
+    "Large Creature": {
+        "name": "Large Creature",
+        "party": [
+            "Adrel",
+            "Aldric",
+            "Cobo",
+            "Galleus",
+            "VV"
+        ],
+        "npcs": [],
+        "enemies": [
+            "Ancient Silver Dragon"
+        ],
+        "numHexes": 20,
+        "mapImage": "App\\Maps\\maze Engine.webp"
     }
 }

@@ -37,45 +37,60 @@ class Map:
         
  
     def moveActor(self, mover, coord):
-        moverCoord = [x for x in list(self.arrayCenters) if self.arrayCenters[x] == mover][0]
+        from engine.size_utils import get_size_cat, compute_footprint, get_actor_anchor
+
+        # --- Clear all current footprint hexes ---
+        old_anchor = get_actor_anchor(mover, self)
+        old_footprint = [c for c, v in self.arrayCenters.items() if v is mover]
+        for c in old_footprint:
+            self.arrayCenters[c] = ''
+
+        moverCoord = old_anchor if old_anchor is not None else (old_footprint[0] if old_footprint else coord)
         moverIndex = list(self.arrayCenters).index(moverCoord)
         coordIndex = list(self.arrayCenters).index(coord)
         neighbors = self.neighbors(moverCoord)
         dprint(neighbors)
-        
-                
-        distance = self.distanceCalc(list(self.arrayCenters).index(moverCoord), list(self.arrayCenters).index(coord))
-        dprint('\t\t',mover.name,'is going from', moverCoord, 'to', coord,'which is a distance of', distance)
+
+        distance = self.distanceCalc(moverIndex, coordIndex)
+        dprint('\t\t', mover.name, 'is going from', moverCoord, 'to', coord, 'which is a distance of', distance)
         curframe = inspect.currentframe()
         calframe = inspect.getouterframes(curframe, 2)
-        #dprint(calframe[1][3])
         if distance > mover.speed/5 and calframe[1][3] != 'dashActor':
-            
             raise SystemExit('Crashed in map moveActor')
-        self.arrayCenters[moverCoord] = ''
-        self.arrayCenters[coord] = mover
+
+        # --- Place actor in new footprint hexes ---
+        size_cat = get_size_cat(mover)
+        new_footprint = compute_footprint(coord, size_cat, self)
+        for c in new_footprint:
+            if c in self.arrayCenters:
+                self.arrayCenters[c] = mover
+        mover._anchor_coord = coord
+
         self.printCurrMap()
         if moverCoord != coord:
+            reacted: set = set()
             if mover in self.party:
                 for neig in neighbors:
                     actor = self.arrayCenters[list(self.arrayCenters)[neig]]
-                    reactDis = self.distanceCalc(neig, coordIndex)
-                    #dprint(actor)
-                    if actor in self.enemy and actor.reaction and reactDis >= 2: 
-                        dprint('youre enemyList', actor.name,'and you should be able to react')
-                        takeReaction(actor, self, mover)
+                    if actor in self.enemy and actor.reaction and id(actor) not in reacted:
+                        reactDis = self.distanceCalc(neig, coordIndex)
+                        if reactDis >= 2:
+                            reacted.add(id(actor))
+                            dprint('youre enemyList', actor.name, 'and you should be able to react')
+                            takeReaction(actor, self, mover)
             if mover in self.enemy:
                 for neig in neighbors:
                     actor = self.arrayCenters[list(self.arrayCenters)[neig]]
-                    reactDis = self.distanceCalc(neig, coordIndex)
-                    #dprint(actor)
-                    if actor in self.party and actor.reaction and reactDis >= 2:
-                        dprint('youre partyList', actor.name,'and you should be able to react')
-                        takeReaction(actor, self, mover)
-            # Update graphics viewer if it exists
+                    if actor in self.party and actor.reaction and id(actor) not in reacted:
+                        reactDis = self.distanceCalc(neig, coordIndex)
+                        if reactDis >= 2:
+                            reacted.add(id(actor))
+                            dprint('youre partyList', actor.name, 'and you should be able to react')
+                            takeReaction(actor, self, mover)
             if self.graphicsViewer is not None:
                 newIndex = self.convertToViewerCoords(coord)
-                self.graphicsViewer.moveActor(mover, newIndex)
+                fp_indices = [self.convertToViewerCoords(c) for c in new_footprint if c in self.arrayCenters]
+                self.graphicsViewer.moveActor(mover, newIndex, fp_indices)
     
     def dashActor(self, mover, targetCoord):
         dprint(mover.name, ' is taking the dash action to ', targetCoord)
@@ -203,19 +218,19 @@ class Map:
         return dcol + max(0, (drow - dcol)/2)
     
     def populateMap(self, party, enemy):
+        from engine.size_utils import get_size_cat, compute_footprint, can_place_footprint
+
         totalArea = len(list(self.arrayCenters)) * 25
-        totalParty = sum([x.size for x in party])
-        totalEnemy = sum([x.size for x in enemy])
-        partyEnemyRatio = totalParty/totalEnemy
+        totalParty = sum([x.size if isinstance(x.size, (int, float)) else 25 for x in party])
+        totalEnemy = sum([x.size if isinstance(x.size, (int, float)) else 25 for x in enemy])
+        partyEnemyRatio = totalParty / totalEnemy if totalEnemy else 1
         maxX = max([x[0] for x in list(self.arrayCenters)])
         maxY = max([x[1] for x in list(self.arrayCenters)])
-        ##dprint(maxY)
-        partyX = self.col_round(partyEnemyRatio*maxX/2)
+        partyX = self.col_round(partyEnemyRatio * maxX / 2)
         if partyEnemyRatio > 1:
-            newX = 1 - 1/partyEnemyRatio
-            partyX = self.col_round(newX*maxX)
+            newX = 1 - 1 / partyEnemyRatio
+            partyX = self.col_round(newX * maxX)
 
-        ##dprint(partyX)
         partySide = []
         enemySide = []
         for key in self.arrayCenters.keys():
@@ -223,28 +238,36 @@ class Map:
                 partySide.append(key)
             else:
                 enemySide.append(key)
-        ##dprint(enemySide)
+
         totalList = [party, enemy]
         for side in totalList:
             for member in side:
-                saved = 0
-                while saved == 0:
-                    if member in party:
-                        coord = r.sample(partySide, 1)[0]
-                        #dprint(member.name, coord)
-                    else:
-                        coord = r.sample(enemySide, 1)[0]
-                        #dprint(member.name, coord)
-                    if self.arrayCenters[coord] == '':
-                        self.arrayCenters[coord] = member
-                        # Update graphics viewer if it exists
+                size_cat = get_size_cat(member)
+                sample_side = partySide if member in party else enemySide
+                saved = False
+                for _ in range(500):
+                    coord = r.sample(sample_side, 1)[0]
+                    if can_place_footprint(coord, size_cat, self):
+                        footprint = compute_footprint(coord, size_cat, self)
+                        for c in footprint:
+                            self.arrayCenters[c] = member
+                        member._anchor_coord = coord
                         if self.graphicsViewer is not None:
                             gViewerCoord = self.convertToViewerCoords(coord)
-                            self.graphicsViewer.moveActor(member, gViewerCoord)
-                        saved = 1
-                    else:
-                        continue
-        ##dprint(self.arrayCenters)
+                            fp_indices = [self.convertToViewerCoords(c) for c in footprint]
+                            self.graphicsViewer.moveActor(member, gViewerCoord, fp_indices)
+                        saved = True
+                        break
+                if not saved:
+                    # Fallback: place in first available empty hex (single hex)
+                    for coord in sample_side:
+                        if self.arrayCenters[coord] == '':
+                            self.arrayCenters[coord] = member
+                            member._anchor_coord = coord
+                            if self.graphicsViewer is not None:
+                                gViewerCoord = self.convertToViewerCoords(coord)
+                                self.graphicsViewer.moveActor(member, gViewerCoord, [gViewerCoord])
+                            break
     
     def neighbors(self, testCoord):
 

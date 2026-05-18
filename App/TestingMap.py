@@ -201,7 +201,8 @@ class CustomGraphicsView(QGraphicsView):
         self.encounter = encounter
         self.curActor = None
         self.curMoveCoords = None
-        self._clean_pixmaps: dict = {}   # QGraphicsPixmapItem -> outline-free QPixmap
+        self._clean_pixmaps: dict = {}     # QGraphicsPixmapItem -> outline-free QPixmap
+        self._original_pixmaps: dict = {} # QGraphicsPixmapItem -> raw unclipped QPixmap (never overwritten)
 
         self.wall_mode = False
         self._wall_indices: set = set()
@@ -306,6 +307,8 @@ class CustomGraphicsView(QGraphicsView):
         self.hex_items = []  # Added hex_items attribute
         self.selected_item = None
         self.last_mouse_pos = QPointF()
+        self._drag_clicked_hex = None  # hex index within footprint that was clicked
+        self._map_obj_ref = None       # reference to the model Map for footprint queries
         self.arrayCenters = []
 
         self.hex_centers_base = []
@@ -997,7 +1000,8 @@ class CustomGraphicsView(QGraphicsView):
         character_item = self.scene.addPixmap(pixmap)
         self.character_objs.append(character)
         self.character_items.append(character_item)
-        self._clean_pixmaps[character_item] = pixmap   # store original for centering
+        self._clean_pixmaps[character_item] = pixmap    # store original for centering
+        self._original_pixmaps[character_item] = pixmap # store raw original (never overwritten)
         character_item.setZValue(2)
         if len(self.hex_items) > 0:
             for hex in self.hex_items:
@@ -1116,10 +1120,16 @@ class CustomGraphicsView(QGraphicsView):
 
             if item == self.map_item:
                 self.selected_item = item
+                self._drag_clicked_hex = None
             elif item in self.character_items:
                 self.selected_item = item
+                # Record which grid hex was clicked so multi-hex actors snap correctly
+                scene_pos = self.mapToScene(event.pos())
+                clicked_idx = self._scene_pos_to_hex_idx(scene_pos)
+                self._drag_clicked_hex = clicked_idx
             elif item in self.hex_items:  # Check if clicked item is a hexagon
                 self.selected_item = item
+                self._drag_clicked_hex = None
 
         super().mousePressEvent(event)
 
@@ -1231,80 +1241,201 @@ class CustomGraphicsView(QGraphicsView):
             # now instead of any character, only if youre the selected actor
             elif self.selected_item == turnCharacterItem:
 
-                # snapping branch unchanged except for using scene pos
-                
                 if self.snap_tree is not None:
                     scene_pos = self.mapToScene(event.pos())
                     real_hex_index = self.getSnapHexIndex(scene_pos)
 
                     if real_hex_index is not None:
-                        snap_center_local = self.hex_centers_base[real_hex_index]
+                        # For multi-hex actors: snap the specific hex that was clicked,
+                        # not the icon center. This keeps the footprint aligned to the grid.
+                        actor = self.curActor
                         map_offset = self.map_item.pos()
-
-                        snap_center_scene = (
+                        snap_center_local = self.hex_centers_base[real_hex_index]
+                        snap_hex_scene = (
                             snap_center_local[0] + map_offset.x(),
                             snap_center_local[1] + map_offset.y()
                         )
 
-                        # Use the clean (no-outline) pixmap size for accurate centering
-                        clean = self._clean_pixmaps.get(self.selected_item)
-                        if clean is not None:
-                            icon_w = clean.width()
-                            icon_h = clean.height()
-                        else:
-                            icon_w = self.selected_item.boundingRect().width()
-                            icon_h = self.selected_item.boundingRect().height()
-                        snap_x = snap_center_scene[0] - icon_w / 2
-                        snap_y = snap_center_scene[1] - icon_h / 2
-                        # Compensate if this item currently has the outline applied
-                        if self.selected_item in self._clean_pixmaps:
-                            actual_w = self.selected_item.boundingRect().width()
-                            if actual_w > icon_w:
-                                snap_x -= _OUTLINE_THICKNESS
-                                snap_y -= _OUTLINE_THICKNESS
-                        self.selected_item.setPos(snap_x, snap_y)
+                        # Check if this is a multi-hex actor with a known clicked hex
+                        from engine.size_utils import hex_count, get_actor_anchor
+                        is_multihex = actor is not None and hex_count(actor) > 1
+                        clicked_hex = self._drag_clicked_hex
 
+                        if is_multihex and clicked_hex is not None and self.map_item.scene() is not None:
+                            # Compute offset: where was the clicked hex relative to the pixmap top-left
+                            clicked_local = self.hex_centers_base[clicked_hex]
+                            clicked_scene = (
+                                clicked_local[0] + map_offset.x(),
+                                clicked_local[1] + map_offset.y()
+                            )
+                            # Rebuild the footprint centered on the new anchor hex
+                            # Anchor hex = real_hex_index; recompute fp_indices from map
+                            from engine.size_utils import get_size_cat, compute_footprint
+                            import numpy as np
+                            map_obj = None
+                            # Find the map object via character_objs/encounter link
+                            if hasattr(self, '_map_obj_ref') and self._map_obj_ref is not None:
+                                map_obj = self._map_obj_ref
+                            if map_obj is not None:
+                                coords = list(map_obj.arrayCenters)
+                                if real_hex_index < len(coords):
+                                    anchor_coord = coords[real_hex_index]
+                                    size_cat = get_size_cat(actor)
+                                    from engine.size_utils import can_place_footprint
+                                    fp_coords = compute_footprint(anchor_coord, size_cat, map_obj)
+                                    fp_indices = [map_obj.convertToViewerCoords(c) for c in fp_coords]
+                                    fp_positions = [
+                                        (self.hex_centers_base[i][0] + map_offset.x(),
+                                         self.hex_centers_base[i][1] + map_offset.y())
+                                        for i in fp_indices if i < len(self.hex_centers_base)
+                                    ]
+                                    fp_px, pos_x, pos_y = self._build_footprint_pixmap(actor, fp_positions)
+                                    if fp_px is not None:
+                                        self._clean_pixmaps[self.selected_item] = fp_px
+                                        self.selected_item.setPixmap(fp_px)
+                                        self.selected_item.setPos(pos_x, pos_y)
+                                    return
+                            # Fallback: no map ref — just center on snapped hex
+                            clean = self._clean_pixmaps.get(self.selected_item)
+                            icon_w = clean.width() if clean else self.selected_item.boundingRect().width()
+                            icon_h = clean.height() if clean else self.selected_item.boundingRect().height()
+                            self.selected_item.setPos(snap_hex_scene[0] - icon_w / 2, snap_hex_scene[1] - icon_h / 2)
+                        else:
+                            # Single-hex actor: snap icon center to hex center
+                            clean = self._clean_pixmaps.get(self.selected_item)
+                            if clean is not None:
+                                icon_w = clean.width()
+                                icon_h = clean.height()
+                            else:
+                                icon_w = self.selected_item.boundingRect().width()
+                                icon_h = self.selected_item.boundingRect().height()
+                            snap_x = snap_hex_scene[0] - icon_w / 2
+                            snap_y = snap_hex_scene[1] - icon_h / 2
+                            if self.selected_item in self._clean_pixmaps:
+                                actual_w = self.selected_item.boundingRect().width()
+                                if actual_w > icon_w:
+                                    snap_x -= _OUTLINE_THICKNESS
+                                    snap_y -= _OUTLINE_THICKNESS
+                            self.selected_item.setPos(snap_x, snap_y)
                 else:
                     self.selected_item.setPos(self.selected_item.pos() + delta_scene)
 
         self.last_mouse_pos = event.pos()
     
-    def moveActor(self, actor, newIndex):
-        #print(actor.name, newIndex)
+    def _build_footprint_pixmap(self, actor, fp_positions_scene):
+        """
+        Build a pixmap where each footprint hex is drawn as a filled hexagon
+        textured with the actor's image. Returns (pixmap, pos_x, pos_y) where
+        (pos_x, pos_y) is the scene-space top-left corner to pass to setPos().
+        """
+        from PyQt5.QtGui import QPolygonF
+
+        r = getattr(self, 'radius', 30)
+        a = math.pi / 3  # 60° — flat-top hex
+
+        # Find actor's pixmap item to get the source image
+        try:
+            idx = self.character_objs.index(actor)
+            pitem = self.character_items[idx]
+        except ValueError:
+            return None, 0, 0
+
+        orig = self._original_pixmaps.get(pitem)
+        if orig is None:
+            orig = self._clean_pixmaps.get(pitem)
+        if orig is None:
+            orig = pitem.pixmap()
+
+        xs = [p[0] for p in fp_positions_scene]
+        ys = [p[1] for p in fp_positions_scene]
+        min_x = min(xs) - r
+        min_y = min(ys) - r
+        max_x = max(xs) + r
+        max_y = max(ys) + r
+        w = int(max_x - min_x) + 2
+        h = int(max_y - min_y) + 2
+
+        # Scale actor image to cover the whole footprint bounding box
+        scaled_img = orig.scaled(w, h, Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
+        # Center the (potentially over-expanded) image
+        img_ox = (scaled_img.width() - w) // 2
+        img_oy = (scaled_img.height() - h) // 2
+
+        px = QPixmap(w, h)
+        px.fill(Qt.transparent)
+        painter = QPainter(px)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        hex_fill = QColor(200, 200, 200, 80)  # light grey tint between hexes
+        border_pen = QPen(QColor(40, 40, 40, 220), 2)
+
+        for cx, cy in fp_positions_scene:
+            lx = cx - min_x
+            ly = cy - min_y
+            pts = [
+                QPointF(lx + r * math.cos(a * i), ly + r * math.sin(a * i))
+                for i in range(6)
+            ]
+            poly = QPolygonF(pts)
+            path = QPainterPath()
+            path.addPolygon(poly)
+            path.closeSubpath()
+
+            # Fill with actor image clipped to hex
+            painter.save()
+            painter.setClipPath(path)
+            painter.drawPixmap(-img_ox, -img_oy, scaled_img)
+            painter.restore()
+
+            # Draw hex border
+            painter.setPen(border_pen)
+            painter.setBrush(Qt.NoBrush)
+            painter.drawPolygon(poly)
+
+        painter.end()
+        return px, min_x, min_y
+
+    def moveActor(self, actor, newIndex, fp_indices=None):
         index = self.character_objs.index(actor)
         pixmap = self.character_items[index]
 
         item = self.map_item
         delta_x, delta_y = item.pos().x(), item.pos().y()
 
-        hexCenters = [[x.x(), x.y()] for x in self.arrayCenters] # grab initial hex x,y
+        hexCenters = [[x.x(), x.y()] for x in self.arrayCenters]
+        hexArrays = np.array(hexCenters) + np.array([delta_x, delta_y])
 
-        hexArrays = np.array(hexCenters) + np.array([delta_x, delta_y]) # self.arrayCenters is original coord. add delta
-        snap_coord = hexArrays[newIndex] # find that coord
+        is_multihex = fp_indices and len(fp_indices) > 1
 
-        # Use the clean (no-outline) pixmap size for accurate centering
-        clean = self._clean_pixmaps.get(pixmap)
-        if clean is not None:
-            icon_w = clean.width()
-            icon_h = clean.height()
+        if is_multihex:
+            fp_positions = [(hexArrays[i][0], hexArrays[i][1]) for i in fp_indices]
+            fp_px, pos_x, pos_y = self._build_footprint_pixmap(actor, fp_positions)
+            if fp_px is not None:
+                self._clean_pixmaps[pixmap] = fp_px
+                pixmap.setPixmap(fp_px)
+                pixmap.setPos(pos_x, pos_y)
         else:
-            icon_w = pixmap.boundingRect().width()
-            icon_h = pixmap.boundingRect().height()
-        snap_x = snap_coord[0] - icon_w / 2
-        snap_y = snap_coord[1] - icon_h / 2
-        # Compensate if outline is currently applied
-        actual_w = pixmap.boundingRect().width()
-        if clean is not None and actual_w > icon_w:
-            snap_x -= _OUTLINE_THICKNESS
-            snap_y -= _OUTLINE_THICKNESS
-        pixmap.setPos(snap_x, snap_y)  # snap to this coord
+            snap_coord = hexArrays[newIndex]
 
-        # this might be kinda hard... 
-        # i think I'll have to find delta_x, delta_y
-        # find hex polygon from self.arrayCenters
-        # find hexes current coords using delta
-        # find character based on its current position vs closest hex from starting index
-        # snap character to newIndexes current position
+            # Use the clean (no-outline) pixmap size for accurate centering
+            clean = self._clean_pixmaps.get(pixmap)
+            if clean is not None:
+                icon_w = clean.width()
+                icon_h = clean.height()
+            else:
+                icon_w = pixmap.boundingRect().width()
+                icon_h = pixmap.boundingRect().height()
+
+            snap_x = snap_coord[0] - icon_w / 2
+            snap_y = snap_coord[1] - icon_h / 2
+
+            # Compensate if outline is currently applied
+            actual_w = pixmap.boundingRect().width()
+            if clean is not None and actual_w > clean.width():
+                snap_x -= _OUTLINE_THICKNESS
+                snap_y -= _OUTLINE_THICKNESS
+
+            pixmap.setPos(snap_x, snap_y)
 
     def getCurActorHexIndex(self):
         """
@@ -1553,8 +1684,11 @@ class CustomGraphicsView(QGraphicsView):
     def setCharsToHexes(self):
         # Iterate over character items
         for character_item in self.character_items:
-            # Use the stored clean pixmap if available (avoids scaling an outlined pixmap)
-            source_pixmap = self._clean_pixmaps.get(character_item, character_item.pixmap())
+            # Always use the raw original as source so we don't clip a multi-hex scaled icon
+            source_pixmap = self._original_pixmaps.get(
+                character_item,
+                self._clean_pixmaps.get(character_item, character_item.pixmap())
+            )
 
             # Resize the character's image to fit within the hexagon
             character_pixmap = source_pixmap.scaled(self.hex_size.toSize(), Qt.KeepAspectRatio)
@@ -1671,6 +1805,7 @@ class CustomGraphicsView(QGraphicsView):
         self.character_items.clear()
         self.character_objs.clear()
         self._clean_pixmaps.clear()
+        self._original_pixmaps.clear()
 
     def loadFromEncounter(self, myEncounter):
         
@@ -1679,18 +1814,28 @@ class CustomGraphicsView(QGraphicsView):
             px = _get_actor_pixmap(player)
             self.addCharacterPixmap(px, player)
         
-        # resize them
+        # resize them to single-hex (base size before multi-hex scaling)
         self.setCharsToHexes()
 
         # set curActor
         self.curActor = list(myEncounter.sortedInitList)[myEncounter.curTurn]
 
-        # now move chars into character spot
-        map = myEncounter.map
-        for coord in map.arrayCenters:
-            if map.arrayCenters[coord] != '': # youre a character
-                gvIndex = map.convertToViewerCoords(coord)
-                self.moveActor(map.arrayCenters[coord], gvIndex)
+        # Move each actor to their position, passing full footprint for multi-hex actors
+        map_obj = myEncounter.map
+        seen_actors: set = set()
+        for coord, occupant in map_obj.arrayCenters.items():
+            if occupant == '' or id(occupant) in seen_actors:
+                continue
+            seen_actors.add(id(occupant))
+
+            anchor_coord = getattr(occupant, '_anchor_coord', None) or coord
+            anchor_idx = map_obj.convertToViewerCoords(anchor_coord)
+
+            # Collect all footprint coords for this actor
+            footprint_coords = [c for c, v in map_obj.arrayCenters.items() if v is occupant]
+            fp_indices = [map_obj.convertToViewerCoords(c) for c in footprint_coords]
+
+            self.moveActor(occupant, anchor_idx, fp_indices if len(fp_indices) > 1 else None)
 
 
 
@@ -3035,6 +3180,7 @@ class MapWidget(QMainWindow):
         num_vertical_grids = int(self.myEncounter.numHexes)
         map_rect = self.map_view.map_item.boundingRect()
         self.map_view.drawHexGrid(num_vertical_grids, map_rect)
+        self.map_view._map_obj_ref = getattr(self.myEncounter, 'map', None)
 
         self.undo_stack = deque(maxlen=20)
         self._turn_serial: int = 0    # increments on each saveTurnSnapshot()
@@ -3497,6 +3643,7 @@ class MapWidget(QMainWindow):
         self.myEncounter.graphicsViewer = self.map_view
         self.myEncounter.map.graphicsViewer = self.map_view
         self.myEncounter.map.combatLog = self.turn_action_panel.log
+        self.map_view._map_obj_ref = self.myEncounter.map
 
         # Track oldest accessible serial when deque is full
         if len(self.undo_stack) == 20:
@@ -3519,6 +3666,7 @@ class MapWidget(QMainWindow):
         self.myEncounter.graphicsViewer = self.map_view
         self.myEncounter.map.graphicsViewer = self.map_view
         self.myEncounter.map.combatLog = self.turn_action_panel.log
+        self.map_view._map_obj_ref = self.myEncounter.map
         self.controller._encounter = self.myEncounter
 
         self.turn_action_panel.turn_log.prepare_serial(self._turn_serial)
@@ -3556,6 +3704,7 @@ class MapWidget(QMainWindow):
         self.myEncounter.graphicsViewer = self.map_view
         self.myEncounter.map.graphicsViewer = self.map_view
         self.myEncounter.map.combatLog = self.turn_action_panel.log
+        self.map_view._map_obj_ref = self.myEncounter.map
         self.controller._encounter = self.myEncounter
 
         # Prepare serial so calcTurn re-logs the header into the correct group
@@ -3692,6 +3841,15 @@ class MapWidget(QMainWindow):
             and arrayCenters[coords[ind]] != ''
             and coords[ind] != actor_coord
         ]
+        # Deduplicate: multi-hex actors occupy multiple coords; keep only anchor coord per actor
+        seen_actors: set = set()
+        deduped: list = []
+        for coord in targetsHit:
+            occupant = arrayCenters[coord]
+            if id(occupant) not in seen_actors:
+                seen_actors.add(id(occupant))
+                deduped.append(coord)
+        targetsHit = deduped
 
         if not targetsHit and not all_area_coords:
             self.turn_action_panel.log("⚠️ No valid targets in selection — try a different hex.")
