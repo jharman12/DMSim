@@ -120,6 +120,7 @@ sys.path.insert(1, str(_root))
 from model.player import createPartyList, Player
 from model.monster import createMonsterList, Monster
 from engine.targeting import drawLine, calcMoveHexes, hex_calc_line, hex_calc_hexes, hex_calc_square
+from engine.size_utils import get_actor_anchor_index
 from model.Interactive.interactiveEncounter import interactiveEncounter
 from dialogs import ManualRollDialog, ManualRollersDialog, ManualActionsDialog, SetStatsDialog
 
@@ -3746,6 +3747,8 @@ class MapWidget(QMainWindow):
         self._bonus_choice = None
         self.turn_action_panel.take_turn_button.setEnabled(True)
         self.turn_action_panel.action_dropdown.setEnabled(True)
+        self.turn_action_panel.bonus_take_turn_button.setEnabled(True)
+        self.turn_action_panel.bonus_action_dropdown.setEnabled(True)
 
 
     def eventFilter(self, obj, event):
@@ -4062,6 +4065,8 @@ class MapWidget(QMainWindow):
         self._bonus_choice = None
         self.turn_action_panel.take_turn_button.setEnabled(True)
         self.turn_action_panel.action_dropdown.setEnabled(True)
+        self.turn_action_panel.bonus_take_turn_button.setEnabled(True)
+        self.turn_action_panel.bonus_action_dropdown.setEnabled(True)
 
         # Record start-of-turn state for the new actor
         self._record_turn_start(self.actor)
@@ -4075,12 +4080,23 @@ class MapWidget(QMainWindow):
             currAction = self.turn_action_panel.action_dropdown.currentText()
             self.turnChoice.type = [x.type for x in self.turnChoices if x.name == currAction][0]
             self.turnChoice.name = currAction
+            # Snapshot actor position before the action so we can measure distance moved
+            pre_index = get_actor_anchor_index(self.actor, self.myEncounter.map)
             self.controller.take_action(self.actor, self.turnChoice)
+            # Reduce speed by distance the actor moved during the action
+            post_index = get_actor_anchor_index(self.actor, self.myEncounter.map)
+            if pre_index is not None and post_index is not None and pre_index != post_index:
+                dist = self.myEncounter.map.distanceCalc(post_index, pre_index)
+                self.actor.speed = max(0, self.actor.speed - dist * 5)
             self.actor.hasAction = False
             self._action_used = True
             self.turn_action_panel.take_turn_button.setEnabled(False)
             self.turn_action_panel.action_dropdown.setEnabled(False)
             self.turn_action_panel.buildSpellSlots(self.actor)
+            # Sync map positions (action may have moved the actor) and update move range
+            self.map_view.loadFromEncounter(self.myEncounter)
+            newMoveHexes = calcMoveHexes(self.actor, self.myEncounter.map)
+            self.map_view.setCurMoveCoords(newMoveHexes)
             # One-spell rule: if action was a level 1+ spell, disable bonus action spells
             self._apply_one_spell_rule()
 
@@ -4103,13 +4119,22 @@ class MapWidget(QMainWindow):
         if hexIndex is not None:
             currLocation = list(self.myEncounter.map.arrayCenters)[hexIndex]
             bonus_choice.moveCoord = currLocation
+        pre_index = get_actor_anchor_index(self.actor, self.myEncounter.map)
         self.controller.take_action(self.actor, bonus_choice)
+        post_index = get_actor_anchor_index(self.actor, self.myEncounter.map)
+        if pre_index is not None and post_index is not None and pre_index != post_index:
+            dist = self.myEncounter.map.distanceCalc(post_index, pre_index)
+            self.actor.speed = max(0, self.actor.speed - dist * 5)
         self.actor.hasBonusAction = False
         self._bonus_action_used = True
         self._bonus_choice = None
         self.turn_action_panel.bonus_take_turn_button.setEnabled(False)
         self.turn_action_panel.bonus_action_dropdown.setEnabled(False)
         self.turn_action_panel.buildSpellSlots(self.actor)
+        # Sync map positions and update move range
+        self.map_view.loadFromEncounter(self.myEncounter)
+        newMoveHexes = calcMoveHexes(self.actor, self.myEncounter.map)
+        self.map_view.setCurMoveCoords(newMoveHexes)
         # One-spell rule: if bonus action was a spell, restrict action dropdown to cantrips/non-spells
         self._apply_one_spell_rule()
 
