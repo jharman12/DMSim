@@ -2522,6 +2522,17 @@ class TurnActionPanel(QWidget):
         for child in self.findChildren(QGroupBox):
             set_font(child, textScale.size(textScale.MD), QFont.Bold)
     
+    def set_encounter_active(self, active: bool):
+        """Enable or disable all interactive turn controls based on encounter state."""
+        self.action_dropdown.setEnabled(active)
+        self.select_target_button.setEnabled(active)
+        self.move_input.setEnabled(active)
+        self.take_turn_button.setEnabled(active)
+        self.bonus_action_dropdown.setEnabled(active)
+        self.select_bonus_target_button.setEnabled(active)
+        self.bonus_take_turn_button.setEnabled(active)
+        self.endTurnButton.setEnabled(active)
+
     def clearLayout(self, layout):
         while layout.count():
             item = layout.takeAt(0)
@@ -3211,6 +3222,7 @@ class MapWidget(QMainWindow):
         # DOCK: TURN ACTION PANEL (right)
         # ------------------------------------------------------------------
         self.turn_action_panel = TurnActionPanel()
+        self.turn_action_panel.set_encounter_active(False)  # disabled until encounter starts
         self.turn_action_panel.take_turn_button.clicked.connect(self.takeTurnButton)
         self.turn_action_panel.bonus_take_turn_button.clicked.connect(self.bonusTurnButton)
         self.turn_action_panel.move_input.clicked.connect(self.moveButton)
@@ -4201,6 +4213,9 @@ class MapWidget(QMainWindow):
             self.turnChoice = turns[3]
             self.turn_action_panel.update_turn_panel(self.actor, self.turnChoices, self.turnChoice)
             self.turn_action_panel.buildSpellSlots(self.actor)
+        # Enable turn controls and lock out the start button
+        self.turn_action_panel.set_encounter_active(True)
+        self.start_button.setEnabled(False)
         # Record starting position for first actor
         self._record_turn_start(self.actor)
 
