@@ -17,7 +17,7 @@ from engine.persistent import (
 )
 from engine.size_utils import (
     get_actor_anchor_index, actor_min_distance, nearest_footprint_index,
-    dedup_actor_list, get_actor_footprint_coords,
+    dedup_actor_list, get_actor_footprint_coords, get_size_cat, can_place_footprint,
 )
 
 
@@ -48,6 +48,33 @@ def _unique_actors_from_coords(targets, arrayCenters):
             seen.add(id(occupant))
             result.append(occupant)
     return result
+
+
+def _safe_move(actor, dest_coord, map_obj):
+    """Move actor to dest_coord using footprint-aware validation.
+
+    For multi-hex actors, if the full footprint doesn't fit at dest_coord,
+    falls back to the nearest valid anchor instead.
+    For small/medium actors, keeps existing moveToNearest logic.
+    """
+    size_cat = get_size_cat(actor)
+    if size_cat not in ('Tiny', 'Small', 'Medium'):
+        if not can_place_footprint(dest_coord, size_cat, map_obj, actor):
+            # Find nearest valid anchor around the destination
+            dest_idx = list(map_obj.arrayCenters).index(dest_coord)
+            my_anchor = next((c for c, v in map_obj.arrayCenters.items() if v is actor), None)
+            my_idx = list(map_obj.arrayCenters).index(my_anchor) if my_anchor else dest_idx
+            dest_coord = map_obj.nearestFreeHex(my_idx, dest_idx, actor=actor)
+        my_anchor = next((c for c, v in map_obj.arrayCenters.items() if v is actor), None)
+        if my_anchor != dest_coord:
+            map_obj.moveActor(actor, dest_coord)
+    else:
+        dest_val = map_obj.arrayCenters.get(dest_coord, '')
+        if dest_val != '' and dest_val is not actor:
+            map_obj.moveToNearest(actor, dest_coord)
+        elif dest_val is not actor:
+            map_obj.moveActor(actor, dest_coord)
+
 
 
 def removeDeadActors(map_obj, sortedInitList):
@@ -153,16 +180,26 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
     closestGuy = map_obj.arrayCenters[list(map_obj.arrayCenters)[enemyList[distance.index(minDist)]]]
     closestIndex = nearest_footprint_index(myIndex, closestGuy, map_obj)
     closestCoord = list(map_obj.arrayCenters)[closestIndex]
+    _actor_size_cat = get_size_cat(actor)
+    _actor_multi_hex = _actor_size_cat not in ('Tiny', 'Small', 'Medium')
+    _coords = list(map_obj.arrayCenters)
+
+    def _dest_valid(index):
+        """True if this hex index is a valid movement destination for the actor."""
+        coord = _coords[index]
+        if _actor_multi_hex:
+            return can_place_footprint(coord, _actor_size_cat, map_obj, actor)
+        return map_obj.arrayCenters[coord] == '' or map_obj.arrayCenters[coord] is actor
+
     distanceMatrix = [
         (map_obj.distanceCalc(myIndex, index), map_obj.distanceCalc(closestIndex, index))
-        for index in range(len(list(map_obj.arrayCenters)))
-        if map_obj.arrayCenters[list(map_obj.arrayCenters)[index]] == ''
+        for index in range(len(_coords))
+        if _dest_valid(index)
     ]
     moveMatrix = [
-        index for index in range(len(list(map_obj.arrayCenters)))
+        index for index in range(len(_coords))
         if map_obj.distanceCalc(index, myIndex) <= effective_speed / 5
-        and (map_obj.arrayCenters[list(map_obj.arrayCenters)[index]] == ''
-             or map_obj.arrayCenters[list(map_obj.arrayCenters)[index]] is actor)
+        and _dest_valid(index)
     ]
 
     turnChoices = []
@@ -201,7 +238,8 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                 if map_obj.arrayCenters[options[-1]] != '' and map_obj.arrayCenters[options[-1]] != actor:
                     newCoord = map_obj.nearestFreeHex(
                         list(map_obj.arrayCenters).index(myCoord),
-                        list(map_obj.arrayCenters).index(options[-1])
+                        list(map_obj.arrayCenters).index(options[-1]),
+                        actor=actor
                     )
                 else:
                     newCoord = options[-1]
@@ -230,7 +268,7 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                     ][0]
                     if map_obj.arrayCenters[moveTo] != '':
                         moveToIndex = list(map_obj.arrayCenters).index(moveTo)
-                        newCoord = map_obj.nearestFreeHex(myIndex, moveToIndex)
+                        newCoord = map_obj.nearestFreeHex(myIndex, moveToIndex, actor=actor)
                     else:
                         newCoord = moveTo
         else:
@@ -250,7 +288,7 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                 ) <= hexLimit
             ][0]
             if map_obj.arrayCenters[moveTo] != '':
-                newCoord = map_obj.nearestFreeHex(myIndex, closestIndex)
+                newCoord = map_obj.nearestFreeHex(myIndex, closestIndex, actor=actor)
             else:
                 newCoord = moveTo
 
@@ -645,10 +683,7 @@ def doAction(actor, map_obj, turnChoice):
 
     if turnChoice.type == 'Wdmg':
         weaponChoice = [x for x in actor.weaponList if x.name == turnChoice.name][0]
-        if map_obj.arrayCenters[turnChoice.moveCoord] != '' and map_obj.arrayCenters[turnChoice.moveCoord] != actor:
-            map_obj.moveToNearest(actor, turnChoice.moveCoord)
-        elif map_obj.arrayCenters[turnChoice.moveCoord] != actor:
-            map_obj.moveActor(actor, turnChoice.moveCoord)
+        _safe_move(actor, turnChoice.moveCoord, map_obj)
         target = map_obj.arrayCenters[turnChoice.targets[0]]
         weaponAttack(actor, target, weaponChoice, map_obj)
 
@@ -660,11 +695,7 @@ def doAction(actor, map_obj, turnChoice):
 
 
 def healSpellTurn(actor, turnChoice, map_obj):
-    moveCoord = turnChoice.moveCoord
-    if map_obj.arrayCenters[moveCoord] != '' and map_obj.arrayCenters[moveCoord] != actor:
-        map_obj.moveToNearest(actor, moveCoord)
-    elif map_obj.arrayCenters[moveCoord] != actor:
-        map_obj.moveActor(actor, moveCoord)
+    _safe_move(actor, turnChoice.moveCoord, map_obj)
 
     peopleTargeted = _unique_actors_from_coords(turnChoice.targets, map_obj.arrayCenters)
     spell = actor.spells[turnChoice.name]
@@ -703,11 +734,7 @@ def takeHealing(actor, people, dmg, map_obj):
 
 
 def castSpellTurn(actor, turnChoice, map_obj):
-    moveCoord = turnChoice.moveCoord
-    if map_obj.arrayCenters[moveCoord] != '' and map_obj.arrayCenters[moveCoord] != actor:
-        map_obj.moveToNearest(actor, moveCoord)
-    elif map_obj.arrayCenters[moveCoord] != actor:
-        map_obj.moveActor(actor, moveCoord)
+    _safe_move(actor, turnChoice.moveCoord, map_obj)
 
     peopleTargeted = _unique_actors_from_coords(turnChoice.targets, map_obj.arrayCenters)
     spell = actor.spells[turnChoice.name]

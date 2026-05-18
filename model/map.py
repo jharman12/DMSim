@@ -37,7 +37,15 @@ class Map:
         
  
     def moveActor(self, mover, coord):
-        from engine.size_utils import get_size_cat, compute_footprint, get_actor_anchor
+        from engine.size_utils import get_size_cat, compute_footprint, get_actor_anchor, can_place_footprint
+
+        size_cat = get_size_cat(mover)
+
+        # --- Pre-validate: for large actors, refuse move if footprint would overwrite another actor ---
+        if size_cat not in ('Tiny', 'Small', 'Medium'):
+            if not can_place_footprint(coord, size_cat, self, mover):
+                dprint(f'WARNING: {mover.name} blocked from moving to {coord} — footprint occupied')
+                return
 
         # --- Clear all current footprint hexes ---
         old_anchor = get_actor_anchor(mover, self)
@@ -109,36 +117,24 @@ class Map:
         if self.arrayCenters[options[-1]] != '':
             moverIndex = list(self.arrayCenters).index(moverCoord)
             targetIndex = list(self.arrayCenters).index(targetCoord)
-            moverNew = self.nearestFreeHex(moverIndex, targetIndex)
-            #dprint('nearestFreeHex chose', moverNew)
+            moverNew = self.nearestFreeHex(moverIndex, targetIndex, actor=mover)
             self.moveActor(mover, moverNew)
         else:
-            #dprint('going option[-1]', options[-1])
             self.moveActor(mover, options[-1])
         
 
     def moveToNearest(self, mover, target):
-        #dprint(mover.name, ' is going to ', target.name)
         if mover == target:
-            #self.printCurrMap()
             return
         dprint(mover, target)
         moverLoc = [i for i in self.arrayCenters if self.arrayCenters[i] == mover][0]
         
         Arabella = target
-        #dprint(moverLoc)
-        #dprint(Arabella)
         moverIndex = list(self.arrayCenters).index(moverLoc)
         Arabella = list(self.arrayCenters).index(Arabella)
-        
 
-        moverNew = self.nearestFreeHex(moverIndex, Arabella)
-        ##dprint(moverNew)
+        moverNew = self.nearestFreeHex(moverIndex, Arabella, actor=mover)
         self.moveActor(mover, moverNew)
-        ##dprint(Ephraim)
-        #self.arrayCenters[moverLoc] = ''
-        #self.arrayCenters[moverNew] = mover
-        #self.printCurrMap()
 
     def defineArrayGrid(self, heightNumber, height=None, width=None):
         """
@@ -279,23 +275,31 @@ class Map:
         ##dprint('Your neighors Cood', [list(self.arrayCenters)[x] for x in yourNeighbors])
         return(yourNeighbors)
     
-    def nearestFreeHex(self, startIndex, endIndex):
-        ##dprint(startIndex, endIndex)
+    def nearestFreeHex(self, startIndex, endIndex, actor=None):
+        from engine.size_utils import get_size_cat, can_place_footprint
         nearIndexList = self.neighbors(list(self.arrayCenters)[endIndex])
-        min = 999999
-        minIndex = -99 # invalid index to catch if nothing is in reach
+        min_dist = 999999
+        minIndex = -99
+        coords = list(self.arrayCenters)
+
+        # Determine if we need footprint-aware checks
+        size_cat = get_size_cat(actor) if actor is not None else 'Medium'
+        multi_hex = size_cat not in ('Tiny', 'Small', 'Medium')
+
         for index in nearIndexList:
             distance = self.distanceCalc(index, startIndex)
-            if distance <= min and self.arrayCenters[list(self.arrayCenters)[index]] == '':
-                min = distance
+            if multi_hex:
+                valid = can_place_footprint(coords[index], size_cat, self, actor)
+            else:
+                valid = self.arrayCenters[coords[index]] == ''
+            if valid and distance <= min_dist:
+                min_dist = distance
                 minIndex = index
+
         if minIndex == -99:
             minIndex = startIndex
             self.printCurrMap()
-            #dprint(self.arrayCenters[list(self.arrayCenters)[startIndex]], 'going to', self.arrayCenters[list(self.arrayCenters)[endIndex]])
-        #dprint("nearestFreehex", list(self.arrayCenters)[minIndex])
-        return list(self.arrayCenters)[minIndex]
-        #return minIndex
+        return coords[minIndex]
     
     def convertToMyCoords(self, index):
         """Convert viewer index to map coordinates."""
