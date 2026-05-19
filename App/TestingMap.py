@@ -87,6 +87,7 @@ Things to work on:
 
 
 import copy
+import pickle
 from collections import deque
 
 import os
@@ -3692,12 +3693,85 @@ class MapWidget(QMainWindow):
     # ------------------------------------------------------------------
 
     def saveEncounter(self):
-        print("Saving encounter...")
-        # later:
-        # - deepcopy encounter
-        # - serialize to JSON / pickle
-        # - QFileDialog.getSaveFileName()
+        """Pickle the current encounter state to a .dmsave file chosen by the user."""
+        from PyQt5.QtWidgets import QFileDialog
+        filepath, _ = QFileDialog.getSaveFileName(
+            self, "Save Encounter", "", "DMSim Save (*.dmsave);;All Files (*)"
+        )
+        if not filepath:
+            return
 
+        # Temporarily strip all PyQt references (same pattern as saveTurnSnapshot)
+        gv = self.myEncounter.graphicsViewer
+        mgv = self.myEncounter.map.graphicsViewer
+        log = self.myEncounter.map.combatLog
+        self.myEncounter.graphicsViewer = None
+        self.myEncounter.map.graphicsViewer = None
+        self.myEncounter.map.combatLog = None
+
+        try:
+            save_data = {
+                'encounter': copy.deepcopy(self.myEncounter),
+                'turn_serial': self._turn_serial,
+                'oldest_serial': self._oldest_serial,
+                'encounter_started': not self.start_button.isEnabled(),
+            }
+            with open(filepath, 'wb') as f:
+                pickle.dump(save_data, f)
+            self.turn_action_panel.log(f'💾 Encounter saved to {pathlib.Path(filepath).name}')
+        except Exception as e:
+            QMessageBox.critical(self, "Save Failed", f"Could not save encounter:\n{e}")
+        finally:
+            self.myEncounter.graphicsViewer = gv
+            self.myEncounter.map.graphicsViewer = mgv
+            self.myEncounter.map.combatLog = log
+
+    def restore_from_save(self, save_data: dict):
+        """Restore encounter state from a save_data dict loaded from a .dmsave file."""
+        enc = save_data['encounter']
+        started = save_data.get('encounter_started', True)
+
+        # Wire up GUI references on the restored encounter
+        enc.graphicsViewer = self.map_view
+        enc.map.graphicsViewer = self.map_view
+        enc.map.combatLog = self.turn_action_panel.log
+        self.myEncounter = enc
+        self.controller.encounter = enc
+
+        # Restore serial counters
+        self._turn_serial = save_data.get('turn_serial', 1)
+        self._oldest_serial = save_data.get('oldest_serial', 1)
+
+        # Rebuild the map view from restored state
+        self.map_view._map_obj_ref = enc.map
+        self.map_view.loadFromEncounter(enc)
+        self.updateTurnOrder()
+        self._rebuild_persistent_zones()
+
+        if started:
+            # Encounter was mid-combat — restore current actor's turn state
+            self.map_view._pre_encounter = False
+            self.turn_action_panel.set_encounter_active(True)
+            self.start_button.setEnabled(False)
+            turns = enc.calcTurn()
+            if turns is not None:
+                self.actor = turns[0]
+                self.turnChoices = turns[2]
+                self.turnChoice = turns[3]
+                self.map_view.setCurTurn(self.actor)
+                self.turn_action_panel.update_turn_panel(self.actor, self.turnChoices, self.turnChoice)
+                self.turn_action_panel.buildSpellSlots(self.actor)
+                newMoveHexes = calcMoveHexes(self.actor, enc.map)
+                self.map_view.setCurMoveCoords(newMoveHexes)
+            self.turn_action_panel.turn_log.set_oldest_accessible(self._oldest_serial)
+            self.turn_action_panel.turn_log.prepare_serial(self._turn_serial)
+        else:
+            # Pre-combat positioning state — allow repositioning, Start Encounter still available
+            self.map_view._pre_encounter = True
+            self.start_button.setEnabled(True)
+            self.turn_action_panel.set_encounter_active(False)
+
+        self.party_health_widget.populate(list(enc.totalList))
 
     def saveTurnSnapshot(self):
         # Nullify PyQt widgets before deep-copy

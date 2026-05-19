@@ -83,6 +83,10 @@ class SimController(QObject):
         """Direct access to the underlying interactiveEncounter (for MapWidget internals)."""
         return self._encounter
 
+    @encounter.setter
+    def encounter(self, value):
+        self._encounter = value
+
     def get_map(self):
         """Return the underlying Map object (read-only for the GUI)."""
         return self._encounter.map

@@ -9,6 +9,7 @@ from PyQt5.QtGui import QPixmap
 
 import pathlib
 import json
+import pickle
 import sys
 import argparse
 import traceback
@@ -185,6 +186,13 @@ class EncounterBuilderTab(QWidget):
         enc_buttons.addWidget(del_enc_btn)
         enc_buttons.addWidget(load_enc_btn)
         enc_layout.addLayout(enc_buttons)
+
+        # Resume saved combat button (loads a .dmsave file)
+        resume_btn = QPushButton("▶ Resume Saved Combat")
+        resume_btn.setToolTip("Load a previously saved mid-combat .dmsave file")
+        resume_btn.clicked.connect(self.load_saved_combat)
+        enc_layout.addWidget(resume_btn)
+
         enc_group.setLayout(enc_layout)
         layout.addWidget(enc_group)
 
@@ -535,6 +543,27 @@ class EncounterBuilderTab(QWidget):
         encounter = interactiveEncounter(party, npcs, enemies, enc_data["numHexes"], _resolve_map_image(enc_data["mapImage"]))
         controller = SimController(encounter)
         self.start_callback(controller)
+
+    def load_saved_combat(self):
+        """Open a .dmsave file and resume the encounter from saved state."""
+        filepath, _ = QFileDialog.getOpenFileName(
+            self, "Resume Saved Combat", "", "DMSim Save (*.dmsave);;All Files (*)"
+        )
+        if not filepath:
+            return
+        try:
+            with open(filepath, 'rb') as f:
+                save_data = pickle.load(f)
+        except Exception as e:
+            QMessageBox.critical(self, "Load Failed", f"Could not load save file:\n{e}")
+            return
+
+        # Pass a COPY to SimController so testingTheory()/preCombat() doesn't corrupt
+        # the saved encounter we're about to restore from.
+        import copy
+        enc_dummy = copy.deepcopy(save_data['encounter'])
+        controller = SimController(enc_dummy)
+        self.start_callback(controller, save_data=save_data)
 
     def buildEncounter(self):
         # Keep for compatibility, but not used
@@ -1030,7 +1059,7 @@ class MainWindow(QMainWindow):
         return False
 
 
-    def startEncounter(self, controller=None):
+    def startEncounter(self, controller=None, save_data=None):
         if controller is None:
             QMessageBox.warning(self, "Error", "Invalid encounter setup")
             return
@@ -1040,6 +1069,8 @@ class MainWindow(QMainWindow):
             self.map_window.close()
 
         self.map_window = MapWidget(controller)
+        if save_data is not None:
+            self.map_window.restore_from_save(save_data)
         self.map_window.show()
 
 
