@@ -136,6 +136,29 @@ class Map:
         moverNew = self.nearestFreeHex(moverIndex, Arabella, actor=mover)
         self.moveActor(mover, moverNew)
 
+    def repositionActor(self, actor, coord):
+        """Directly reposition actor to coord with no speed check, reactions, or effects.
+
+        For pre-combat actor placement only. If the full footprint doesn't fit
+        at coord (another actor is already there), the call is silently ignored.
+        """
+        from engine.size_utils import get_size_cat, compute_footprint, can_place_footprint
+
+        size_cat = get_size_cat(actor)
+        if not can_place_footprint(coord, size_cat, self, actor):
+            return
+
+        # Clear old footprint
+        for c in [c for c, v in self.arrayCenters.items() if v is actor]:
+            self.arrayCenters[c] = ''
+
+        # Place new footprint
+        new_footprint = compute_footprint(coord, size_cat, self)
+        for c in new_footprint:
+            if c in self.arrayCenters:
+                self.arrayCenters[c] = actor
+        actor._anchor_coord = coord
+
     def defineArrayGrid(self, heightNumber, height=None, width=None):
         """
         Initialize the hexagonal grid. 

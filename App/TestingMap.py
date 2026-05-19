@@ -310,6 +310,8 @@ class CustomGraphicsView(QGraphicsView):
         self.last_mouse_pos = QPointF()
         self._drag_clicked_hex = None  # hex index within footprint that was clicked
         self._map_obj_ref = None       # reference to the model Map for footprint queries
+        self._pre_encounter = False    # True between preCombat and Start Encounter
+        self._pre_enc_last_snap_idx = None  # last snapped hex index during pre-encounter drag
         self.arrayCenters = []
 
         self.hex_centers_base = []
@@ -1240,6 +1242,44 @@ class CustomGraphicsView(QGraphicsView):
                     hex_item.setPos(hex_item.pos() + delta_scene)
 
             # now instead of any character, only if youre the selected actor
+            elif self._pre_encounter and self.selected_item in self.character_items:
+                # Pre-encounter: any actor can be freely repositioned
+                if self.hex_tree is not None:
+                    scene_pos = self.mapToScene(event.pos())
+                    real_hex_index = self._scene_pos_to_hex_idx(scene_pos)
+                    if real_hex_index is not None:
+                        actor = self.character_objs[self.character_items.index(self.selected_item)]
+                        map_offset = self.map_item.pos()
+                        from engine.size_utils import hex_count, get_size_cat, compute_footprint
+                        is_multihex = actor is not None and hex_count(actor) > 1
+                        if is_multihex and self._map_obj_ref is not None:
+                            coords = list(self._map_obj_ref.arrayCenters)
+                            if real_hex_index < len(coords):
+                                anchor_coord = coords[real_hex_index]
+                                size_cat = get_size_cat(actor)
+                                fp_coords = compute_footprint(anchor_coord, size_cat, self._map_obj_ref)
+                                fp_indices = [self._map_obj_ref.convertToViewerCoords(c) for c in fp_coords]
+                                fp_positions = [
+                                    (self.hex_centers_base[i][0] + map_offset.x(),
+                                     self.hex_centers_base[i][1] + map_offset.y())
+                                    for i in fp_indices if i < len(self.hex_centers_base)
+                                ]
+                                fp_px, pos_x, pos_y = self._build_footprint_pixmap(actor, fp_positions)
+                                if fp_px is not None:
+                                    self._clean_pixmaps[self.selected_item] = fp_px
+                                    self.selected_item.setPixmap(fp_px)
+                                    self.selected_item.setPos(pos_x, pos_y)
+                        else:
+                            snap_center_local = self.hex_centers_base[real_hex_index]
+                            snap_hex_scene = (
+                                snap_center_local[0] + map_offset.x(),
+                                snap_center_local[1] + map_offset.y()
+                            )
+                            clean = self._clean_pixmaps.get(self.selected_item)
+                            icon_w = clean.width() if clean else self.selected_item.boundingRect().width()
+                            icon_h = clean.height() if clean else self.selected_item.boundingRect().height()
+                            self.selected_item.setPos(snap_hex_scene[0] - icon_w / 2, snap_hex_scene[1] - icon_h / 2)
+                        self._pre_enc_last_snap_idx = real_hex_index
             elif self.selected_item == turnCharacterItem:
 
                 if self.snap_tree is not None:
@@ -1472,7 +1512,19 @@ class CustomGraphicsView(QGraphicsView):
         
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
+            if (self._pre_encounter
+                    and self.selected_item in self.character_items
+                    and self._pre_enc_last_snap_idx is not None
+                    and self._map_obj_ref is not None):
+                actor_idx = self.character_items.index(self.selected_item)
+                actor = self.character_objs[actor_idx]
+                coords = list(self._map_obj_ref.arrayCenters)
+                if self._pre_enc_last_snap_idx < len(coords):
+                    dest_coord = coords[self._pre_enc_last_snap_idx]
+                    self._map_obj_ref.repositionActor(actor, dest_coord)
+                    self.loadFromEncounter(self.encounter)
             self.selected_item = None
+            self._pre_enc_last_snap_idx = None
 
     def getHexFromPoint(self, scene_pos):
         if not self.hex_tree:
@@ -4203,6 +4255,8 @@ class MapWidget(QMainWindow):
 
     def run_command(self):
         self.turn_action_panel.log('Starting Combat!')
+        # Lock out pre-encounter repositioning
+        self.map_view._pre_encounter = False
         # Snapshot BEFORE calcTurn so serial 1 covers the first turn header logged below
         self.saveTurnSnapshot()
         turns = self.myEncounter.calcTurn()
@@ -4220,9 +4274,6 @@ class MapWidget(QMainWindow):
         self._record_turn_start(self.actor)
 
     def testingTheory(self):
-        # should populate turn_order_widget
-        # create the initial movement grids highlight 
-
         self.myEncounter.preCombat(self.map_view)
         self.myEncounter.map.combatLog = self.turn_action_panel.log
         # Red outline is now managed by setCurTurn — trigger it for the starting actor
@@ -4232,6 +4283,10 @@ class MapWidget(QMainWindow):
 
         # Populate party health widget now that preCombat has set up actors
         self.party_health_widget.populate(list(self.myEncounter.totalList))
+
+        # Enable pre-encounter drag mode so actors can be repositioned before combat
+        self.map_view._map_obj_ref = self.myEncounter.map
+        self.map_view._pre_encounter = True
 
     
         
