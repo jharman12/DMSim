@@ -4181,13 +4181,32 @@ class MapWidget(QMainWindow):
         self.distance_button.setChecked(False)
         self.map_view.set_distance_mode(False)
 
+        # Snapshot positions of all actors before end_turn runs automated monster turns
+        all_actors_now = list(self.myEncounter.totalList)
+        positions_before = {a.name: self._actor_hex_idx(a) for a in all_actors_now}
+        prev_actor = self.actor
+
         # Record end-of-turn state for the current actor before advancing
         self._record_turn_end(self.actor)
 
         # Save snapshot of the completed turn (= start of next turn state)
         self.saveTurnSnapshot()
+        automated_serial = self._turn_serial  # serial active during monster auto-turns
 
         turns = self.controller.end_turn(self.actor)
+
+        # Record turn data for any automated actors that ran during end_turn
+        for a in list(self.myEncounter.totalList):
+            if a is prev_actor:
+                continue  # already recorded above
+            from_idx = positions_before.get(a.name)
+            to_idx = self._actor_hex_idx(a)
+            if from_idx is not None:
+                rec = self._turn_records.setdefault(a.name, {})
+                rec['from_idx'] = from_idx
+                rec['to_idx'] = to_idx
+                rec['serial'] = automated_serial
+
         if turns is not None:
             self.actor = turns[0]
             self.turnChoices = turns[2]
