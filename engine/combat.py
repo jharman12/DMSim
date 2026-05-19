@@ -18,6 +18,7 @@ from engine.persistent import (
 from engine.size_utils import (
     get_actor_anchor_index, actor_min_distance, nearest_footprint_index,
     dedup_actor_list, get_actor_footprint_coords, get_size_cat, can_place_footprint,
+    actor_to_actor_distance,
 )
 
 
@@ -812,17 +813,7 @@ def castSpellTurn(actor, turnChoice, map_obj):
 
 
 def weaponAttack(actor, target, weap, map_obj):
-    myIndex = [
-        list(map_obj.arrayCenters).index(i)
-        for i in map_obj.arrayCenters.keys()
-        if map_obj.arrayCenters[i] == actor
-    ][0]
-    targetIndex = [
-        list(map_obj.arrayCenters).index(i)
-        for i in map_obj.arrayCenters.keys()
-        if map_obj.arrayCenters[i] == target
-    ][0]
-    targDistance = map_obj.distanceCalc(myIndex, targetIndex)
+    targDistance = actor_to_actor_distance(actor, target, map_obj)
 
     if targDistance > weap.range / 5:
         dprint(actor.name, 'out of range to hit', target.name, 'with', weap.name, '...', targDistance, '..', weap.range / 5)

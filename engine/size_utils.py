@@ -137,6 +137,23 @@ def actor_min_distance(from_index: int, target_actor, map_obj) -> float:
     return min(map_obj.distanceCalc(from_index, coords.index(c)) for c in footprint)
 
 
+def actor_to_actor_distance(attacker, target, map_obj) -> float:
+    """
+    Minimum hex distance between any hex of `attacker` and any hex of `target`.
+    Handles both single-hex and multi-hex actors correctly.
+    """
+    coords = list(map_obj.arrayCenters)
+    attacker_fp = get_actor_footprint_coords(attacker, map_obj)
+    target_fp = get_actor_footprint_coords(target, map_obj)
+    if not attacker_fp or not target_fp:
+        return 999
+    return min(
+        map_obj.distanceCalc(coords.index(ac), coords.index(tc))
+        for ac in attacker_fp
+        for tc in target_fp
+    )
+
+
 def nearest_footprint_index(actor_anchor_idx: int, target_actor, map_obj) -> int:
     """
     Return the index of the footprint hex of target_actor that is nearest to actor_anchor_idx.
