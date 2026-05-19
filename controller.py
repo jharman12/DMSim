@@ -275,6 +275,13 @@ class SimController(QObject):
 
         if turns:
             self.turn_changed.emit(turns[0])
+        else:
+            # Combat over — determine winner by which side is still standing
+            map_obj = self._encounter.map
+            if len(map_obj.party) == 0:
+                self.encounter_ended.emit('Enemy')
+            else:
+                self.encounter_ended.emit('Party')
         return turns
 
     # ------------------------------------------------------------------

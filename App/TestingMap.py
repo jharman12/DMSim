@@ -3538,6 +3538,21 @@ class MapWidget(QMainWindow):
         """Called by SimController.encounter_ended signal."""
         self.turn_action_panel.log(f'--- Encounter over! {winner} wins! ---')
         self.start_button.setEnabled(False)
+        self.turn_action_panel.set_encounter_active(False)
+
+        if winner == 'Party':
+            title = "Victory! 🎉"
+            msg = "The party has defeated all enemies!\n\nCombat has ended."
+        else:
+            title = "Defeat! 💀"
+            msg = "The party has fallen!\n\nCombat has ended."
+
+        from PyQt5.QtWidgets import QMessageBox
+        dlg = QMessageBox(self)
+        dlg.setWindowTitle(title)
+        dlg.setText(msg)
+        dlg.setIcon(QMessageBox.Information)
+        dlg.exec_()
 
     def _toggle_wall_mode(self, checked: bool):
         """Enable or disable wall-placement mode on the map view."""
