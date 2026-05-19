@@ -224,13 +224,18 @@ class EncounterBuilderTab(QWidget):
         self.map_edit.setPlaceholderText("(default map)")
         self.map_edit.textChanged.connect(self._update_map_preview)
         map_layout.addWidget(self.map_edit)
-        browse_btn = QPushButton("Browse...")
-        browse_btn.clicked.connect(self.browse_map_image)
+        import_map_btn = QPushButton("📥 Import New Map")
+        import_map_btn.setToolTip("Choose an image from your drive and save it into App/Maps")
+        import_map_btn.clicked.connect(self.import_map_image)
+        saved_map_btn = QPushButton("🗺 Select Saved Map")
+        saved_map_btn.setToolTip("Pick from maps already imported into App/Maps")
+        saved_map_btn.clicked.connect(self.select_saved_map)
         clear_btn = QPushButton("✕")
         clear_btn.setFixedWidth(28)
         clear_btn.setToolTip("Clear selection and use default map")
         clear_btn.clicked.connect(lambda: self.map_edit.setText(""))
-        map_layout.addWidget(browse_btn)
+        map_layout.addWidget(import_map_btn)
+        map_layout.addWidget(saved_map_btn)
         map_layout.addWidget(clear_btn)
         details_layout.addLayout(map_layout)
 
@@ -386,47 +391,65 @@ class EncounterBuilderTab(QWidget):
         else:
             self._map_preview.setToolTip(f"Default map: {_DEFAULT_MAP.name}")
 
-    def browse_map_image(self):
+    def import_map_image(self):
+        """Pick any image from disk, copy it into App/Maps, and select it."""
         maps_dir = _root / "App" / "Maps"
         maps_dir.mkdir(parents=True, exist_ok=True)
 
-        start_dir = str(maps_dir)
         file_path, _ = QFileDialog.getOpenFileName(
             self,
-            "Select Map Image",
-            start_dir,
+            "Import Map Image",
+            str(Path.home()),
             "Image Files (*.png *.jpg *.jpeg *.bmp *.gif *.webp)"
         )
+        if not file_path:
+            return
 
-        if file_path:
-            file_path = Path(file_path)
+        src = Path(file_path)
+        if src.parent.resolve() == maps_dir.resolve():
+            # Already in App/Maps — just select it
+            self.map_edit.setText("App\\Maps\\" + src.name)
+            return
 
-            if file_path.parent == maps_dir:
-                relative_path = "App\\Maps\\" + file_path.name
-            else:
-                destination = maps_dir / file_path.name
-                counter = 1
-                while destination.exists():
-                    destination = maps_dir / f"{file_path.stem}_{counter}{file_path.suffix}"
-                    counter += 1
+        destination = maps_dir / src.name
+        counter = 1
+        while destination.exists():
+            destination = maps_dir / f"{src.stem}_{counter}{src.suffix}"
+            counter += 1
 
-                try:
-                    shutil.copy2(file_path, destination)
-                    relative_path = "App\\Maps\\" + destination.name
-                    QMessageBox.information(
-                        self,
-                        "Map Copied",
-                        f"Map image copied to: {destination.name}"
-                    )
-                except Exception as e:
-                    QMessageBox.warning(
-                        self,
-                        "Copy Failed",
-                        f"Failed to copy map image: {str(e)}\nUsing original path."
-                    )
-                    relative_path = str(file_path)
-
+        try:
+            shutil.copy2(src, destination)
+            relative_path = "App\\Maps\\" + destination.name
             self.map_edit.setText(relative_path)
+            QMessageBox.information(
+                self, "Map Imported",
+                f"Map saved as: {destination.name}\n\nIt is now available in 'Select Saved Map'."
+            )
+        except Exception as e:
+            QMessageBox.warning(self, "Import Failed", f"Could not copy map image:\n{e}")
+
+    def select_saved_map(self):
+        """Pick from maps already saved in App/Maps."""
+        maps_dir = _root / "App" / "Maps"
+        maps_dir.mkdir(parents=True, exist_ok=True)
+
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select Saved Map",
+            str(maps_dir),
+            "Image Files (*.png *.jpg *.jpeg *.bmp *.gif *.webp)"
+        )
+        if file_path:
+            src = Path(file_path)
+            if src.parent.resolve() == maps_dir.resolve():
+                self.map_edit.setText("App\\Maps\\" + src.name)
+            else:
+                # User navigated outside — treat as an import
+                QMessageBox.information(
+                    self, "Outside Saved Maps",
+                    "That file is outside the saved maps folder.\n"
+                    "Use 'Import New Map' to copy it in first."
+                )
 
     def add_from_combo(self, combo, list_widget):
         text = combo.currentText().strip()
