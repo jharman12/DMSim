@@ -62,9 +62,9 @@ def _safe_move(actor, dest_coord, map_obj):
     if size_cat not in ('Tiny', 'Small', 'Medium'):
         if not can_place_footprint(dest_coord, size_cat, map_obj, actor):
             # Find nearest valid anchor around the destination
-            dest_idx = list(map_obj.arrayCenters).index(dest_coord)
+            dest_idx = map_obj._coord_idx[dest_coord]
             my_anchor = next((c for c, v in map_obj.arrayCenters.items() if v is actor), None)
-            my_idx = list(map_obj.arrayCenters).index(my_anchor) if my_anchor else dest_idx
+            my_idx = map_obj._coord_idx[my_anchor] if my_anchor else dest_idx
             dest_coord = map_obj.nearestFreeHex(my_idx, dest_idx, actor=actor)
         my_anchor = next((c for c, v in map_obj.arrayCenters.items() if v is actor), None)
         if my_anchor != dest_coord:
@@ -88,7 +88,7 @@ def removeDeadActors(map_obj, sortedInitList):
         else:
             map_obj.enemy.remove(deadActor)
         # Clear all footprint hexes (supports multi-hex actors)
-        for coord in list(map_obj.arrayCenters):
+        for coord in map_obj._coord_list:
             if map_obj.arrayCenters[coord] is deadActor:
                 map_obj.arrayCenters[coord] = ''
         del sortedInitList[deadActor]
@@ -122,9 +122,9 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
             for mate in map_obj.party:
                 if mate.alive and 'deathSaves' in mate.status:
                     dprint('Teammate', mate.name, 'is down at',
-                          [x for x in list(map_obj.arrayCenters) if map_obj.arrayCenters[x] == mate][0])
+                          [x for x in map_obj._coord_list if map_obj.arrayCenters[x] == mate][0])
                     healDownedTeammate.append(
-                        [x for x in list(map_obj.arrayCenters) if map_obj.arrayCenters[x] == mate][0]
+                        [x for x in map_obj._coord_list if map_obj.arrayCenters[x] == mate][0]
                     )
 
     actor.reaction = 1
@@ -137,24 +137,24 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
         aTargets = 'party'
         hTargets = 'enemy'
         enemyList = dedup_actor_list([
-            list(map_obj.arrayCenters).index(i)
+            map_obj._coord_idx[i]
             for i in map_obj.arrayCenters.keys()
             if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.enemy
         ], map_obj)
         partyList = dedup_actor_list([
-            list(map_obj.arrayCenters).index(i)
+            map_obj._coord_idx[i]
             for i in map_obj.arrayCenters.keys()
             if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.party
         ], map_obj)
 
     if actor in map_obj.party:
         enemyList = dedup_actor_list([
-            list(map_obj.arrayCenters).index(i)
+            map_obj._coord_idx[i]
             for i in map_obj.arrayCenters.keys()
             if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.party
         ], map_obj)
         partyList = dedup_actor_list([
-            list(map_obj.arrayCenters).index(i)
+            map_obj._coord_idx[i]
             for i in map_obj.arrayCenters.keys()
             if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.enemy
         ], map_obj)
@@ -164,26 +164,26 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
     myIndex = get_actor_anchor_index(actor, map_obj)
     if myIndex is None:
         myIndex = [
-            list(map_obj.arrayCenters).index(i)
+            map_obj._coord_idx[i]
             for i in map_obj.arrayCenters.keys()
             if map_obj.arrayCenters[i] is actor
         ][0]
     closest = 999
     distance = []
     for index in enemyList:
-        dist = actor_min_distance(myIndex, map_obj.arrayCenters[list(map_obj.arrayCenters)[index]], map_obj)
+        dist = actor_min_distance(myIndex, map_obj.arrayCenters[map_obj._coord_list[index]], map_obj)
         distance.append(dist)
         if dist <= closest:
             closest = dist
-            toAttack = map_obj.arrayCenters[list(map_obj.arrayCenters)[index]]
+            toAttack = map_obj.arrayCenters[map_obj._coord_list[index]]
 
     minDist = min(distance)
-    closestGuy = map_obj.arrayCenters[list(map_obj.arrayCenters)[enemyList[distance.index(minDist)]]]
+    closestGuy = map_obj.arrayCenters[map_obj._coord_list[enemyList[distance.index(minDist)]]]
     closestIndex = nearest_footprint_index(myIndex, closestGuy, map_obj)
-    closestCoord = list(map_obj.arrayCenters)[closestIndex]
+    closestCoord = map_obj._coord_list[closestIndex]
     _actor_size_cat = get_size_cat(actor)
     _actor_multi_hex = _actor_size_cat not in ('Tiny', 'Small', 'Medium')
-    _coords = list(map_obj.arrayCenters)
+    _coords = map_obj._coord_list
 
     def _dest_valid(index):
         """True if this hex index is a valid movement destination for the actor."""
@@ -204,7 +204,7 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
     ]
 
     turnChoices = []
-    myCoord = list(map_obj.arrayCenters)[myIndex]
+    myCoord = map_obj._coord_list[myIndex]
 
     # --- Weapon choices ---
     for weap in actor.weaponList:
@@ -212,8 +212,8 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
         if int(minDist) > int((int(weap.range) + int(effective_speed)) / 5):
             turnChoices.append(myAction(
                 name=weap.name, type='Wdmg', mod=0, numHit=0,
-                currCoord=list(map_obj.arrayCenters)[myIndex],
-                moveCoord=list(map_obj.arrayCenters)[myIndex], targets=[]
+                currCoord=map_obj._coord_list[myIndex],
+                moveCoord=map_obj._coord_list[myIndex], targets=[]
             ))
             continue
 
@@ -221,8 +221,8 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
         if len(anyOpenSpot) == 0:
             turnChoices.append(myAction(
                 name=weap.name, type='Wdmg', mod=0, numHit=0,
-                currCoord=list(map_obj.arrayCenters)[myIndex],
-                moveCoord=list(map_obj.arrayCenters)[myIndex], targets=[]
+                currCoord=map_obj._coord_list[myIndex],
+                moveCoord=map_obj._coord_list[myIndex], targets=[]
             ))
             continue
 
@@ -232,14 +232,14 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                 options = [
                     x for x in line
                     if map_obj.distanceCalc(
-                        list(map_obj.arrayCenters).index(myCoord),
-                        list(map_obj.arrayCenters).index(x)
+                        map_obj._coord_idx[myCoord],
+                        map_obj._coord_idx[x]
                     ) <= effective_speed / 5
                 ]
                 if map_obj.arrayCenters[options[-1]] != '' and map_obj.arrayCenters[options[-1]] != actor:
                     newCoord = map_obj.nearestFreeHex(
-                        list(map_obj.arrayCenters).index(myCoord),
-                        list(map_obj.arrayCenters).index(options[-1]),
+                        map_obj._coord_idx[myCoord],
+                        map_obj._coord_idx[options[-1]],
                         actor=actor
                     )
                 else:
@@ -248,27 +248,27 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                 reach = weap.range
                 hexLimit = reach / 5
                 dist = map_obj.distanceCalc(
-                    list(map_obj.arrayCenters).index(closestCoord),
-                    list(map_obj.arrayCenters).index(myCoord)
+                    map_obj._coord_idx[closestCoord],
+                    map_obj._coord_idx[myCoord]
                 )
                 if dist <= hexLimit:
                     newCoord = [
                         coord for coord in line
                         if map_obj.distanceCalc(
-                            list(map_obj.arrayCenters).index(myCoord),
-                            list(map_obj.arrayCenters).index(coord)
+                            map_obj._coord_idx[myCoord],
+                            map_obj._coord_idx[coord]
                         ) <= effective_speed / 5
                     ][-1]
                 else:
                     moveTo = [
                         coord for coord in line
                         if map_obj.distanceCalc(
-                            list(map_obj.arrayCenters).index(closestCoord),
-                            list(map_obj.arrayCenters).index(coord)
+                            map_obj._coord_idx[closestCoord],
+                            map_obj._coord_idx[coord]
                         ) <= hexLimit
                     ][0]
                     if map_obj.arrayCenters[moveTo] != '':
-                        moveToIndex = list(map_obj.arrayCenters).index(moveTo)
+                        moveToIndex = map_obj._coord_idx[moveTo]
                         newCoord = map_obj.nearestFreeHex(myIndex, moveToIndex, actor=actor)
                     else:
                         newCoord = moveTo
@@ -276,16 +276,16 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
             reach = weap.range
             hexLimit = reach / 5
             dist = map_obj.distanceCalc(
-                list(map_obj.arrayCenters).index(closestCoord),
-                list(map_obj.arrayCenters).index(myCoord)
+                map_obj._coord_idx[closestCoord],
+                map_obj._coord_idx[myCoord]
             )
             if dist <= hexLimit:
                 newCoord = myCoord
             moveTo = [
                 coord for coord in line
                 if map_obj.distanceCalc(
-                    list(map_obj.arrayCenters).index(closestCoord),
-                    list(map_obj.arrayCenters).index(coord)
+                    map_obj._coord_idx[closestCoord],
+                    map_obj._coord_idx[coord]
                 ) <= hexLimit
             ][0]
             if map_obj.arrayCenters[moveTo] != '':
@@ -312,7 +312,7 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
 
         turnChoices.append(myAction(
             name=weap.name, type='Wdmg', mod=avgDmg, numHit=1,
-            currCoord=list(map_obj.arrayCenters)[myIndex],
+            currCoord=map_obj._coord_list[myIndex],
             moveCoord=newCoord, targets=[closestCoord]
         ))
 
@@ -364,8 +364,8 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                     closestAllyIndex = myIndex
                 allyDistanceMatrix = [
                     (map_obj.distanceCalc(myIndex, index), map_obj.distanceCalc(closestAllyIndex, index))
-                    for index in range(len(list(map_obj.arrayCenters)))
-                    if map_obj.arrayCenters[list(map_obj.arrayCenters)[index]] == ''
+                    for index in range(len(map_obj._coord_list))
+                    if map_obj.arrayCenters[map_obj._coord_list[index]] == ''
                 ]
 
                 anyOpenSpot = [
@@ -380,8 +380,8 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                 if len(anyOpenSpot) == 0 and not allyInRange:
                     turnChoices.append(myAction(
                         name=spell, type='heal', mod=0, numHit=0,
-                        currCoord=list(map_obj.arrayCenters)[myIndex],
-                        moveCoord=list(map_obj.arrayCenters)[myIndex], targets=[],
+                        currCoord=map_obj._coord_list[myIndex],
+                        moveCoord=map_obj._coord_list[myIndex], targets=[],
                         action_type=_spell_atype
                     ))
                     continue
@@ -400,7 +400,7 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                 lowestMissingHealth = [0, [myCoord]]
                 for index in partyList:
                     if map_obj.distanceCalc(myIndex, index) <= hexLimit:
-                        person = map_obj.arrayCenters[list(map_obj.arrayCenters)[index]]
+                        person = map_obj.arrayCenters[map_obj._coord_list[index]]
                         mostHeal = min(avgDmg, person.maxHealth - person.health)
                         if mostHeal > lowestMissingHealth[0]:
                             lowestMissingHealth = [
@@ -416,7 +416,7 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
 
                 turnChoices.append(myAction(
                     name=spell, type='heal', mod=lowestMissingHealth[0], numHit=1,
-                    currCoord=list(map_obj.arrayCenters)[myIndex],
+                    currCoord=map_obj._coord_list[myIndex],
                     moveCoord=moveToCoord, targets=lowestMissingHealth[1],
                     action_type=_spell_atype
                 ))
@@ -459,8 +459,8 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                 if len(numToHit) == 2:
                     turnChoices.append(myAction(
                         name=spell, type='Sdmg', mod=0, numHit=0,
-                        currCoord=list(map_obj.arrayCenters)[myIndex],
-                        moveCoord=list(map_obj.arrayCenters)[myIndex], targets=[],
+                        currCoord=map_obj._coord_list[myIndex],
+                        moveCoord=map_obj._coord_list[myIndex], targets=[],
                         action_type=_spell_atype
                     ))
                 else:
@@ -468,7 +468,7 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                     moveToCoord = coordWithinReach(myCoord, numToHit[2], reachLimit, map_obj)
                     turnChoices.append(myAction(
                         name=spell, type='Sdmg', mod=numToHit[0] * avgDmg, numHit=numToHit[0],
-                        currCoord=list(map_obj.arrayCenters)[myIndex],
+                        currCoord=map_obj._coord_list[myIndex],
                         moveCoord=moveToCoord, castCoord=numToHit[2], targets=numToHit[3],
                         action_type=_spell_atype
                     ))
@@ -477,8 +477,8 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                 if len(numToHit) == 2:
                     turnChoices.append(myAction(
                         name=spell, type='cc', mod=0, numHit=0,
-                        currCoord=list(map_obj.arrayCenters)[myIndex],
-                        moveCoord=list(map_obj.arrayCenters)[myIndex], targets=[],
+                        currCoord=map_obj._coord_list[myIndex],
+                        moveCoord=map_obj._coord_list[myIndex], targets=[],
                         action_type=_spell_atype
                     ))
                 else:
@@ -486,7 +486,7 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                     moveToCoord = coordWithinReach(myCoord, numToHit[2], reachLimit, map_obj)
                     turnChoices.append(myAction(
                         name=spell, type='cc', mod=numToHit[0] * avgDmg * 20, numHit=numToHit[0],
-                        currCoord=list(map_obj.arrayCenters)[myIndex],
+                        currCoord=map_obj._coord_list[myIndex],
                         moveCoord=moveToCoord, castCoord=numToHit[2], targets=numToHit[3],
                         action_type=_spell_atype
                     ))
@@ -500,16 +500,16 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
             if len(anyOpenSpot) == 0:
                 turnChoices.append(myAction(
                     name=spell, type='Sdmg', mod=0, numHit=0,
-                    currCoord=list(map_obj.arrayCenters)[myIndex],
-                    moveCoord=list(map_obj.arrayCenters)[myIndex], targets=[],
+                    currCoord=map_obj._coord_list[myIndex],
+                    moveCoord=map_obj._coord_list[myIndex], targets=[],
                     action_type=_spell_atype
                 ))
                 continue
             if len(distance_hits) == 0:
                 turnChoices.append(myAction(
                     name=spell, type='Sdmg', mod=0, numHit=0,
-                    currCoord=list(map_obj.arrayCenters)[myIndex],
-                    moveCoord=list(map_obj.arrayCenters)[myIndex], targets=[],
+                    currCoord=map_obj._coord_list[myIndex],
+                    moveCoord=map_obj._coord_list[myIndex], targets=[],
                     action_type=_spell_atype
                 ))
             elif myEffect in dmgTypes:
@@ -523,8 +523,8 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                 if reachLimit >= actor.optRange:
                     moveToCoord = coordWithinReach(myCoord, closestCoord, actor.optRange, map_obj)
                     if map_obj.distanceCalc(
-                        list(map_obj.arrayCenters).index(moveToCoord),
-                        list(map_obj.arrayCenters).index(myCoord)
+                        map_obj._coord_idx[moveToCoord],
+                        map_obj._coord_idx[myCoord]
                     ) > actor.speed / 5:
                         moveToCoord = coordWithinReach(myCoord, closestCoord, reachLimit, map_obj)
                 else:
@@ -532,7 +532,7 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
 
                 turnChoices.append(myAction(
                     name=spell, type='Sdmg', mod=avgDmg, numHit=1,
-                    currCoord=list(map_obj.arrayCenters)[myIndex],
+                    currCoord=map_obj._coord_list[myIndex],
                     moveCoord=moveToCoord, targets=[closestCoord],
                     action_type=_spell_atype
                 ))
@@ -541,8 +541,8 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                 if reachLimit >= actor.optRange:
                     moveToCoord = coordWithinReach(myCoord, closestCoord, actor.optRange, map_obj)
                     if map_obj.distanceCalc(
-                        list(map_obj.arrayCenters).index(moveToCoord),
-                        list(map_obj.arrayCenters).index(myCoord)
+                        map_obj._coord_idx[moveToCoord],
+                        map_obj._coord_idx[myCoord]
                     ) > actor.speed / 5:
                         moveToCoord = coordWithinReach(myCoord, closestCoord, reachLimit, map_obj)
                 else:
@@ -550,7 +550,7 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
 
                 turnChoices.append(myAction(
                     name=spell, type='cc', mod=1, numHit=1,
-                    currCoord=list(map_obj.arrayCenters)[myIndex],
+                    currCoord=map_obj._coord_list[myIndex],
                     moveCoord=moveToCoord, targets=[closestCoord],
                     action_type=_spell_atype
                 ))
@@ -771,7 +771,7 @@ def castSpellTurn(actor, turnChoice, map_obj):
     # Persistent (concentration + area) spells: create zone, skip immediate damage.
     # Instantaneous AoE spells deal damage normally.
     if is_concentration and spell.get('area', '') != '':
-        coords = list(map_obj.arrayCenters)
+        coords = map_obj._coord_list
         # Use area_coords (all hexes in the area) if the GUI set them;
         # fall back to targets only (AI path or legacy calls).
         zone_coords = list(getattr(turnChoice, 'area_coords', None) or turnChoice.targets)
@@ -889,12 +889,12 @@ def takeDmg(actor, target, dmg, map_obj):
 
 def takeReaction(actor, map_obj, target):
     myIndex = [
-        list(map_obj.arrayCenters).index(i)
+        map_obj._coord_idx[i]
         for i in map_obj.arrayCenters.keys()
         if map_obj.arrayCenters[i] == actor
     ][0]
     targetIndex = [
-        list(map_obj.arrayCenters).index(i)
+        map_obj._coord_idx[i]
         for i in map_obj.arrayCenters.keys()
         if map_obj.arrayCenters[i] == target
     ][0]

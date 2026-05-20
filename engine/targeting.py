@@ -11,15 +11,15 @@ from scipy import spatial
 
 def drawLine(coord1, coord2, map_obj):
     dist = int(map_obj.distanceCalc(
-        list(map_obj.arrayCenters).index(coord1),
-        list(map_obj.arrayCenters).index(coord2)
+        map_obj._coord_idx[coord1],
+        map_obj._coord_idx[coord2]
     ))
     x1, y1 = coord1
     x2, y2 = coord2
     xDiff = x2 - x1
     yDiff = y2 - y1
 
-    pts = np.array(list(map_obj.arrayCenters))
+    pts = np.array(map_obj._coord_list)
     lineCoord = np.array([(0.0, 0.0) for _ in range(dist + 1)])
     for i in range(int(dist) + 1):
         lineCoord[i] = [coord1[0] + i * xDiff / dist, coord1[1] + i * yDiff / dist - 0.01]
@@ -38,28 +38,17 @@ def calcMoveHexes(actor, map_obj, type=None):
     from engine.size_utils import get_size_cat, can_place_footprint
 
     arrayCenters = map_obj.arrayCenters
-    coords = list(arrayCenters)
-    n = len(coords)
+    coords = map_obj._coord_list
     walls = getattr(map_obj, 'walls', set())
 
     actor_coord = next(
         (c for c in arrayCenters if arrayCenters[c] is actor),
         next((c for c in arrayCenters if arrayCenters[c] == actor), None)
     )
-    start = coords.index(actor_coord)
+    start = map_obj._coord_idx[actor_coord]
 
     speed = int(actor.speed / 5)
     limit = speed * 2 if type == 'dash' else speed
-
-    def _hex_dist(a, b):
-        drow = abs(a[1] - b[1])
-        dcol = abs(a[0] - b[0])
-        return dcol + max(0, (drow - dcol) / 2)
-
-    neighbors = [
-        [j for j in range(n) if i != j and _hex_dist(coords[i], coords[j]) == 1]
-        for i in range(n)
-    ]
 
     cost = {start: 0}
     queue = deque([start])
@@ -68,7 +57,7 @@ def calcMoveHexes(actor, map_obj, type=None):
         cur = queue.popleft()
         if cost[cur] >= limit:
             continue
-        for nb in neighbors[cur]:
+        for nb in map_obj._neighbors_of(coords[cur]):
             if nb not in cost and nb not in walls:
                 cost[nb] = cost[cur] + 1
                 queue.append(nb)
@@ -90,8 +79,8 @@ def calcMoveHexes(actor, map_obj, type=None):
 def coordWithinReach(actorCoord, targetCoord, reach, map_obj):
     hexLimit = reach
     dist = map_obj.distanceCalc(
-        list(map_obj.arrayCenters).index(targetCoord),
-        list(map_obj.arrayCenters).index(actorCoord)
+        map_obj._coord_idx[targetCoord],
+        map_obj._coord_idx[actorCoord]
     )
     if dist <= hexLimit:
         return actorCoord
@@ -99,12 +88,12 @@ def coordWithinReach(actorCoord, targetCoord, reach, map_obj):
     moveTo = [
         coord for coord in line
         if map_obj.distanceCalc(
-            list(map_obj.arrayCenters).index(targetCoord),
-            list(map_obj.arrayCenters).index(coord)
+            map_obj._coord_idx[targetCoord],
+            map_obj._coord_idx[coord]
         ) <= hexLimit
     ][0]
-    moverIndex = list(map_obj.arrayCenters).index(moveTo)
-    actorIndex = list(map_obj.arrayCenters).index(actorCoord)
+    moverIndex = map_obj._coord_idx[moveTo]
+    actorIndex = map_obj._coord_idx[actorCoord]
     if map_obj.arrayCenters[moveTo] != '':
         return map_obj.nearestFreeHex(actorIndex, moverIndex)
     return moveTo
@@ -115,8 +104,8 @@ def moveWithingReach(actor, target, reach, map_obj):
     targetCoord = [x for x in map_obj.arrayCenters.keys() if map_obj.arrayCenters[x] == target][0]
     hexLimit = reach / 5
     dist = map_obj.distanceCalc(
-        list(map_obj.arrayCenters).index(targetCoord),
-        list(map_obj.arrayCenters).index(actorCoord)
+        map_obj._coord_idx[targetCoord],
+        map_obj._coord_idx[actorCoord]
     )
     if dist <= hexLimit:
         return
@@ -124,8 +113,8 @@ def moveWithingReach(actor, target, reach, map_obj):
     moveTo = [
         coord for coord in line
         if map_obj.distanceCalc(
-            list(map_obj.arrayCenters).index(targetCoord),
-            list(map_obj.arrayCenters).index(coord)
+            map_obj._coord_idx[targetCoord],
+            map_obj._coord_idx[coord]
         ) <= hexLimit
     ][0]
     if map_obj.arrayCenters[moveTo] != '':
@@ -140,28 +129,29 @@ def bestSphere(actor, map_obj, radius, reach, targets='enemy'):
     setRatio = 4
     hexLimit = radius / 5
     actorCoord = [x for x in map_obj.arrayCenters.keys() if map_obj.arrayCenters[x] == actor][0]
+    coord_idx = map_obj._coord_idx
+    coord_list = map_obj._coord_list
 
     if targets == 'party':
-        enemyList = dedup_actor_list([list(map_obj.arrayCenters).index(i) for i in map_obj.arrayCenters.keys()
+        enemyList = dedup_actor_list([coord_idx[i] for i in map_obj.arrayCenters.keys()
                      if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.enemy], map_obj)
-        partyList = dedup_actor_list([list(map_obj.arrayCenters).index(i) for i in map_obj.arrayCenters.keys()
+        partyList = dedup_actor_list([coord_idx[i] for i in map_obj.arrayCenters.keys()
                      if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.party], map_obj)
     else:
-        enemyList = dedup_actor_list([list(map_obj.arrayCenters).index(i) for i in map_obj.arrayCenters.keys()
+        enemyList = dedup_actor_list([coord_idx[i] for i in map_obj.arrayCenters.keys()
                      if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.party], map_obj)
-        partyList = dedup_actor_list([list(map_obj.arrayCenters).index(i) for i in map_obj.arrayCenters.keys()
+        partyList = dedup_actor_list([coord_idx[i] for i in map_obj.arrayCenters.keys()
                      if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.enemy], map_obj)
 
     distances = {
-        'Enemy': [[map_obj.distanceCalc(c1, list(map_obj.arrayCenters).index(c2)) for c1 in enemyList]
-                  for c2 in list(map_obj.arrayCenters)],
-        'Ally': [[map_obj.distanceCalc(c1, list(map_obj.arrayCenters).index(c2)) for c1 in partyList]
-                 for c2 in list(map_obj.arrayCenters)]
+        'Enemy': [[map_obj.distanceCalc(c1, coord_idx[c2]) for c1 in enemyList]
+                  for c2 in coord_list],
+        'Ally': [[map_obj.distanceCalc(c1, coord_idx[c2]) for c1 in partyList]
+                 for c2 in coord_list]
     }
     desired = len(enemyList)
     goalAchieved = 0
-    myIndex = [list(map_obj.arrayCenters).index(i) for i in map_obj.arrayCenters.keys()
-               if map_obj.arrayCenters[i] == actor][0]
+    myIndex = coord_idx[actorCoord]
 
     while goalAchieved == 0:
         for i in range(len(distances['Ally'])):
@@ -172,18 +162,18 @@ def bestSphere(actor, map_obj, radius, reach, targets='enemy'):
                 continue
             sumAllies = sum(1 for dist in distances['Ally'][i] if dist <= hexLimit)
 
-            enemiesHit = [list(map_obj.arrayCenters)[c] for c in enemyList
+            enemiesHit = [coord_list[c] for c in enemyList
                           if map_obj.distanceCalc(c, i) <= hexLimit]
-            partyHit = [list(map_obj.arrayCenters)[c] for c in partyList
+            partyHit = [coord_list[c] for c in partyList
                         if map_obj.distanceCalc(c, i) <= hexLimit]
             totalHit = enemiesHit + partyHit
 
             if sumAllies == 0 and sumEnemies == desired:
-                return (desired, actorCoord, list(map_obj.arrayCenters)[i], totalHit)
+                return (desired, actorCoord, coord_list[i], totalHit)
             if sumAllies == 0 and sumEnemies < desired:
                 continue
             if sumAllies != 0 and sumEnemies / sumAllies >= setRatio:
-                return (sumEnemies, actorCoord, list(map_obj.arrayCenters)[i], totalHit)
+                return (sumEnemies, actorCoord, coord_list[i], totalHit)
 
         desired -= 1
         if desired == 0:
@@ -194,28 +184,30 @@ def bestLine2(actor, map_obj, length, reach):
     startTime = time.time()
     actorCoord = [x for x in map_obj.arrayCenters.keys() if map_obj.arrayCenters[x] == actor][0]
     moveLimit = reach + actor.speed / 5
-    myIndex = list(map_obj.arrayCenters).index(actorCoord)
+    coord_idx = map_obj._coord_idx
+    coord_list = map_obj._coord_list
+    myIndex = coord_idx[actorCoord]
     movementCoords = [coord for coord in map_obj.arrayCenters.keys()
-                      if map_obj.distanceCalc(myIndex, list(map_obj.arrayCenters).index(coord)) <= moveLimit
+                      if map_obj.distanceCalc(myIndex, coord_idx[coord]) <= moveLimit
                       and map_obj.arrayCenters[coord] == '']
     hexLimit = int(length / 5)
 
     if actor in map_obj.enemy:
-        enemyList = [list(map_obj.arrayCenters).index(i) for i in map_obj.arrayCenters.keys()
+        enemyList = [coord_idx[i] for i in map_obj.arrayCenters.keys()
                      if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.enemy]
     else:
-        enemyList = [list(map_obj.arrayCenters).index(i) for i in map_obj.arrayCenters.keys()
+        enemyList = [coord_idx[i] for i in map_obj.arrayCenters.keys()
                      if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.party]
 
     if len(enemyList) == 1:
         enemyDist = map_obj.distanceCalc(myIndex, enemyList[0])
         if enemyDist > moveLimit + hexLimit:
             return (0, 0)
-        targetCoord = list(map_obj.arrayCenters)[enemyList[0]]
+        targetCoord = coord_list[enemyList[0]]
         line = drawLine(actorCoord, targetCoord, map_obj)
         moveTo = [coord for coord in line
-                  if map_obj.distanceCalc(list(map_obj.arrayCenters).index(targetCoord),
-                                          list(map_obj.arrayCenters).index(coord)) <= moveLimit + hexLimit
+                  if map_obj.distanceCalc(coord_idx[targetCoord],
+                                          coord_idx[coord]) <= moveLimit + hexLimit
                   and (map_obj.arrayCenters[coord] == '' or map_obj.arrayCenters[coord] == actor)][0]
         return (1, moveTo, moveTo, [targetCoord])
 
@@ -226,20 +218,20 @@ def bestLine2(actor, map_obj, length, reach):
             enemyDist = map_obj.distanceCalc(myIndex, enemy)
             if e2 == enemy or enemyDist > moveLimit + hexLimit or e2Dist > moveLimit + hexLimit:
                 continue
-            enemyCoord = list(map_obj.arrayCenters)[enemy]
-            e2Coord = list(map_obj.arrayCenters)[e2]
+            enemyCoord = coord_list[enemy]
+            e2Coord = coord_list[e2]
             line = drawLine(enemyCoord, e2Coord, map_obj)
-            sumEnemies = sum(1 for badGuy in enemyList if list(map_obj.arrayCenters)[badGuy] in line)
+            sumEnemies = sum(1 for badGuy in enemyList if coord_list[badGuy] in line)
             test.append([(sumEnemies, 0), enemyCoord, e2Coord])
 
     test = list({tuple(sorted(i)): i for i in test}.values())
     test.sort()
     test.reverse()
 
-    maxX = max(coord[0] for coord in list(map_obj.arrayCenters))
-    maxY = max(coord[1] for coord in list(map_obj.arrayCenters))
+    maxX = max(coord[0] for coord in coord_list)
+    maxY = max(coord[1] for coord in coord_list)
     test = np.asarray(test)
-    testRing = np.asarray([coord for coord in list(map_obj.arrayCenters)
+    testRing = np.asarray([coord for coord in coord_list
                            if coord[1] in (0, 1, maxY - 1, maxY) or coord[0] in (0, maxX)])
 
     possibleCoords = []
@@ -266,21 +258,21 @@ def bestLine2(actor, map_obj, length, reach):
             if firstCoord != coord:
                 line = drawLine(coord, firstCoord, map_obj)
                 inBetweenCoords = [x for x in line if miX <= x[0] <= maX and miY <= x[1] <= maY]
-                sumEnemies = sum(1 for badGuy in enemyList if list(map_obj.arrayCenters)[badGuy] in inBetweenCoords)
+                sumEnemies = sum(1 for badGuy in enemyList if coord_list[badGuy] in inBetweenCoords)
                 if secondCoord in line and sumEnemies == guys:
                     possibleCoords += [c for c in line if c not in inBetweenCoords]
 
             if secondCoord != coord:
                 line2 = drawLine(coord, secondCoord, map_obj)
                 inBetweenCoords = [x for x in line2 if miX <= x[0] <= maX and miY <= x[1] <= maY]
-                sumEnemies = sum(1 for badGuy in enemyList if list(map_obj.arrayCenters)[badGuy] in inBetweenCoords)
+                sumEnemies = sum(1 for badGuy in enemyList if coord_list[badGuy] in inBetweenCoords)
                 if firstCoord in line2 and sumEnemies == guys:
                     possibleCoords += [c for c in line2 if c not in inBetweenCoords]
 
         moveTo = [x for x in possibleCoords if x in movementCoords]
         if len(moveTo) != 0:
-            badGuys = [list(map_obj.arrayCenters)[badGuy] for badGuy in enemyList
-                       if list(map_obj.arrayCenters)[badGuy] in inBetweenCoords]
+            badGuys = [coord_list[badGuy] for badGuy in enemyList
+                       if coord_list[badGuy] in inBetweenCoords]
             return [guys, moveTo[0], moveTo[0], badGuys]
 
     return (0, 0)
@@ -290,26 +282,28 @@ def bestSquare(actor, map_obj, length, reach):
     setRatio = 4
     actorCoord = [x for x in map_obj.arrayCenters.keys() if map_obj.arrayCenters[x] == actor][0]
     moveLimit = reach / 5 + actor.speed / 5
-    myIndex = list(map_obj.arrayCenters).index(actorCoord)
+    coord_idx = map_obj._coord_idx
+    coord_list = map_obj._coord_list
+    myIndex = coord_idx[actorCoord]
     movementCoords = [coord for coord in map_obj.arrayCenters.keys()
-                      if map_obj.distanceCalc(myIndex, list(map_obj.arrayCenters).index(coord)) <= moveLimit
+                      if map_obj.distanceCalc(myIndex, coord_idx[coord]) <= moveLimit
                       and map_obj.arrayCenters[coord] == '']
     hexLimit = int(length / 5)
 
     if actor in map_obj.enemy:
-        enemyList = [list(map_obj.arrayCenters).index(i) for i in map_obj.arrayCenters.keys()
+        enemyList = [coord_idx[i] for i in map_obj.arrayCenters.keys()
                      if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.enemy]
-        partyList = [list(map_obj.arrayCenters).index(i) for i in map_obj.arrayCenters.keys()
+        partyList = [coord_idx[i] for i in map_obj.arrayCenters.keys()
                      if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.party]
     else:
-        enemyList = [list(map_obj.arrayCenters).index(i) for i in map_obj.arrayCenters.keys()
+        enemyList = [coord_idx[i] for i in map_obj.arrayCenters.keys()
                      if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.party]
-        partyList = [list(map_obj.arrayCenters).index(i) for i in map_obj.arrayCenters.keys()
+        partyList = [coord_idx[i] for i in map_obj.arrayCenters.keys()
                      if map_obj.arrayCenters[i] != '' and map_obj.arrayCenters[i] not in map_obj.enemy]
 
     desired = len(enemyList)
     distances = [[coord2 for coord1 in enemyList
-                  if map_obj.distanceCalc(coord1, list(map_obj.arrayCenters).index(coord2)) <= hexLimit]
+                  if map_obj.distanceCalc(coord1, coord_idx[coord2]) <= hexLimit]
                  for coord2 in movementCoords]
     flat = list(set(x for xs in distances for x in xs))
 
@@ -345,50 +339,40 @@ def bestSquare(actor, map_obj, length, reach):
                         y = op[2](y, 1)
                     squareCoords.append((x, y))
 
-            sumEnemies = sum(1 for ind in enemyList if list(map_obj.arrayCenters)[ind] in squareCoords)
+            sumEnemies = sum(1 for ind in enemyList if coord_list[ind] in squareCoords)
             if sumEnemies == 0:
                 continue
-            sumAllies = sum(1 for ind in partyList if list(map_obj.arrayCenters)[ind] in squareCoords)
+            sumAllies = sum(1 for ind in partyList if coord_list[ind] in squareCoords)
 
             if sumEnemies >> maxHit:
                 maxHit = sumEnemies
-                enemiesHit = [list(map_obj.arrayCenters)[ind] for ind in enemyList
-                              if list(map_obj.arrayCenters)[ind] in squareCoords]
-                partyHitList = [list(map_obj.arrayCenters)[ind] for ind in partyList
-                                if list(map_obj.arrayCenters)[ind] in squareCoords]
+                enemiesHit = [coord_list[ind] for ind in enemyList if coord_list[ind] in squareCoords]
+                partyHitList = [coord_list[ind] for ind in partyList if coord_list[ind] in squareCoords]
                 totalHit = enemiesHit + partyHitList
 
             if sumAllies == 0 and sumEnemies == desired:
-                enemiesHit = [list(map_obj.arrayCenters)[ind] for ind in enemyList
-                              if list(map_obj.arrayCenters)[ind] in squareCoords]
-                partyHitList = [list(map_obj.arrayCenters)[ind] for ind in partyList
-                                if list(map_obj.arrayCenters)[ind] in squareCoords]
+                enemiesHit = [coord_list[ind] for ind in enemyList if coord_list[ind] in squareCoords]
+                partyHitList = [coord_list[ind] for ind in partyList if coord_list[ind] in squareCoords]
                 totalHit = enemiesHit + partyHitList
                 line = drawLine(actorCoord, moveCoord, map_obj)
                 options = [
                     x for x in line
-                    if map_obj.distanceCalc(list(map_obj.arrayCenters).index(x),
-                                            list(map_obj.arrayCenters).index(actorCoord)) <= actor.speed / 5
-                    and map_obj.distanceCalc(list(map_obj.arrayCenters).index(x),
-                                             list(map_obj.arrayCenters).index(moveCoord)) <= reach / 5
+                    if map_obj.distanceCalc(coord_idx[x], coord_idx[actorCoord]) <= actor.speed / 5
+                    and map_obj.distanceCalc(coord_idx[x], coord_idx[moveCoord]) <= reach / 5
                 ]
                 return (desired, options[0], moveCoord, totalHit)
 
             if sumAllies == 0 and sumEnemies < desired:
                 continue
             if sumAllies != 0 and sumEnemies / sumAllies >= setRatio:
-                enemiesHit = [list(map_obj.arrayCenters)[ind] for ind in enemyList
-                              if list(map_obj.arrayCenters)[ind] in squareCoords]
-                partyHitList = [list(map_obj.arrayCenters)[ind] for ind in partyList
-                                if list(map_obj.arrayCenters)[ind] in squareCoords]
+                enemiesHit = [coord_list[ind] for ind in enemyList if coord_list[ind] in squareCoords]
+                partyHitList = [coord_list[ind] for ind in partyList if coord_list[ind] in squareCoords]
                 totalHit = enemiesHit + partyHitList
                 line = drawLine(actorCoord, moveCoord, map_obj)
                 options = [
                     x for x in line
-                    if map_obj.distanceCalc(list(map_obj.arrayCenters).index(x),
-                                            list(map_obj.arrayCenters).index(actorCoord)) <= actor.speed / 5
-                    and map_obj.distanceCalc(list(map_obj.arrayCenters).index(x),
-                                             list(map_obj.arrayCenters).index(moveCoord)) <= reach / 5
+                    if map_obj.distanceCalc(coord_idx[x], coord_idx[actorCoord]) <= actor.speed / 5
+                    and map_obj.distanceCalc(coord_idx[x], coord_idx[moveCoord]) <= reach / 5
                 ]
                 return (sumEnemies, options[0], moveCoord, totalHit)
 
@@ -400,10 +384,8 @@ def bestSquare(actor, map_obj, length, reach):
     line = drawLine(actorCoord, finalList[max_index][0], map_obj)
     options = [
         x for x in line
-        if map_obj.distanceCalc(list(map_obj.arrayCenters).index(x),
-                                list(map_obj.arrayCenters).index(actorCoord)) <= actor.speed / 5
-        and map_obj.distanceCalc(list(map_obj.arrayCenters).index(x),
-                                 list(map_obj.arrayCenters).index(finalList[max_index][0])) <= reach / 5
+        if map_obj.distanceCalc(coord_idx[x], coord_idx[actorCoord]) <= actor.speed / 5
+        and map_obj.distanceCalc(coord_idx[x], coord_idx[finalList[max_index][0]]) <= reach / 5
     ]
     return (maxEnemies, options[0], finalList[max_index][0], finalList[max_index][2])
 
@@ -411,9 +393,9 @@ def bestSquare(actor, map_obj, length, reach):
 def bestCone(actor, map_obj, length, reach):
     """Find optimal cone placement to hit the most enemies."""
     actor_hex = None
-    arrayCenters = list(map_obj.arrayCenters)
+    arrayCenters = map_obj._coord_list
     valueAt = map_obj.arrayCenters
-    indexOf = {k: i for i, k in enumerate(arrayCenters)}
+    indexOf = map_obj._coord_idx
     empty_hexes = [k for k in arrayCenters if valueAt[k] == '']
 
     for k, v in valueAt.items():
@@ -531,7 +513,7 @@ def hex_calc_hexes(index1: int, index2: int, hex_limit: int, map_obj) -> list:
     Return the indexes of all hexes within a cone/sweep of *hex_limit* hexes
     starting at *index1* and aimed toward *index2*.
     """
-    arrayCenters = list(map_obj.arrayCenters)
+    arrayCenters = map_obj._coord_list
 
     operations2 = [
         [[operator.sub, 1], [operator.add, 1], [operator.sub, 1], [operator.sub, 1]],
@@ -631,7 +613,7 @@ def hex_calc_line(index1: int, index2: int, hex_limit: int, map_obj) -> list:
 
 def hex_calc_square(index1: int, index2: int, hex_limit: int, map_obj) -> list:
     """Return the indexes of hexes inside a square AoE from *index1* aimed at *index2*."""
-    arrayCenters = list(map_obj.arrayCenters)
+    arrayCenters = map_obj._coord_list
     move_coord = arrayCenters[index2]
 
     operations = [

@@ -202,15 +202,42 @@ class Map:
             x = previousX
             y = previousY
             y += 2 * r * math.sin(a)
-        
+
+        # Build O(1) coord ↔ index caches. Keys never change after grid init.
+        self._rebuild_coord_cache()
+
+    def _rebuild_coord_cache(self):
+        """Rebuild the cached coord list and reverse-index dict.
+
+        Called once after defineArrayGrid (and after repositionActor which can
+        theoretically be called on a different grid, though keys are stable).
+        """
+        self._coord_list: list = list(self.arrayCenters.keys())
+        self._coord_idx: dict = {c: i for i, c in enumerate(self._coord_list)}
+
+    def _neighbors_of(self, coord: tuple) -> list:
+        """Return index list of the (up to 6) hex-adjacent coords using O(1) math.
+
+        This map uses a doubled-height coordinate system where valid hexes always
+        share the same parity (both col and row are even, or both are odd).
+        The 6 neighbors all preserve parity:
+          diagonal steps (±1, ±1) → distance = 1 + max(0,(1-1)/2) = 1
+          vertical steps  (0,  ±2) → distance = 0 + max(0,(2-0)/2) = 1
+        """
+        col, row = coord
+        candidates = [
+            (col + 1, row + 1),
+            (col + 1, row - 1),
+            (col - 1, row + 1),
+            (col - 1, row - 1),
+            (col,     row + 2),
+            (col,     row - 2),
+        ]
+        return [self._coord_idx[c] for c in candidates if c in self._coord_idx]
 
     def distanceCalc(self, index1, index2):
-        ##dprint(list(self.arrayCenters)[index1])
-        ##dprint(list(self.arrayCenters)[index2])
-        test = self.doubledHeight(list(self.arrayCenters)[index1], list(self.arrayCenters)[index2])
-        ##dprint(test)
-        return test
-    
+        return self.doubledHeight(self._coord_list[index1], self._coord_list[index2])
+
     def col_round(self, x):
         frac = x - math.floor(x)
         if frac <= 0.5: return math.floor(x)
@@ -239,12 +266,12 @@ class Map:
     def populateMap(self, party, enemy):
         from engine.size_utils import get_size_cat, compute_footprint, can_place_footprint
 
-        totalArea = len(list(self.arrayCenters)) * 25
+        totalArea = len(self._coord_list) * 25
         totalParty = sum([x.size if isinstance(x.size, (int, float)) else 25 for x in party])
         totalEnemy = sum([x.size if isinstance(x.size, (int, float)) else 25 for x in enemy])
         partyEnemyRatio = totalParty / totalEnemy if totalEnemy else 1
-        maxX = max([x[0] for x in list(self.arrayCenters)])
-        maxY = max([x[1] for x in list(self.arrayCenters)])
+        maxX = max(x[0] for x in self._coord_list)
+        maxY = max(x[1] for x in self._coord_list)
         partyX = self.col_round(partyEnemyRatio * maxX / 2)
         if partyEnemyRatio > 1:
             newX = 1 - 1 / partyEnemyRatio
@@ -289,21 +316,15 @@ class Map:
                             break
     
     def neighbors(self, testCoord):
+        """Return index list of adjacent hexes. O(6) using precomputed coord map."""
+        return self._neighbors_of(testCoord)
 
-        coordList = list(self.arrayCenters)
-        testIndex = coordList.index(testCoord)
-        distanceList =[self.distanceCalc(testIndex, coordList.index(i)) for i in coordList]
-        ##dprint(len(distanceList))
-        yourNeighbors = [i for i, x in enumerate(distanceList) if x == 1 ]
-        ##dprint('Your neighors Cood', [list(self.arrayCenters)[x] for x in yourNeighbors])
-        return(yourNeighbors)
-    
+
     def nearestFreeHex(self, startIndex, endIndex, actor=None):
         from engine.size_utils import get_size_cat, can_place_footprint
-        nearIndexList = self.neighbors(list(self.arrayCenters)[endIndex])
+        nearIndexList = self._neighbors_of(self._coord_list[endIndex])
         min_dist = 999999
         minIndex = -99
-        coords = list(self.arrayCenters)
 
         # Determine if we need footprint-aware checks
         size_cat = get_size_cat(actor) if actor is not None else 'Medium'
@@ -311,10 +332,11 @@ class Map:
 
         for index in nearIndexList:
             distance = self.distanceCalc(index, startIndex)
+            coord = self._coord_list[index]
             if multi_hex:
-                valid = can_place_footprint(coords[index], size_cat, self, actor)
+                valid = can_place_footprint(coord, size_cat, self, actor)
             else:
-                valid = self.arrayCenters[coords[index]] == ''
+                valid = self.arrayCenters[coord] == ''
             if valid and distance <= min_dist:
                 min_dist = distance
                 minIndex = index
@@ -322,22 +344,22 @@ class Map:
         if minIndex == -99:
             minIndex = startIndex
             self.printCurrMap()
-        return coords[minIndex]
-    
+        return self._coord_list[minIndex]
+
     def convertToMyCoords(self, index):
         """Convert viewer index to map coordinates."""
-        centers = list(self.arrayCenters.keys())
-        return centers[index]
-    
+        return self._coord_list[index]
+
     def convertToViewerCoords(self, coord):
-        """Convert map coordinates to viewer index."""
-        return list(self.arrayCenters).index(coord)
-    
+        """Convert map coordinates to viewer index. O(1) via cached dict."""
+        return self._coord_idx[coord]
+
+
     def printCurrMap(self):
         string = ''
-        coordList = list(self.arrayCenters)
-        maxX = max([x[0] for x in list(self.arrayCenters)])
-        maxY = max([x[1] for x in list(self.arrayCenters)])
+        coordList = self._coord_list
+        maxX = max(x[0] for x in self._coord_list)
+        maxY = max(x[1] for x in self._coord_list)
         ##dprint(maxY)
         for y in range(maxY + 1):
             ##dprint(y)
