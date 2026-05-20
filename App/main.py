@@ -672,15 +672,115 @@ class EncounterBuilderTab(QWidget):
         finally:
             progress.close()
     
+    def _rate_simulation_difficulty(self, stats: list) -> tuple[str, str, str]:
+        """
+        Rate the encounter difficulty from simulation results.
+
+        Returns (label, color_hex, description).
+
+        Two-stage algorithm:
+          Stage 1 — Win rate gates Hard / Deadly / TPK:
+            - TPK    : party never wins
+            - Deadly : party wins fewer than half the time
+            - Hard   : party wins most of the time but deaths occur, or win rate < ~90%
+
+          Stage 2 — For encounters where the party wins consistently with no deaths,
+          resource consumption (HP remaining + spell slot pressure) determines
+          Trivial / Easy / Medium:
+            - Trivial : high HP left AND minimal spell slot use
+            - Easy    : moderate HP or moderate slot use
+            - Medium  : low HP remaining or heavy slot expenditure
+        """
+        n = len(stats)
+        if n == 0:
+            return ("Unknown", "#888888", "No simulation data available.")
+
+        party_wins = sum(1 for s in stats if s['winner'] == 'Party')
+        win_rate = party_wins / n
+        death_rate = sum(1 for s in stats if s['any_deaths']) / n
+
+        # Avg party HP % averaged across ALL runs (winners + losers)
+        hp_remaining = sum(
+            sum(p['health_percent'] for p in s['party_stats']) / max(len(s['party_stats']), 1)
+            for s in stats
+        ) / n
+
+        # Spell pressure: fraction of runs where any caster burned ≥50% of any slot level
+        slot_pressure_runs = 0
+        for s in stats:
+            for p in s['party_stats']:
+                used = p.get('spell_slots_used', {})
+                remaining = p.get('spell_slots_remaining', {})
+                for lvl in used:
+                    if lvl == '0':
+                        continue
+                    total = used.get(lvl, 0) + remaining.get(lvl, 0)
+                    if total > 0 and used.get(lvl, 0) / total >= 0.5:
+                        slot_pressure_runs += 1
+                        break
+        slot_pressure = slot_pressure_runs / n
+
+        # ----------------------------------------------------------------
+        # Stage 1: win rate / death rate gates the upper difficulty tiers
+        # ----------------------------------------------------------------
+        if win_rate == 0.0:
+            return ("TPK", "#8B0000",
+                    "Total Party Kill. The party has no realistic chance of survival.")
+
+        if win_rate < 0.5:
+            return ("Deadly", "#CC2200",
+                    "Deadly. The party loses more often than it wins.")
+
+        # Party wins at least half the time — now check deaths / consistency
+        # Hard if: win rate below ~90%, OR deaths occur in a significant number of runs
+        if win_rate < 0.90 or death_rate > 0:
+            return ("Hard", "#E06000",
+                    "Hard. The party can win but expects losses and heavy resource expenditure.")
+
+        # ----------------------------------------------------------------
+        # Stage 2: Party wins consistently (~always) with negligible deaths.
+        # Distinguish Trivial / Easy / Medium purely by resource consumption.
+        # ----------------------------------------------------------------
+        #   Trivial : HP ≥ 70% remaining AND slot pressure < 25%
+        #   Easy    : HP ≥ 50% remaining AND slot pressure < 60%
+        #   Medium  : everything else (high slot drain or low HP)
+        if hp_remaining >= 70 and slot_pressure < 0.25:
+            return ("Trivial", "#2060CC",
+                    "Trivial. The party wins without breaking a sweat.")
+
+        if hp_remaining >= 50 and slot_pressure < 0.60:
+            return ("Easy", "#4A8F00",
+                    "Easy. The party wins comfortably with moderate resource use.")
+
+        return ("Medium", "#B8A000",
+                "Medium. The party always wins but spends significant health and spell slots to do so.")
+
     def show_simulation_results(self, encounter_sim):
         """Display simulation results in a dialog window."""
         dialog = QDialog(self)
         dialog.setWindowTitle("Encounter Simulation Results")
-        dialog.resize(700, 600)
-        
+        dialog.resize(700, 640)
+
         layout = QVBoxLayout(dialog)
-        
-        # Create text display
+
+        # ── Difficulty Banner ────────────────────────────────────────────
+        rating_label, rating_color, rating_desc = self._rate_simulation_difficulty(
+            encounter_sim.combatStats
+        )
+        banner = QLabel(f"Simulation Difficulty:  {rating_label}")
+        banner.setAlignment(Qt.AlignCenter)
+        banner.setStyleSheet(
+            f"background-color: {rating_color}; color: white; "
+            f"font-size: 18px; font-weight: bold; padding: 10px; border-radius: 6px;"
+        )
+        layout.addWidget(banner)
+
+        desc_lbl = QLabel(rating_desc)
+        desc_lbl.setAlignment(Qt.AlignCenter)
+        desc_lbl.setStyleSheet("font-style: italic; padding: 4px 0 8px 0;")
+        layout.addWidget(desc_lbl)
+
+        # ── Detailed Results ─────────────────────────────────────────────
         results_text = QTextEdit()
         results_text.setReadOnly(True)
         results_text.setStyleSheet("font-family: Consolas, monospace;")
@@ -690,16 +790,19 @@ class EncounterBuilderTab(QWidget):
         n_sims = len(encounter_sim.combatStats)
         party_wins = sum(1 for stat in encounter_sim.combatStats if stat['winner'] == 'Party')
         enemy_wins = sum(1 for stat in encounter_sim.combatStats if stat['winner'] == 'Enemy')
-        
+
         text += "=" * 60 + "\n"
         text += "ENCOUNTER SIMULATION RESULTS\n"
         text += "=" * 60 + "\n\n"
-        
+
+        text += f"DIFFICULTY RATING: {rating_label}\n"
+        text += f"  {rating_desc}\n\n"
+
         # Win rate
         text += "Win Rate:\n"
         text += f"  Party Wins: {party_wins}/{n_sims} ({party_wins/n_sims*100:.1f}%)\n"
         text += f"  Enemy Wins: {enemy_wins}/{n_sims} ({enemy_wins/n_sims*100:.1f}%)\n\n"
-        
+
         # Combat length
         avg_turns = sum(stat['turns'] for stat in encounter_sim.combatStats) / n_sims
         min_turns = min(stat['turns'] for stat in encounter_sim.combatStats)
@@ -708,7 +811,7 @@ class EncounterBuilderTab(QWidget):
         text += f"  Average Rounds: {avg_turns:.1f}\n"
         text += f"  Min Rounds: {min_turns}\n"
         text += f"  Max Rounds: {max_turns}\n\n"
-        
+
         # Death statistics
         combats_with_deaths = sum(1 for stat in encounter_sim.combatStats if stat['any_deaths'])
         text += "Party Deaths:\n"

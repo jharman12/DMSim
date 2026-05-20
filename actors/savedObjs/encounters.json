@@ -58,7 +58,13 @@
         ],
         "npcs": [],
         "enemies": [
-            "Lich"
+            "Lich",
+            "Death Dog",
+            "Death Dog",
+            "Death Dog",
+            "Orc",
+            "Orc",
+            "Orc"
         ],
         "numHexes": 20,
         "mapImage": "App\\Maps\\maze Engine.webp"
