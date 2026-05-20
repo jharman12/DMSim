@@ -16,7 +16,7 @@ from engine.dice import rollSave
 from model.map import Map
 
 class Encounter:
-    def __init__(self, partyList, npcList, enemyList, n):
+    def __init__(self, partyList, npcList, enemyList, n, progress_callback=None):
         global output
         output = open('encounter.out', 'w+')
         startTime = time.time()
@@ -26,13 +26,9 @@ class Encounter:
         sims = n
         
         for i in range(sims):
-            #r.seed(i+240)
-            #try:
-            self.preCombat(partyList,npcList,enemyList)
-            
-            #except Exception as e:
-            #    print('The model crashed in seed', i, 'with error\n', e)
-            #    sys.exit()
+            self.preCombat(partyList, npcList, enemyList)
+            if progress_callback is not None:
+                progress_callback(i + 1, sims)
         
         partyWinners = len([x[2] for x in self.winners if x[2] == 'Party'])
         enemyWinners = len([x[2] for x in self.winners if x[2] == 'Enemy'])
@@ -114,21 +110,21 @@ class Encounter:
             turn += 1
             for actor in list(sortedInitList.keys()):
                 
-                print('\t It is: '+actor.name+ ' turn w/ health = '+ str(actor.health) + '\n')
+                #print('\t It is: '+actor.name+ ' turn w/ health = '+ str(actor.health) + '\n')
                 #time.sleep(10)
-                for healthCheck in list(sortedInitList.keys()):
-                    print('\t\t', healthCheck.name, healthCheck.health)
+                #for healthCheck in list(sortedInitList.keys()):
+                    #print('\t\t', healthCheck.name, healthCheck.health)
                 if not actor in list(sortedInitList.keys()): # you've already been removed
                     continue
                 if not actor.alive:  # Skip if already dead
                     continue
                 if actor.legRes >= 1 and len(actor.cc) > 0: # if cced and has legendary resistance... use it and continue
                     actor.legRes = actor.legRes - 1
-                    #print('\t Actor used Leg Res to not be cced : '+actor.name+ ' has  '+ str(actor.legRes) + ' more\n')
+                    ##print('\t Actor used Leg Res to not be cced : '+actor.name+ ' has  '+ str(actor.legRes) + ' more\n')
                     actor.cc = []
                 elif len(actor.cc) > 0: # if actor cced then spend turn trying to save
                     outcome = rollSave(actor, actor.cc[1][0], actor.cc[2]) 
-                    #print('\t Actor cced, trying to save...either way no turn taken \n')
+                    ##print('\t Actor cced, trying to save...either way no turn taken \n')
                     if outcome: # if failed save... still cced
                         continue
                     else: # if passed save... no long cced
@@ -149,19 +145,19 @@ class Encounter:
 
                     for enemy in map.enemy:
                         if enemy.legActions >= 1 and len(map.party) != 0:
-                            print('\t Legendary Action taken by: ' + enemy.name + '\n')
+                            #print('\t Legendary Action taken by: ' + enemy.name + '\n')
                             enemy.takeLegAction(map)
                             removeDeadActors(map, sortedInitList)
                 
             
                 
         survivors = [x.name for x in list(sortedInitList.keys()) if x.health > 0]
-        print(survivors)
+        #print(survivors)
         if len(enemyList) == 0:
             winner = 'Party'
         else:
             winner = 'Enemy'
-        print('Winner: ' + winner+ '. Turns: '+ str(turn) + '. Survivors: ' + str(survivors) + '\n')
+        #print('Winner: ' + winner+ '. Turns: '+ str(turn) + '. Survivors: ' + str(survivors) + '\n')
         return survivors, turn, winner
     
     def printEncounterStats(self, partyList, npcList):

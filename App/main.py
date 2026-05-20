@@ -654,9 +654,18 @@ class EncounterBuilderTab(QWidget):
             progress.setValue(10)
             QApplication.processEvents()
             
-            # Run simulation
+            # Run simulation — tick progress bar after each completed sim
             num_sims = 10
-            encounter_sim = Encounter(party, npcs, enemies, num_sims)
+
+            def _on_sim_done(completed, total):
+                if progress.wasCanceled():
+                    return
+                value = 10 + int(completed / total * 85)
+                progress.setValue(value)
+                QApplication.processEvents()
+
+            encounter_sim = Encounter(party, npcs, enemies, num_sims,
+                                      progress_callback=_on_sim_done)
             
             progress.setValue(90)
             QApplication.processEvents()
@@ -727,15 +736,15 @@ class EncounterBuilderTab(QWidget):
             return ("TPK", "#8B0000",
                     "Total Party Kill. The party has no realistic chance of survival.")
 
-        if win_rate < 0.5:
+        if win_rate < 0.5 or death_rate > 0:
             return ("Deadly", "#CC2200",
-                    "Deadly. The party loses more often than it wins.")
+                    "Deadly. The party is likely to have significant losses.")
 
         # Party wins at least half the time — now check deaths / consistency
         # Hard if: win rate below ~90%, OR deaths occur in a significant number of runs
-        if win_rate < 0.90 or death_rate > 0:
+        if hp_remaining <= 0.50 or slot_pressure >= 0.60:
             return ("Hard", "#E06000",
-                    "Hard. The party can win but expects losses and heavy resource expenditure.")
+                    "Hard. The party can win but expect it be close and have heavy resource expenditure.")
 
         # ----------------------------------------------------------------
         # Stage 2: Party wins consistently (~always) with negligible deaths.
@@ -744,11 +753,11 @@ class EncounterBuilderTab(QWidget):
         #   Trivial : HP ≥ 70% remaining AND slot pressure < 25%
         #   Easy    : HP ≥ 50% remaining AND slot pressure < 60%
         #   Medium  : everything else (high slot drain or low HP)
-        if hp_remaining >= 70 and slot_pressure < 0.25:
+        if hp_remaining >= 85 and slot_pressure < 0.25:
             return ("Trivial", "#2060CC",
                     "Trivial. The party wins without breaking a sweat.")
 
-        if hp_remaining >= 50 and slot_pressure < 0.60:
+        if hp_remaining >= 70 and slot_pressure < 0.40:
             return ("Easy", "#4A8F00",
                     "Easy. The party wins comfortably with moderate resource use.")
 
