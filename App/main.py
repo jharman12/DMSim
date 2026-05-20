@@ -451,6 +451,24 @@ class EncounterBuilderTab(QWidget):
                     "Use 'Import New Map' to copy it in first."
                 )
 
+    # ------------------------------------------------------------------
+    # Enemy list grouping helpers
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _enemy_display(name: str, count: int) -> str:
+        return f"{name} x {count}" if count > 1 else name
+
+    @staticmethod
+    def _enemy_parse(text: str) -> tuple:
+        """Parse 'Orc x 3' -> ('Orc', 3); 'Orc' -> ('Orc', 1)."""
+        if ' x ' in text:
+            parts = text.rsplit(' x ', 1)
+            try:
+                return parts[0], int(parts[1])
+            except ValueError:
+                pass
+        return text, 1
+
     def add_from_combo(self, combo, list_widget):
         text = combo.currentText().strip()
         if text and not any(list_widget.item(i).text() == text for i in range(list_widget.count())):
@@ -461,14 +479,25 @@ class EncounterBuilderTab(QWidget):
                 self.update_difficulty()
 
     def add_multiple_enemies(self):
-        """Add multiple instances of the selected enemy."""
+        """Add enemies to the list, merging with existing entries of the same type."""
         text = self.enemy_combo.currentText().strip()
         quantity = self.enemy_qty_spin.value()
-        if text:
-            for _ in range(quantity):
-                self.enemy_list.addItem(text)
-            self.enemy_combo.setCurrentIndex(-1)  # Clear selection
-            self.update_difficulty()
+        if not text:
+            return
+        # Find existing row with this name and increment its count
+        for i in range(self.enemy_list.count()):
+            item_name, item_count = self._enemy_parse(self.enemy_list.item(i).text())
+            if item_name == text:
+                self.enemy_list.item(i).setText(
+                    self._enemy_display(text, item_count + quantity)
+                )
+                self.enemy_combo.setCurrentIndex(-1)
+                self.update_difficulty()
+                return
+        # No existing entry — add a new grouped item
+        self.enemy_list.addItem(self._enemy_display(text, quantity))
+        self.enemy_combo.setCurrentIndex(-1)
+        self.update_difficulty()
 
     def add_to_list(self, list_widget, avail):
         item, ok = QInputDialog.getItem(self, "Select", "Choose:", avail, 0, False)
@@ -477,16 +506,69 @@ class EncounterBuilderTab(QWidget):
 
     def remove_from_list(self, list_widget):
         current = list_widget.currentItem()
-        if current:
-            list_widget.takeItem(list_widget.row(current))
-            # Update difficulty if removing from party or enemies
-            if list_widget == self.party_list or list_widget == self.enemy_list:
+        if not current:
+            return
+        if list_widget == self.enemy_list:
+            item_name, item_count = self._enemy_parse(current.text())
+            if item_count > 1:
+                dlg = QDialog(self)
+                dlg.setWindowTitle("Remove Enemies")
+                dlg.setMinimumWidth(280)
+                layout = QVBoxLayout(dlg)
+                layout.setSpacing(12)
+                layout.setContentsMargins(16, 16, 16, 16)
+
+                name_lbl = QLabel(f"<b>{item_name}</b>")
+                name_lbl.setAlignment(Qt.AlignCenter)
+                layout.addWidget(name_lbl)
+
+                count_lbl = QLabel(f"Currently on roster: {item_count}")
+                count_lbl.setAlignment(Qt.AlignCenter)
+                count_lbl.setStyleSheet("color: #aaa;")
+                layout.addWidget(count_lbl)
+
+                spin_row = QHBoxLayout()
+                spin_row.addWidget(QLabel("Remove:"))
+                spin = QSpinBox()
+                spin.setRange(1, item_count)
+                spin.setValue(1)
+                spin.setMinimumWidth(70)
+                spin_row.addWidget(spin)
+                spin_row.addStretch()
+                layout.addLayout(spin_row)
+
+                btn_row = QHBoxLayout()
+                btn_row.addStretch()
+                cancel_btn = QPushButton("Cancel")
+                cancel_btn.clicked.connect(dlg.reject)
+                ok_btn = QPushButton("Remove")
+                ok_btn.setDefault(True)
+                ok_btn.clicked.connect(dlg.accept)
+                btn_row.addWidget(cancel_btn)
+                btn_row.addWidget(ok_btn)
+                layout.addLayout(btn_row)
+
+                if dlg.exec_() != QDialog.Accepted:
+                    return
+                new_count = item_count - spin.value()
+                if new_count <= 0:
+                    list_widget.takeItem(list_widget.row(current))
+                else:
+                    current.setText(self._enemy_display(item_name, new_count))
                 self.update_difficulty()
+                return
+        list_widget.takeItem(list_widget.row(current))
+        if list_widget == self.party_list or list_widget == self.enemy_list:
+            self.update_difficulty()
 
     def get_current_data(self):
         party = [self.party_list.item(i).text() for i in range(self.party_list.count())]
         npcs = [self.npc_list.item(i).text() for i in range(self.npc_list.count())]
-        enemies = [self.enemy_list.item(i).text() for i in range(self.enemy_list.count())]
+        # Expand grouped entries: "Orc x 3" -> ["Orc", "Orc", "Orc"]
+        enemies = []
+        for i in range(self.enemy_list.count()):
+            name, count = self._enemy_parse(self.enemy_list.item(i).text())
+            enemies.extend([name] * count)
         return {
             "name": self.name_edit.text(),
             "party": party,
@@ -507,8 +589,11 @@ class EncounterBuilderTab(QWidget):
         for name in data.get("npcs", []):
             self.npc_list.addItem(name)
         self.enemy_list.clear()
-        for name in data.get("enemies", []):
-            self.enemy_list.addItem(name)
+        # Group enemies by name when loading saved data
+        from collections import Counter
+        counts = Counter(data.get("enemies", []))
+        for name, count in counts.items():
+            self.enemy_list.addItem(self._enemy_display(name, count))
         self.update_difficulty()
 
     def update_enc_list(self):
