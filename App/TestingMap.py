@@ -129,6 +129,7 @@ from dialogs import ManualRollDialog, ManualRollersDialog, ManualActionsDialog, 
 _UNKNOWN_IMAGE = str(_root / "App" / "unknown.jpg")
 _DEFAULT_MAP = str(_root / "App" / "Maps" / "TestingMap.webp")
 _OUTLINE_THICKNESS = 3   # pixels added per side by addRedOutline
+_ICON_RENDER_PX = 96    # minimum icon storage resolution for sharp zoom-in
 
 
 def _get_actor_pixmap(actor) -> "QPixmap":
@@ -366,9 +367,10 @@ class CustomGraphicsView(QGraphicsView):
             clean = self._clean_pixmaps.get(old_item)
             if clean is not None:
                 old_item.setPixmap(clean)
-                # Undo the position shift that was applied when the outline was added
+                # Undo the position shift — offset is in scene units (stored px * scale)
                 pos = old_item.pos()
-                old_item.setPos(pos.x() + _OUTLINE_THICKNESS, pos.y() + _OUTLINE_THICKNESS)
+                shift = _OUTLINE_THICKNESS * old_item.scale()
+                old_item.setPos(pos.x() + shift, pos.y() + shift)
 
         self.curActor = actor
 
@@ -382,7 +384,8 @@ class CustomGraphicsView(QGraphicsView):
                 new_item.setPixmap(outlined)
                 # Outline adds thickness pixels on each side; shift up-left to keep center
                 pos = new_item.pos()
-                new_item.setPos(pos.x() - _OUTLINE_THICKNESS, pos.y() - _OUTLINE_THICKNESS)
+                shift = _OUTLINE_THICKNESS * new_item.scale()
+                new_item.setPos(pos.x() - shift, pos.y() - shift)
 
     def setCurMoveCoords(self, indexes):
         self.curMoveCoords = indexes
@@ -997,8 +1000,10 @@ class CustomGraphicsView(QGraphicsView):
     def setMapPixmap(self, pixmap):
         if self.map_item is not None:
             self.scene.removeItem(self.map_item)
+        self._original_map_pixmap = pixmap          # keep full-res source
         self.map_item = self.scene.addPixmap(pixmap)
         self.map_item.setZValue(0)
+        self.map_item.setTransformationMode(Qt.SmoothTransformation)
 
     def addCharacterPixmap(self, pixmap, character):
         # add player object to character items to more easily move characters and retrieve character info
@@ -1008,6 +1013,7 @@ class CustomGraphicsView(QGraphicsView):
         self._clean_pixmaps[character_item] = pixmap    # store original for centering
         self._original_pixmaps[character_item] = pixmap # store raw original (never overwritten)
         character_item.setZValue(2)
+        character_item.setTransformationMode(Qt.SmoothTransformation)
         if len(self.hex_items) > 0:
             for hex in self.hex_items:
                 hex.setZValue(1)
@@ -1375,19 +1381,20 @@ class CustomGraphicsView(QGraphicsView):
                         else:
                             # Single-hex actor: snap icon center to hex center
                             clean = self._clean_pixmaps.get(self.selected_item)
+                            item_scale = self.selected_item.scale() if self.selected_item.scale() != 0 else 1.0
                             if clean is not None:
-                                icon_w = clean.width()
-                                icon_h = clean.height()
+                                icon_w = clean.width() * item_scale
+                                icon_h = clean.height() * item_scale
                             else:
-                                icon_w = self.selected_item.boundingRect().width()
-                                icon_h = self.selected_item.boundingRect().height()
+                                icon_w = self.selected_item.boundingRect().width() * item_scale
+                                icon_h = self.selected_item.boundingRect().height() * item_scale
                             snap_x = snap_hex_scene[0] - icon_w / 2
                             snap_y = snap_hex_scene[1] - icon_h / 2
                             if self.selected_item in self._clean_pixmaps:
                                 actual_w = self.selected_item.boundingRect().width()
-                                if actual_w > icon_w:
-                                    snap_x -= _OUTLINE_THICKNESS
-                                    snap_y -= _OUTLINE_THICKNESS
+                                if actual_w > (icon_w / item_scale if item_scale != 0 else icon_w):
+                                    snap_x -= _OUTLINE_THICKNESS * item_scale
+                                    snap_y -= _OUTLINE_THICKNESS * item_scale
                             self.selected_item.setPos(snap_x, snap_y)
                 else:
                     self.selected_item.setPos(self.selected_item.pos() + delta_scene)
@@ -1485,27 +1492,29 @@ class CustomGraphicsView(QGraphicsView):
             if fp_px is not None:
                 self._clean_pixmaps[pixmap] = fp_px
                 pixmap.setPixmap(fp_px)
+                pixmap.setScale(1.0)    # footprint pixmap is already in scene units
                 pixmap.setPos(pos_x, pos_y)
         else:
             snap_coord = hexArrays[newIndex]
+            item_scale = pixmap.scale() if pixmap.scale() != 0 else 1.0
 
             # Use the clean (no-outline) pixmap size for accurate centering
             clean = self._clean_pixmaps.get(pixmap)
             if clean is not None:
-                icon_w = clean.width()
-                icon_h = clean.height()
+                icon_w = clean.width() * item_scale
+                icon_h = clean.height() * item_scale
             else:
-                icon_w = pixmap.boundingRect().width()
-                icon_h = pixmap.boundingRect().height()
+                icon_w = pixmap.boundingRect().width() * item_scale
+                icon_h = pixmap.boundingRect().height() * item_scale
 
             snap_x = snap_coord[0] - icon_w / 2
             snap_y = snap_coord[1] - icon_h / 2
 
-            # Compensate if outline is currently applied
+            # Compensate if outline is currently applied (outline added in stored-pixel space)
             actual_w = pixmap.boundingRect().width()
             if clean is not None and actual_w > clean.width():
-                snap_x -= _OUTLINE_THICKNESS
-                snap_y -= _OUTLINE_THICKNESS
+                snap_x -= _OUTLINE_THICKNESS * item_scale
+                snap_y -= _OUTLINE_THICKNESS * item_scale
 
             pixmap.setPos(snap_x, snap_y)
 
@@ -1765,37 +1774,50 @@ class CustomGraphicsView(QGraphicsView):
         self._reapply_fog()
 
     def setCharsToHexes(self):
-        # Iterate over character items
+        # Determine storage resolution: at least _ICON_RENDER_PX so icons stay
+        # sharp when the user zooms in, even on large maps with tiny hex cells.
+        hex_max = max(int(self.hex_size.width()), int(self.hex_size.height()))
+        if hex_max < _ICON_RENDER_PX:
+            up = _ICON_RENDER_PX / hex_max
+            store_w = max(int(self.hex_size.width() * up), 1)
+            store_h = max(int(self.hex_size.height() * up), 1)
+            icon_scale = 1.0 / up            # item.setScale → visual size = hex_size
+        else:
+            store_w = int(self.hex_size.width())
+            store_h = int(self.hex_size.height())
+            icon_scale = 1.0
+
+        store_size = QSize(store_w, store_h)
+        hex_path_store = self.createHexagonPath(store_size)
+
         for character_item in self.character_items:
-            # Always use the raw original as source so we don't clip a multi-hex scaled icon
+            # Always use the raw original so we don't clip a multi-hex scaled icon
             source_pixmap = self._original_pixmaps.get(
                 character_item,
                 self._clean_pixmaps.get(character_item, character_item.pixmap())
             )
 
-            # Resize the character's image to fit within the hexagon
-            character_pixmap = source_pixmap.scaled(self.hex_size.toSize(), Qt.KeepAspectRatio)
+            # Scale the source image to fill the storage resolution
+            character_pixmap = source_pixmap.scaled(
+                store_size, Qt.KeepAspectRatio, Qt.SmoothTransformation
+            )
 
-            # Create a painter path for the character image
-            character_path = QPainterPath()
-            character_path.addRect(QRectF(QPointF(), self.hex_size))
+            # Clip the image to the hexagon outline at storage resolution
+            clip_path = QPainterPath()
+            clip_path.addRect(QRectF(QPointF(), QSizeF(store_size)))
+            clip_path = clip_path.intersected(hex_path_store)
 
-            # Clip the character image with the hexagon path
-            character_path = character_path.intersected(self.hex_path)
-
-            # Create a new pixmap and paint the character image onto it
-            combined_pixmap = QPixmap(self.hex_size.toSize())
+            combined_pixmap = QPixmap(store_size)
             combined_pixmap.fill(Qt.transparent)
             painter = QPainter(combined_pixmap)
-            painter.setClipPath(character_path)
+            painter.setClipPath(clip_path)
             painter.drawPixmap(combined_pixmap.rect(), character_pixmap)
             painter.end()
 
-            # Store the clean clipped pixmap BEFORE any outline is applied
+            # Store clean clipped pixmap BEFORE any outline, then apply scale
             self._clean_pixmaps[character_item] = combined_pixmap
-
-            # Set the combined pixmap as the pixmap for the character item
             character_item.setPixmap(combined_pixmap)
+            character_item.setScale(icon_scale)
     
     def setHexColors(self, fill_color, indexes):
         brush = QBrush(fill_color)
