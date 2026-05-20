@@ -2542,29 +2542,19 @@ class TurnActionPanel(QWidget):
         actions_pane_layout.addWidget(bonus_group)
         actions_pane_layout.addStretch()
 
-        # Pane 3: Game Log
-        log_pane = QWidget()
-        log_pane_layout = QVBoxLayout(log_pane)
-        log_pane_layout.setContentsMargins(0, 0, 0, 0)
-        log_pane_layout.setSpacing(4)
-        self.game_log_label = QLabel("Game Log")
-        self.game_log_label.setStyleSheet("font-weight: bold;")
-        log_pane_layout.addWidget(self.game_log_label)
-        self.turn_log = TurnLogWidget()
-        self.turn_log.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        log_pane_layout.addWidget(self.turn_log)
-
-        # 3-way splitter: Spell Slots | Actions | Game Log
+        # 2-way splitter: Spell Slots | Actions
+        # (Game Log is now a separate dockable widget — see MapWidget)
         self._slot_log_splitter = QSplitter(Qt.Vertical)
         self._slot_log_splitter.addWidget(spell_pane)
         self._slot_log_splitter.addWidget(actions_pane)
-        self._slot_log_splitter.addWidget(log_pane)
         self._slot_log_splitter.setStretchFactor(0, 1)
-        self._slot_log_splitter.setStretchFactor(1, 0)
-        self._slot_log_splitter.setStretchFactor(2, 2)
-        self._slot_log_splitter.setSizes([120, 220, 200])
+        self._slot_log_splitter.setStretchFactor(1, 2)
+        self._slot_log_splitter.setSizes([120, 280])
         self._slot_log_splitter.setChildrenCollapsible(False)
         main_layout.addWidget(self._slot_log_splitter, stretch=1)
+
+        # turn_log is injected by MapWidget after construction
+        self.turn_log: TurnLogWidget | None = None
 
         # -------------------------------
         # End Turn button
@@ -2616,8 +2606,6 @@ class TurnActionPanel(QWidget):
         set_font(self.take_turn_button, textScale.size(textScale.SM))
         set_font(self.bonus_take_turn_button, textScale.size(textScale.SM))
 
-        set_font(self.game_log_label, textScale.size(textScale.MD), QFont.Bold)
-        # TurnLogWidget uses fixed internal CSS; no font scaling needed
         # Apply font to grouped boxes and their title
         for child in self.findChildren(QGroupBox):
             set_font(child, textScale.size(textScale.MD), QFont.Bold)
@@ -2747,7 +2735,8 @@ class TurnActionPanel(QWidget):
 
     def log(self, text):
         """Append text to the combat log."""
-        self.turn_log.log(text)
+        if self.turn_log is not None:
+            self.turn_log.log(text)
 
     def set_concentration(self, caster_name: str, spell_name: str):
         """Show a concentration indicator below the action buttons."""
@@ -2965,7 +2954,8 @@ class PlayerMapView(QGraphicsView):
 
         painter.restore()
 
-
+
+
 class _PlayerCurrentTurnWidget(QWidget):
     """Read-only card showing whose turn it currently is (for the player screen)."""
     def __init__(self, parent=None):
@@ -3337,7 +3327,6 @@ class MapWidget(QMainWindow):
         self.turn_action_panel.select_target_button.clicked.connect(self.spellButton_pressed)
         self.turn_action_panel.select_bonus_target_button.clicked.connect(self.bonusSpellButton_pressed)
         self.turn_action_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.turn_action_panel.turn_log.undo_requested.connect(self._undo_to_serial)
 
         action_dock = QDockWidget("Turn Actions", self)
         action_dock.setObjectName("TurnActionsDock")
@@ -3354,6 +3343,26 @@ class MapWidget(QMainWindow):
         action_dock.customContextMenuRequested.connect(
             lambda pos: self._player_dock_menu(pos, action_dock, "cur_turn")
         )
+
+        # ------------------------------------------------------------------
+        # DOCK: GAME LOG (bottom, full width)
+        # ------------------------------------------------------------------
+        self.game_log_widget = TurnLogWidget()
+        self.game_log_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.turn_action_panel.turn_log = self.game_log_widget
+
+        log_dock = QDockWidget("Game Log", self)
+        log_dock.setObjectName("GameLogDock")
+        log_dock.setWidget(self.game_log_widget)
+        log_dock.setAllowedAreas(Qt.AllDockWidgetAreas)
+        log_dock.setFeatures(
+            QDockWidget.DockWidgetMovable |
+            QDockWidget.DockWidgetFloatable |
+            QDockWidget.DockWidgetClosable
+        )
+        log_dock.setMinimumHeight(80)
+        self.addDockWidget(Qt.BottomDockWidgetArea, log_dock)
+        self._log_dock = log_dock
 
         # ------------------------------------------------------------------
         # DOCK: PARTY HEALTH (top, split to the right of Turn Order)
@@ -3402,6 +3411,7 @@ class MapWidget(QMainWindow):
         view_menu.addAction(turn_order_dock.toggleViewAction())
         view_menu.addAction(action_dock.toggleViewAction())
         view_menu.addAction(party_health_dock.toggleViewAction())
+        view_menu.addAction(log_dock.toggleViewAction())
 
         # ------------------------------------------------------------------
         # DAMAGE TRACKER
@@ -3419,6 +3429,7 @@ class MapWidget(QMainWindow):
         self.controller.persistent_spell_created.connect(self._on_persistent_spell_created)
         self.controller.persistent_spell_ended.connect(self._on_persistent_spell_ended)
         self.controller.turn_changed.connect(self._refresh_damage_tracker)
+        self.game_log_widget.undo_requested.connect(self._undo_to_serial)
         self.map_view.walls_changed.connect(self._on_walls_changed)
         self.map_view.fog_changed.connect(self._on_fog_changed)
         self.map_view.target_area_changed.connect(self._on_target_area_changed)
@@ -3545,11 +3556,11 @@ class MapWidget(QMainWindow):
         """Highlight the turn group for the given actor record."""
         serial = record.get('serial')
         if serial is not None:
-            self.turn_action_panel.turn_log.highlight_group(serial)
+            self.game_log_widget.highlight_group(serial)
 
     def _clear_prev_turn_highlights(self):
         """Clear both the log highlights and the map path highlight."""
-        self.turn_action_panel.turn_log.clear_highlights()
+        self.game_log_widget.clear_highlights()
         self.map_view.clear_prev_turn_path()
 
     def _on_actor_died(self, actor):
@@ -3853,8 +3864,8 @@ class MapWidget(QMainWindow):
                 self.turn_action_panel.buildSpellSlots(self.actor)
                 newMoveHexes = calcMoveHexes(self.actor, enc.map)
                 self.map_view.setCurMoveCoords(newMoveHexes)
-            self.turn_action_panel.turn_log.set_oldest_accessible(self._oldest_serial)
-            self.turn_action_panel.turn_log.prepare_serial(self._turn_serial)
+            self.game_log_widget.set_oldest_accessible(self._oldest_serial)
+            self.game_log_widget.prepare_serial(self._turn_serial)
         else:
             # Pre-combat positioning state — allow repositioning, Start Encounter still available
             self.map_view._pre_encounter = True
@@ -3877,11 +3888,11 @@ class MapWidget(QMainWindow):
         # Track oldest accessible serial when deque is full
         if len(self.undo_stack) == 20:
             self._oldest_serial += 1
-            self.turn_action_panel.turn_log.set_oldest_accessible(self._oldest_serial)
+            self.game_log_widget.set_oldest_accessible(self._oldest_serial)
 
         self.undo_stack.append(snapshot)
         self._turn_serial += 1
-        self.turn_action_panel.turn_log.prepare_serial(self._turn_serial)
+        self.game_log_widget.prepare_serial(self._turn_serial)
 
     def undoTurn(self):
         if not self.undo_stack:
@@ -3889,7 +3900,7 @@ class MapWidget(QMainWindow):
 
         # Truncate the current in-progress turn group then re-log it after restore.
         # _turn_serial stays the same — we are replaying the same turn.
-        self.turn_action_panel.turn_log.truncate_after_serial(self._turn_serial)
+        self.game_log_widget.truncate_after_serial(self._turn_serial)
 
         self.myEncounter = self.undo_stack.pop()
         self.myEncounter.graphicsViewer = self.map_view
@@ -3898,7 +3909,7 @@ class MapWidget(QMainWindow):
         self.map_view._map_obj_ref = self.myEncounter.map
         self.controller._encounter = self.myEncounter
 
-        self.turn_action_panel.turn_log.prepare_serial(self._turn_serial)
+        self.game_log_widget.prepare_serial(self._turn_serial)
         self.rebuildFromEncounter(relog_turn_header=True)
 
     def _undo_to_serial(self, serial: int):
@@ -3919,7 +3930,7 @@ class MapWidget(QMainWindow):
             return
 
         # Truncate log to just before this turn
-        self.turn_action_panel.turn_log.truncate_after_serial(serial)
+        self.game_log_widget.truncate_after_serial(serial)
 
         # Pop all snapshots down to the target (silently, without rebuilding)
         for _ in range(undo_count - 1):
@@ -3937,7 +3948,7 @@ class MapWidget(QMainWindow):
         self.controller._encounter = self.myEncounter
 
         # Prepare serial so calcTurn re-logs the header into the correct group
-        self.turn_action_panel.turn_log.prepare_serial(serial)
+        self.game_log_widget.prepare_serial(serial)
         self.rebuildFromEncounter(relog_turn_header=True)
 
     def rebuildFromEncounter(self, relog_turn_header: bool = False):
