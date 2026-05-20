@@ -43,3 +43,4 @@ skip 35.) for all of the monsters that I have saved, generate a stock image for 
 37.) Similarly to task 36, the map begins getting blurry when you zoom in too much. Is there a way of fixing this?
 38.) The character icons also get extremely blurry when adding a lot of hexes. Can we fix this blurriness? 
 39.) Make the game log be a dock as well such that we can move it around if needed.
+40.) When more than one enemy of a single type in the encounter builder, dont lis the same enemy multiple times, have for example "Orc x 10". And when you delete an enemy with multiple of the same selected, have a pop-up to enter how many or to set current number.

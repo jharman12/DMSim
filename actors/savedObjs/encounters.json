@@ -58,15 +58,9 @@
         ],
         "npcs": [],
         "enemies": [
-            "Lich",
-            "Death Dog",
-            "Death Dog",
-            "Death Dog",
-            "Orc",
-            "Orc",
-            "Orc"
+            "Lich"
         ],
-        "numHexes": 20,
+        "numHexes": 40,
         "mapImage": "App\\Maps\\maze Engine.webp"
     },
     "Helms Deep": {

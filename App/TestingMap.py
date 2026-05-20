@@ -307,6 +307,7 @@ class CustomGraphicsView(QGraphicsView):
         self.character_items = []
         self.character_objs = []
         self.hex_items = []  # Added hex_items attribute
+        self._last_outline_zoom: float = -1.0  # cached zoom level for outline updates
         self.selected_item = None
         self.last_mouse_pos = QPointF()
         self._drag_clicked_hex = None  # hex index within footprint that was clicked
@@ -1011,19 +1012,48 @@ class CustomGraphicsView(QGraphicsView):
             for hex in self.hex_items:
                 hex.setZValue(1)
         
+    def _outline_pen_for_zoom(self) -> 'QPen':
+        """Return a zoom-aware black outline pen for hex grid items.
+
+        Target: ~1.5 screen pixels wide regardless of zoom, capped at 1.0 scene unit.
+        Below zoom ~0.4 the outline would be sub-pixel — return NoPen so Qt skips
+        drawing it entirely (saves rendering work on large grids).
+        """
+        zoom = self.transform().m11()
+        if zoom <= 0:
+            return QPen(Qt.NoPen)
+        width_scene = min(1.5 / zoom, 1.0)
+        if width_scene * zoom < 0.4:        # would be <0.4px — invisible, skip rendering
+            return QPen(Qt.NoPen)
+        pen = QPen(QColor(0, 0, 0, 255))
+        pen.setWidthF(width_scene)
+        return pen
+
+    def _refresh_hex_outlines(self):
+        """Re-apply zoom-aware outline pen to every hex grid item.
+
+        Skips the update if the zoom level hasn't changed enough to matter
+        (avoids redundant setPen() calls on large grids during fast scrolling).
+        """
+        zoom = self.transform().m11()
+        if abs(zoom - self._last_outline_zoom) < 0.001:
+            return
+        self._last_outline_zoom = zoom
+        pen = self._outline_pen_for_zoom()
+        for item in self.hex_items:
+            item.setPen(pen)
+
     def wheelEvent(self, event):
-        # Zoom factor
         zoom_in_factor = 1.15
         zoom_out_factor = 1 / zoom_in_factor
 
-        # Determine zoom direction
         if event.angleDelta().y() > 0:
             zoom_factor = zoom_in_factor
         else:
             zoom_factor = zoom_out_factor
 
-        # Apply zoom to the view (not individual items!)
         self.scale(zoom_factor, zoom_factor)
+        self._refresh_hex_outlines()
         event.accept()
 
     def mousePressEvent(self, event):
@@ -1704,8 +1734,7 @@ class CustomGraphicsView(QGraphicsView):
 
                 hex_polygon = QGraphicsPolygonItem()
                 hex_polygon.setPolygon(QPolygonF(hex_points))
-                # Set fill and outline colors
-                
+                hex_polygon.setPen(self._outline_pen_for_zoom())
                 self.scene.addItem(hex_polygon)
                 self.hex_items.append(hex_polygon)  # Store hexagon in hex_items
 
@@ -1769,12 +1798,8 @@ class CustomGraphicsView(QGraphicsView):
             character_item.setPixmap(combined_pixmap)
     
     def setHexColors(self, fill_color, indexes):
-        
-        brush = QBrush(fill_color) 
-        # For a solid outline, you can use an opaque color
-        outline_color = QColor(0, 0, 0, 255) # Black, fully opaque
-        pen = QPen(outline_color)
-        pen.setWidth(2)
+        brush = QBrush(fill_color)
+        pen = self._outline_pen_for_zoom()
         for ind in indexes:
             hex_polygon = self.hex_items[ind]
             hex_polygon.setBrush(brush)
