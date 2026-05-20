@@ -40,6 +40,9 @@ class interactiveEncounter:
                 actor.maxSpeed = actor.speed
             actor.hasAction = True
             actor.hasBonusAction = True
+            # Reset damage dealt counter for player actors.
+            if getattr(actor, 'is_player', False):
+                actor._damage_dealt = 0
             # Snapshot monster spell use counts so the GUI can show max checkboxes correctly.
             if not getattr(actor, 'is_player', False):
                 actor._spell_max_uses = {

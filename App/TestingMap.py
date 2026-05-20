@@ -123,7 +123,7 @@ from model.monster import createMonsterList, Monster
 from engine.targeting import drawLine, calcMoveHexes, hex_calc_line, hex_calc_hexes, hex_calc_square
 from engine.size_utils import get_actor_anchor_index
 from model.Interactive.interactiveEncounter import interactiveEncounter
-from dialogs import ManualRollDialog, ManualRollersDialog, ManualActionsDialog, SetStatsDialog
+from dialogs import ManualRollDialog, ManualRollersDialog, ManualActionsDialog, SetStatsDialog, DamageTrackerDialog
 
 
 _UNKNOWN_IMAGE = str(_root / "App" / "unknown.jpg")
@@ -3234,6 +3234,11 @@ class MapWidget(QMainWindow):
         self.undo_button.clicked.connect(self.undoTurn)
         top_button_row.addWidget(self.undo_button)
 
+        self.damage_tracker_button = QPushButton("📊 Damage")
+        self.damage_tracker_button.setToolTip("Show damage dealt by each player this combat")
+        self.damage_tracker_button.clicked.connect(self._open_damage_tracker)
+        top_button_row.addWidget(self.damage_tracker_button)
+
         map_frame_layout.addLayout(top_button_row)
 
         # ---- Map view ----
@@ -3377,6 +3382,11 @@ class MapWidget(QMainWindow):
         view_menu.addAction(party_health_dock.toggleViewAction())
 
         # ------------------------------------------------------------------
+        # DAMAGE TRACKER
+        # ------------------------------------------------------------------
+        self._damage_tracker: DamageTrackerDialog | None = None
+
+        # ------------------------------------------------------------------
         # SIGNAL WIRING
         # ------------------------------------------------------------------
         self.controller.log_message.connect(self.turn_action_panel.log)
@@ -3386,6 +3396,7 @@ class MapWidget(QMainWindow):
         self.controller.encounter_ended.connect(self._on_encounter_ended)
         self.controller.persistent_spell_created.connect(self._on_persistent_spell_created)
         self.controller.persistent_spell_ended.connect(self._on_persistent_spell_ended)
+        self.controller.turn_changed.connect(self._refresh_damage_tracker)
         self.map_view.walls_changed.connect(self._on_walls_changed)
         self.map_view.fog_changed.connect(self._on_fog_changed)
         self.map_view.target_area_changed.connect(self._on_target_area_changed)
@@ -3453,6 +3464,21 @@ class MapWidget(QMainWindow):
             self.controller.set_interactive_actors(new_interactive)
             self.myEncounter.interactive_actors = new_interactive
 
+    def _open_damage_tracker(self):
+        """Open (or bring to front) the non-modal damage tracker window."""
+        party = [a for a in self.myEncounter.totalList if getattr(a, 'is_player', False)]
+        if self._damage_tracker is None or not self._damage_tracker.isVisible():
+            self._damage_tracker = DamageTrackerDialog(party, parent=self)
+        self._damage_tracker.refresh()
+        self._damage_tracker.show()
+        self._damage_tracker.raise_()
+        self._damage_tracker.activateWindow()
+
+    def _refresh_damage_tracker(self, *_args):
+        """Refresh the damage tracker if it is open."""
+        if self._damage_tracker is not None and self._damage_tracker.isVisible():
+            self._damage_tracker.refresh()
+
     def _on_turn_changed(self, actor):
         """Called by SimController.turn_changed signal when the active actor changes."""
         self.map_view.setCurTurn(actor)
@@ -3516,6 +3542,7 @@ class MapWidget(QMainWindow):
         self.party_health_widget.update_actor(actor, current, maximum)
         if self._secondary_map_window is not None and self._secondary_map_window.isVisible():
             self._secondary_map_window.update_actor_health(actor, current, maximum)
+        self._refresh_damage_tracker()
 
     def _party_health_dock_menu(self, pos, dock):
         """Right-click context menu on the Party Health dock title bar."""
@@ -3564,6 +3591,7 @@ class MapWidget(QMainWindow):
         self.turn_action_panel.log(f'--- Encounter over! {winner} wins! ---')
         self.start_button.setEnabled(False)
         self.turn_action_panel.set_encounter_active(False)
+        self._refresh_damage_tracker()
 
         if winner == 'Party':
             title = "Victory! 🎉"

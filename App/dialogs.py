@@ -583,3 +583,109 @@ class SetStatsDialog(QDialog):
                     active.discard(cond)
 
 
+class DamageTrackerDialog(QDialog):
+    """Non-modal popup showing cumulative damage dealt per player actor this combat."""
+
+    _BAR_MAX_WIDTH = 180
+
+    def __init__(self, party: list, parent=None):
+        super().__init__(parent, Qt.Window | Qt.WindowStaysOnTopHint)
+        self.setWindowTitle("📊 Damage Tracker")
+        self.setMinimumWidth(340)
+        self._party = party  # live list; entries never change, only _damage_dealt attr does
+
+        self._rows: list[dict] = []   # one entry per player: {name_lbl, dmg_lbl, bar_fill, bar_bg}
+
+        root = QVBoxLayout(self)
+        root.setSpacing(6)
+        root.setContentsMargins(12, 10, 12, 10)
+
+        title = QLabel("Damage Dealt — This Combat")
+        title.setStyleSheet("font-weight: bold; font-size: 14px; color: #e0e0e0;")
+        root.addWidget(title)
+
+        divider = QFrame()
+        divider.setFrameShape(QFrame.HLine)
+        divider.setStyleSheet("color: #555;")
+        root.addWidget(divider)
+
+        self._rows_container = QVBoxLayout()
+        self._rows_container.setSpacing(4)
+        root.addLayout(self._rows_container)
+
+        self._build_rows()
+
+        root.addStretch()
+
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(self.hide)
+        close_btn.setFixedHeight(28)
+        root.addWidget(close_btn, alignment=Qt.AlignRight)
+
+        self.setStyleSheet("""
+            QDialog { background: #2b2b2b; }
+            QLabel  { color: #e0e0e0; font-size: 13px; }
+        """)
+
+    def _build_rows(self):
+        """Create one row widget per player."""
+        for actor in self._party:
+            if not getattr(actor, 'is_player', False):
+                continue
+
+            row_widget = QWidget()
+            row_layout = QHBoxLayout(row_widget)
+            row_layout.setContentsMargins(0, 2, 0, 2)
+            row_layout.setSpacing(8)
+
+            # Name label (fixed width so damage column aligns)
+            name_lbl = QLabel(actor.name)
+            name_lbl.setMinimumWidth(110)
+            name_lbl.setStyleSheet("font-weight: bold; color: #c8d8f0;")
+            row_layout.addWidget(name_lbl)
+
+            # Damage number
+            dmg_lbl = QLabel("0")
+            dmg_lbl.setMinimumWidth(48)
+            dmg_lbl.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            dmg_lbl.setStyleSheet("font-family: monospace; color: #ff9966;")
+            row_layout.addWidget(dmg_lbl)
+
+            # Bar background
+            bar_bg = QFrame()
+            bar_bg.setFixedHeight(14)
+            bar_bg.setFixedWidth(self._BAR_MAX_WIDTH)
+            bar_bg.setStyleSheet("background: #444; border-radius: 4px;")
+            bar_layout = QHBoxLayout(bar_bg)
+            bar_layout.setContentsMargins(0, 0, 0, 0)
+            bar_layout.setSpacing(0)
+
+            bar_fill = QFrame()
+            bar_fill.setFixedHeight(14)
+            bar_fill.setFixedWidth(0)
+            bar_fill.setStyleSheet("background: #e05030; border-radius: 4px;")
+            bar_layout.addWidget(bar_fill)
+            bar_layout.addStretch()
+
+            row_layout.addWidget(bar_bg)
+            row_layout.addStretch()
+
+            self._rows_container.addWidget(row_widget)
+            self._rows.append({
+                'actor': actor,
+                'dmg_lbl': dmg_lbl,
+                'bar_fill': bar_fill,
+            })
+
+    def refresh(self):
+        """Update all rows from the actors' current _damage_dealt values."""
+        if not self._rows:
+            return
+        max_dmg = max((r['actor']._damage_dealt for r in self._rows), default=0)
+        max_dmg = max(max_dmg, 1)
+        for row in self._rows:
+            dmg = getattr(row['actor'], '_damage_dealt', 0)
+            row['dmg_lbl'].setText(str(int(dmg)))
+            fill_w = int((dmg / max_dmg) * self._BAR_MAX_WIDTH)
+            row['bar_fill'].setFixedWidth(fill_w)
+

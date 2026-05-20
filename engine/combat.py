@@ -882,9 +882,14 @@ def takeDmg(actor, target, dmg, map_obj):
                     target.status.append('deathSaves')
                     target.cc = []
 
+    # Accumulate damage dealt for player actors (damage tracker).
+    if dmg > 0 and getattr(actor, 'is_player', False):
+        actor._damage_dealt = getattr(actor, '_damage_dealt', 0) + dmg
+
     # Only trigger a concentration save if the target actually took damage.
     if dmg > 0:
         concentration_save(target, int(dmg), map_obj)
+
 
 
 def takeReaction(actor, map_obj, target):
