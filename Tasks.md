@@ -40,9 +40,10 @@ Done 34.) In the encounter window, once the players simulate the combat, I need 
 skip 35.) for all of the monsters that I have saved, generate a stock image for their icon based off of their names. Do not use any copy rated images here.
 
 Done 36.) The map needs to be able to handle a lot of hexes (maps able to handle an army 1000+ enemies). Currently, the hexes outlines are set at the beginning such that you can see the outline zoomed all the way out. When zooming in on a map the Num hexes set to 99, the polygon outline of the hexes begin to look way to large. I need the hexes outline to scale based off of the zoom level.
-37.) Similarly to task 36, the map begins getting blurry when you zoom in too much. Is there a way of fixing this?
-38.) The character icons also get extremely blurry when adding a lot of hexes. Can we fix this blurriness? 
-39.) Make the game log be a dock as well such that we can move it around if needed.
+Done 37.) Similarly to task 36, the map begins getting blurry when you zoom in too much. Is there a way of fixing this?
+Done 38.) The character icons also get extremely blurry when adding a lot of hexes. Can we fix this blurriness? 
+
+Done 39.) Make the game log be a dock as well such that we can move it around if needed.
 40.) When more than one enemy of a single type in the encounter builder, dont lis the same enemy multiple times, have for example "Orc x 10". And when you delete an enemy with multiple of the same selected, have a pop-up to enter how many or to set current number.
 41.) Walls are not working properly. actors are just walking through walls now since the distances of hexes has been cached.
 42.) Actors are some times moving off map when they die instead of being deleted off the map.

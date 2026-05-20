@@ -2495,7 +2495,7 @@ class TurnActionPanel(QWidget):
         self.move_Action_layout.addWidget(self.take_turn_button)
         action_group_layout.addLayout(self.move_Action_layout)
 
-        actions_pane_layout.addWidget(action_group)
+        actions_pane_layout.addWidget(action_group, stretch=1)
 
         bonus_group = QGroupBox("⚡ Bonus Action")
         bonus_group.setStyleSheet(
@@ -2539,8 +2539,7 @@ class TurnActionPanel(QWidget):
         )
         bonus_group_layout.addWidget(self.bonus_take_turn_button)
 
-        actions_pane_layout.addWidget(bonus_group)
-        actions_pane_layout.addStretch()
+        actions_pane_layout.addWidget(bonus_group, stretch=1)
 
         # 2-way splitter: Spell Slots | Actions
         # (Game Log is now a separate dockable widget — see MapWidget)
