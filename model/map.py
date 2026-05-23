@@ -8,7 +8,6 @@ _root = pathlib.Path(__file__).parent.parent.parent
 sys.path.insert(1, str(_root))
 
 from engine.combat import takeReaction
-from engine.targeting import drawLine
 from engine.utils import dprint
 
 class Map:
@@ -27,7 +26,7 @@ class Map:
 
         self.party = partyList
         self.enemy = enemyList
-        self.walls: set = set()           # hex indices that are impassable walls
+        self.walls: set = set()           # (col, row) coord tuples for impassable wall hexes
         self.persistent_spells: list = [] # active PersistentSpell zones
         self.populateMap(self.party, self.enemy)
         
@@ -101,26 +100,29 @@ class Map:
                 self.graphicsViewer.moveActor(mover, newIndex, fp_indices)
     
     def dashActor(self, mover, targetCoord):
+        """Move mover up to double-speed toward targetCoord, following the
+        wall-aware BFS path rather than a straight line."""
+        from engine.targeting import _bfs_path_dest
         dprint(mover.name, ' is taking the dash action to ', targetCoord)
-        movement = 2*(mover.speed/5)
-        moverCoord = [i for i in self.arrayCenters if self.arrayCenters[i] ==mover][0]
-        line = drawLine(moverCoord, targetCoord, self)
-        #dprint(line)
-        options = [x for x in line
-                   if x != moverCoord
-                   and self.distanceCalc(list(self.arrayCenters).index(moverCoord),
-                                         list(self.arrayCenters).index(x)) <= movement]
-        # If no options (movement = 0 or already adjacent with no path), stay put
-        if not options:
+
+        moverCoord = next((c for c in self.arrayCenters if self.arrayCenters[c] is mover), None)
+        if moverCoord is None:
             return
-        
-        if self.arrayCenters[options[-1]] != '':
-            moverIndex = list(self.arrayCenters).index(moverCoord)
-            targetIndex = list(self.arrayCenters).index(targetCoord)
-            moverNew = self.nearestFreeHex(moverIndex, targetIndex, actor=mover)
-            self.moveActor(mover, moverNew)
-        else:
-            self.moveActor(mover, options[-1])
+        start_idx  = self._coord_idx[moverCoord]
+        target_idx = self._coord_idx.get(targetCoord)
+        if target_idx is None:
+            return
+
+        speed_hexes = int(mover.speed / 5) * 2  # dash = double movement
+        dest_idx = _bfs_path_dest(start_idx, target_idx, speed_hexes, self)
+        if dest_idx is None or dest_idx == start_idx:
+            return
+
+        best_coord = self._coord_list[dest_idx]
+        if self.arrayCenters.get(best_coord) not in ('', mover):
+            best_coord = self.nearestFreeHex(start_idx, dest_idx, actor=mover)
+
+        self.moveActor(mover, best_coord)
         
 
     def moveToNearest(self, mover, target):

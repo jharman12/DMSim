@@ -27,6 +27,49 @@ def drawLine(coord1, coord2, map_obj):
     return snapCoord
 
 
+def _bfs_path_dest(start_idx, target_idx, max_steps, map_obj):
+    """Return the hex index reached after walking *max_steps* along the
+    wall-aware BFS shortest path from start_idx toward target_idx.
+
+    Returns target_idx if it is within max_steps, the furthest point along
+    the path otherwise, or None if target_idx is completely unreachable.
+    """
+    from collections import deque
+    if start_idx == target_idx:
+        return start_idx
+
+    coords = map_obj._coord_list
+    walls = getattr(map_obj, 'walls', set())
+    wall_idx_set = {map_obj._coord_idx[c] for c in walls if c in map_obj._coord_idx}
+
+    parent = {start_idx: None}
+    queue = deque([start_idx])
+    found = False
+    while queue:
+        cur = queue.popleft()
+        if cur == target_idx:
+            found = True
+            break
+        for nb in map_obj._neighbors_of(coords[cur]):
+            if nb not in parent and nb not in wall_idx_set:
+                parent[nb] = cur
+                queue.append(nb)
+
+    if not found:
+        return None  # Target fully enclosed by walls — unreachable
+
+    # Reconstruct path: start → target
+    path = []
+    cur = target_idx
+    while cur is not None:
+        path.append(cur)
+        cur = parent[cur]
+    path.reverse()  # path[0] = start, path[-1] = target
+
+    # Return the point max_steps along the path (capped at end)
+    return path[min(max_steps, len(path) - 1)]
+
+
 def calcMoveHexes(actor, map_obj, type=None):
     """Return list of hex indices the actor can reach, routing around walls.
 
@@ -50,6 +93,9 @@ def calcMoveHexes(actor, map_obj, type=None):
     speed = int(actor.speed / 5)
     limit = speed * 2 if type == 'dash' else speed
 
+    # Convert wall coord-tuples to _coord_idx indices for fast BFS lookup
+    wall_idx_set = {map_obj._coord_idx[c] for c in walls if c in map_obj._coord_idx}
+
     cost = {start: 0}
     queue = deque([start])
 
@@ -58,7 +104,7 @@ def calcMoveHexes(actor, map_obj, type=None):
         if cost[cur] >= limit:
             continue
         for nb in map_obj._neighbors_of(coords[cur]):
-            if nb not in cost and nb not in walls:
+            if nb not in cost and nb not in wall_idx_set:
                 cost[nb] = cost[cur] + 1
                 queue.append(nb)
 
@@ -77,6 +123,9 @@ def calcMoveHexes(actor, map_obj, type=None):
 
 
 def coordWithinReach(actorCoord, targetCoord, reach, map_obj):
+    """Return the destination coord the actor should move to in order to get
+    within *reach* hexes of targetCoord, routing around walls via BFS path-following.
+    Returns actorCoord unchanged if already in range or no actor found there."""
     hexLimit = reach
     dist = map_obj.distanceCalc(
         map_obj._coord_idx[targetCoord],
@@ -84,24 +133,36 @@ def coordWithinReach(actorCoord, targetCoord, reach, map_obj):
     )
     if dist <= hexLimit:
         return actorCoord
-    line = drawLine(actorCoord, targetCoord, map_obj)
-    moveTo = [
-        coord for coord in line
-        if map_obj.distanceCalc(
-            map_obj._coord_idx[targetCoord],
-            map_obj._coord_idx[coord]
-        ) <= hexLimit
-    ][0]
-    moverIndex = map_obj._coord_idx[moveTo]
-    actorIndex = map_obj._coord_idx[actorCoord]
-    if map_obj.arrayCenters[moveTo] != '':
-        return map_obj.nearestFreeHex(actorIndex, moverIndex)
+
+    actor = map_obj.arrayCenters.get(actorCoord)
+    if not actor or actor == '':
+        return actorCoord
+
+    start_idx  = map_obj._coord_idx[actorCoord]
+    target_idx = map_obj._coord_idx[targetCoord]
+    speed      = int(actor.speed / 5)
+
+    dest_idx = _bfs_path_dest(start_idx, target_idx, speed, map_obj)
+    if dest_idx is None:
+        return actorCoord  # Surrounded by walls — can't move toward target
+
+    moveTo = map_obj._coord_list[dest_idx]
+    if map_obj.arrayCenters.get(moveTo) not in ('', actor):
+        return map_obj.nearestFreeHex(start_idx, dest_idx)
     return moveTo
 
 
 def moveWithingReach(actor, target, reach, map_obj):
-    actorCoord = [x for x in map_obj.arrayCenters.keys() if map_obj.arrayCenters[x] == actor][0]
-    targetCoord = [x for x in map_obj.arrayCenters.keys() if map_obj.arrayCenters[x] == target][0]
+    """Move actor toward target along the wall-aware BFS path, stopping within
+    *reach* feet if possible, otherwise as close as movement allows."""
+    actorCoord = next(
+        (c for c in map_obj.arrayCenters if map_obj.arrayCenters[c] is actor), None
+    )
+    targetCoord = next(
+        (c for c in map_obj.arrayCenters if map_obj.arrayCenters[c] is target), None
+    )
+    if actorCoord is None or targetCoord is None:
+        return
     hexLimit = reach / 5
     dist = map_obj.distanceCalc(
         map_obj._coord_idx[targetCoord],
@@ -109,15 +170,17 @@ def moveWithingReach(actor, target, reach, map_obj):
     )
     if dist <= hexLimit:
         return
-    line = drawLine(actorCoord, targetCoord, map_obj)
-    moveTo = [
-        coord for coord in line
-        if map_obj.distanceCalc(
-            map_obj._coord_idx[targetCoord],
-            map_obj._coord_idx[coord]
-        ) <= hexLimit
-    ][0]
-    if map_obj.arrayCenters[moveTo] != '':
+
+    start_idx  = map_obj._coord_idx[actorCoord]
+    target_idx = map_obj._coord_idx[targetCoord]
+    speed      = int(actor.speed / 5)
+
+    dest_idx = _bfs_path_dest(start_idx, target_idx, speed, map_obj)
+    if dest_idx is None:
+        return  # No path around walls
+
+    moveTo = map_obj._coord_list[dest_idx]
+    if map_obj.arrayCenters.get(moveTo) not in ('', actor):
         map_obj.moveToNearest(actor, target)
     else:
         map_obj.moveActor(actor, moveTo)

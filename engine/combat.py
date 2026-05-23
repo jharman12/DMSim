@@ -10,7 +10,7 @@ from engine.utils import safe_log, dprint
 from engine.dice import rollDice, rollSave, rollDeathSave, printDeathSaves
 from engine.targeting import (
     drawLine, coordWithinReach, moveWithingReach,
-    bestSphere, bestLine2, bestSquare, bestCone,
+    bestSphere, bestLine2, bestSquare, bestCone, calcMoveHexes, _bfs_path_dest,
 )
 from engine.persistent import (
     create_persistent_spell, end_concentration, concentration_save,
@@ -192,16 +192,26 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
             return can_place_footprint(coord, _actor_size_cat, map_obj, actor)
         return map_obj.arrayCenters[coord] == '' or map_obj.arrayCenters[coord] is actor
 
+    # BFS-reachable hexes — respects walls and actor footprint
+    moveMatrix = [i for i in calcMoveHexes(actor, map_obj) if _dest_valid(i)]
+
+    # (dist_from_me, dist_to_closest_target) for each reachable valid hex
     distanceMatrix = [
         (map_obj.distanceCalc(myIndex, index), map_obj.distanceCalc(closestIndex, index))
-        for index in range(len(_coords))
-        if _dest_valid(index)
+        for index in moveMatrix
     ]
-    moveMatrix = [
-        index for index in range(len(_coords))
-        if map_obj.distanceCalc(index, myIndex) <= effective_speed / 5
-        and _dest_valid(index)
-    ]
+
+    def _best_dest(target_index, weap_range_hexes):
+        """Return the coord to move to in order to get within weap_range_hexes of
+        target_index, following the wall-aware BFS path.  Falls back to the nearest
+        reachable valid hex if the direct path is blocked or occupied."""
+        dest_idx = _bfs_path_dest(myIndex, target_index, int(effective_speed / 5), map_obj)
+        if dest_idx is not None and _dest_valid(dest_idx):
+            return _coords[dest_idx]
+        # BFS dest invalid (occupied) — pick nearest valid reachable hex
+        if moveMatrix:
+            return _coords[min(moveMatrix, key=lambda idx: map_obj.distanceCalc(target_index, idx))]
+        return myCoord
 
     turnChoices = []
     myCoord = map_obj._coord_list[myIndex]
@@ -217,7 +227,7 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
             ))
             continue
 
-        anyOpenSpot = [x for x in distanceMatrix if x[0] <= effective_speed / 5 and x[1] <= int(weap.range) / 5]
+        anyOpenSpot = [x for x in distanceMatrix if x[1] <= int(weap.range) / 5]
         if len(anyOpenSpot) == 0:
             turnChoices.append(myAction(
                 name=weap.name, type='Wdmg', mod=0, numHit=0,
@@ -226,72 +236,7 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
             ))
             continue
 
-        line = drawLine(myCoord, closestCoord, map_obj)
-        if weap.range / 5 >= actor.optRange:
-            if minDist >= actor.optRange + effective_speed / 5:
-                options = [
-                    x for x in line
-                    if map_obj.distanceCalc(
-                        map_obj._coord_idx[myCoord],
-                        map_obj._coord_idx[x]
-                    ) <= effective_speed / 5
-                ]
-                if map_obj.arrayCenters[options[-1]] != '' and map_obj.arrayCenters[options[-1]] != actor:
-                    newCoord = map_obj.nearestFreeHex(
-                        map_obj._coord_idx[myCoord],
-                        map_obj._coord_idx[options[-1]],
-                        actor=actor
-                    )
-                else:
-                    newCoord = options[-1]
-            else:
-                reach = weap.range
-                hexLimit = reach / 5
-                dist = map_obj.distanceCalc(
-                    map_obj._coord_idx[closestCoord],
-                    map_obj._coord_idx[myCoord]
-                )
-                if dist <= hexLimit:
-                    newCoord = [
-                        coord for coord in line
-                        if map_obj.distanceCalc(
-                            map_obj._coord_idx[myCoord],
-                            map_obj._coord_idx[coord]
-                        ) <= effective_speed / 5
-                    ][-1]
-                else:
-                    moveTo = [
-                        coord for coord in line
-                        if map_obj.distanceCalc(
-                            map_obj._coord_idx[closestCoord],
-                            map_obj._coord_idx[coord]
-                        ) <= hexLimit
-                    ][0]
-                    if map_obj.arrayCenters[moveTo] != '':
-                        moveToIndex = map_obj._coord_idx[moveTo]
-                        newCoord = map_obj.nearestFreeHex(myIndex, moveToIndex, actor=actor)
-                    else:
-                        newCoord = moveTo
-        else:
-            reach = weap.range
-            hexLimit = reach / 5
-            dist = map_obj.distanceCalc(
-                map_obj._coord_idx[closestCoord],
-                map_obj._coord_idx[myCoord]
-            )
-            if dist <= hexLimit:
-                newCoord = myCoord
-            moveTo = [
-                coord for coord in line
-                if map_obj.distanceCalc(
-                    map_obj._coord_idx[closestCoord],
-                    map_obj._coord_idx[coord]
-                ) <= hexLimit
-            ][0]
-            if map_obj.arrayCenters[moveTo] != '':
-                newCoord = map_obj.nearestFreeHex(myIndex, closestIndex, actor=actor)
-            else:
-                newCoord = moveTo
+        newCoord = _best_dest(closestIndex, int(weap.range) / 5)
 
         if not actor.is_player:
             if weap.name in actor.multiAttack.keys():

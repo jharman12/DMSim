@@ -315,6 +315,14 @@ class CustomGraphicsView(QGraphicsView):
         self._map_obj_ref = None       # reference to the model Map for footprint queries
         self._pre_encounter = False    # True between preCombat and Start Encounter
         self._pre_enc_last_snap_idx = None  # last snapped hex index during pre-encounter drag
+
+        # Multi-select (pre-encounter rubber-band)
+        self._multi_selected_items: list = []        # character_items currently multi-selected
+        self._rubber_band_start = None               # QPointF (view coords) where drag began
+        self._rubber_band_item = None                # QGraphicsRectItem drawn on scene
+        self._rubber_band_active: bool = False       # currently drawing the rubber band
+        self._multi_drag_active: bool = False        # dragging an entire multi-selection
+        self._multi_drag_start_indices: dict = {}    # {item: hex_idx} at drag start
         self.arrayCenters = []
 
         self.hex_centers_base = []
@@ -544,6 +552,167 @@ class CustomGraphicsView(QGraphicsView):
     # ------------------------------------------------------------------
     # Distance-calc mode
     # ------------------------------------------------------------------
+
+    # ── Multi-select helpers ─────────────────────────────────────────────────
+
+    def _item_center_scene(self, item) -> 'QPointF':
+        """Return the scene-space center point of a QGraphicsItem."""
+        r = item.boundingRect()
+        return item.mapToScene(r.center())
+
+    def _snap_item_to_hex(self, item, hex_idx: int):
+        """Snap a single character item (at pre-encounter scale) to hex_idx."""
+        if hex_idx is None or hex_idx >= len(self.hex_centers_base):
+            return
+        map_offset = self.map_item.pos()
+        cx, cy = self.hex_centers_base[hex_idx]
+        item_scale = item.scale() if item.scale() != 0 else 1.0
+        clean = self._clean_pixmaps.get(item)
+        icon_w = (clean.width() * item_scale) if clean else item.boundingRect().width()
+        icon_h = (clean.height() * item_scale) if clean else item.boundingRect().height()
+        snap_x = cx + map_offset.x() - icon_w / 2
+        snap_y = cy + map_offset.y() - icon_h / 2
+        if clean is not None:
+            actual_w = item.boundingRect().width()
+            if actual_w > clean.width():
+                snap_x -= _OUTLINE_THICKNESS * item_scale
+                snap_y -= _OUTLINE_THICKNESS * item_scale
+        item.setPos(snap_x, snap_y)
+
+    def _apply_selection_highlight(self, item, selected: bool):
+        """Add or remove a blue selection outline on a character item."""
+        from PyQt5.QtGui import QPainter, QColor
+        clean = self._clean_pixmaps.get(item)
+        if clean is None:
+            return
+        if selected:
+            from PyQt5.QtGui import QPixmap
+            outlined = QPixmap(clean.size() + QSize(6, 6))
+            outlined.fill(Qt.transparent)
+            p = QPainter(outlined)
+            p.drawPixmap(3, 3, clean)
+            p.setCompositionMode(QPainter.CompositionMode_SourceAtop)
+            p.fillRect(outlined.rect(), QColor(100, 149, 237, 140))  # cornflower blue tint
+            p.end()
+            item.setPixmap(outlined)
+        else:
+            item.setPixmap(clean)
+
+    def _clear_multi_selection(self):
+        """Deselect all multi-selected actors and remove highlights."""
+        for it in self._multi_selected_items:
+            self._apply_selection_highlight(it, False)
+        self._multi_selected_items.clear()
+
+    def _update_rubber_band(self, view_pos):
+        """Update the rubber-band rect and highlight actors inside it."""
+        from PyQt5.QtCore import QRectF
+        start = self._rubber_band_start
+        rect_view = QRectF(
+            min(start.x(), view_pos.x()), min(start.y(), view_pos.y()),
+            abs(view_pos.x() - start.x()), abs(view_pos.y() - start.y())
+        )
+        scene_rect = self.mapToScene(rect_view.toRect()).boundingRect()
+
+        # Draw / update the rubber-band rectangle on the scene
+        if self._rubber_band_item is None:
+            from PyQt5.QtGui import QPen, QColor
+            self._rubber_band_item = self.scene.addRect(
+                scene_rect,
+                QPen(QColor(100, 149, 237), 2, Qt.DashLine),
+            )
+            self._rubber_band_item.setBrush(QColor(100, 149, 237, 40))
+            self._rubber_band_item.setZValue(1000)
+        else:
+            self._rubber_band_item.setRect(scene_rect)
+
+        # Highlight actors inside
+        for it in self.character_items:
+            center = self._item_center_scene(it)
+            inside = scene_rect.contains(center)
+            self._apply_selection_highlight(it, inside)
+
+    def _finish_rubber_band(self):
+        """Finalise the rubber-band selection."""
+        from PyQt5.QtCore import QRectF
+        if self._rubber_band_item is not None:
+            scene_rect = self._rubber_band_item.rect()
+            self.scene.removeItem(self._rubber_band_item)
+            self._rubber_band_item = None
+            # Commit selection
+            self._multi_selected_items = [
+                it for it in self.character_items
+                if scene_rect.contains(self._item_center_scene(it))
+            ]
+            # Re-apply highlights cleanly
+            for it in self.character_items:
+                self._apply_selection_highlight(it, it in self._multi_selected_items)
+        self._rubber_band_active = False
+        self._rubber_band_start = None
+
+    def _show_group_popup(self, scene_pos):
+        """Show a right-click context menu for multi-selected actors."""
+        from PyQt5.QtWidgets import QMenu
+        menu = QMenu(self)
+        group_act = menu.addAction("Group actors")
+        clear_act = menu.addAction("Clear selection")
+        chosen = menu.exec_(self.mapToGlobal(self.mapFromScene(scene_pos)))
+        if chosen == group_act:
+            self._group_selected_actors()
+        elif chosen == clear_act:
+            self._clear_multi_selection()
+
+    def _group_selected_actors(self):
+        """Move all multi-selected actors to adjacent hexes around a center."""
+        if not self._multi_selected_items or self._map_obj_ref is None:
+            return
+        from collections import deque
+        map_obj = self._map_obj_ref
+        coords = list(map_obj.arrayCenters)
+
+        # Find the center hex: average of current actor scene positions
+        center_pts = [self._item_center_scene(it) for it in self._multi_selected_items]
+        avg_cx = sum(p.x() for p in center_pts) / len(center_pts)
+        avg_cy = sum(p.y() for p in center_pts) / len(center_pts)
+        from PyQt5.QtCore import QPointF
+        center_idx = self._scene_pos_to_hex_idx(QPointF(avg_cx, avg_cy))
+        if center_idx is None:
+            center_idx = 0
+
+        # Build a set of blocked coords (walls + actors not in selection)
+        wall_coords = set(getattr(map_obj, 'walls', set()))
+        selected_actors = {
+            self.character_objs[self.character_items.index(it)]
+            for it in self._multi_selected_items
+        }
+        blocked_coords = set(wall_coords)
+        for coord, occupant in map_obj.arrayCenters.items():
+            if occupant != '' and occupant not in selected_actors:
+                blocked_coords.add(coord)
+
+        # BFS from center coord to find enough free hexes
+        needed = len(self._multi_selected_items)
+        center_coord = coords[center_idx]
+        visited = {center_coord}
+        queue = deque([center_coord])
+        free_coords = []
+        while queue and len(free_coords) < needed:
+            cur = queue.popleft()
+            if cur not in blocked_coords:
+                free_coords.append(cur)
+            for nb_idx in map_obj.neighbors(cur):
+                nb_coord = coords[nb_idx] if nb_idx < len(coords) else None
+                if nb_coord is not None and nb_coord not in visited:
+                    visited.add(nb_coord)
+                    queue.append(nb_coord)
+
+        # Assign actors to free hexes
+        for it, dest_coord in zip(self._multi_selected_items, free_coords):
+            actor = self.character_objs[self.character_items.index(it)]
+            map_obj.repositionActor(actor, dest_coord)
+
+        self.loadFromEncounter(self.encounter)
+        self._clear_multi_selection()
 
     def _scene_pos_to_hex_idx(self, scene_pos) -> int | None:
         """Return the hex index nearest to scene_pos using the full hex KD-tree.
@@ -1070,6 +1239,20 @@ class CustomGraphicsView(QGraphicsView):
             # Check if clicked a character icon
             clicked_item = self.itemAt(event.pos())
 
+            # Pre-encounter: right-click on multi-selected actor → Group popup
+            if (self._pre_encounter
+                    and clicked_item in self.character_items
+                    and clicked_item in self._multi_selected_items):
+                self._show_group_popup(scene_pos)
+                return
+
+            # Pre-encounter: right-click on empty space → start rubber-band selection
+            if self._pre_encounter and clicked_item not in self.character_items:
+                self._clear_multi_selection()
+                self._rubber_band_start = event.pos()
+                self._rubber_band_active = True
+                return
+
             if clicked_item in self.character_items:
                 index = self.character_items.index(clicked_item)
                 character_obj = self.character_objs[index]
@@ -1157,6 +1340,33 @@ class CustomGraphicsView(QGraphicsView):
             if self.spellAreaCheck != None and self.affected != None:
                 self.affectedSaved.emit(self.affected)
                 # updateTargets handler will deactivate target mode via _set_target_mode
+
+            # ── Pre-encounter: single-actor drag or multi-group drag ──────────────
+            if self._pre_encounter:
+                if item in self.character_items:
+                    if item in self._multi_selected_items:
+                        # Begin moving the whole group
+                        self._multi_drag_active = True
+                        self._multi_drag_start_indices = {
+                            it: self._scene_pos_to_hex_idx(
+                                self._item_center_scene(it)
+                            )
+                            for it in self._multi_selected_items
+                        }
+                        self.selected_item = item
+                        scene_pos = self.mapToScene(event.pos())
+                        self._drag_clicked_hex = self._scene_pos_to_hex_idx(scene_pos)
+                    else:
+                        # Fresh single-actor click → clear any existing multi-selection
+                        self._clear_multi_selection()
+                        self.selected_item = item
+                        scene_pos = self.mapToScene(event.pos())
+                        self._drag_clicked_hex = self._scene_pos_to_hex_idx(scene_pos)
+                elif item == self.map_item or item in self.hex_items or item is None:
+                    # Clicked on empty space (no rubber-band on left-click — use right-click)
+                    self._clear_multi_selection()
+                    self.selected_item = self.map_item
+                return  # handled
 
             if item == self.map_item:
                 self.selected_item = item
@@ -1261,6 +1471,11 @@ class CustomGraphicsView(QGraphicsView):
                     self.fog_changed.emit(set(self._fog_indices))
             return
 
+        # ── Rubber-band selection (right-button drag, pre-encounter only) ──────
+        if event.buttons() == Qt.RightButton and self._rubber_band_active and self._rubber_band_start is not None:
+            self._update_rubber_band(event.pos())
+            return
+
         if event.buttons() == Qt.LeftButton and self.selected_item:
             # Convert view-space delta into scene-space delta
             old_pos_scene = self.mapToScene(self.last_mouse_pos)
@@ -1278,45 +1493,65 @@ class CustomGraphicsView(QGraphicsView):
                 for hex_item in self.hex_items:
                     hex_item.setPos(hex_item.pos() + delta_scene)
 
-            # now instead of any character, only if youre the selected actor
+            # Pre-encounter: single actor drag or multi-group drag
             elif self._pre_encounter and self.selected_item in self.character_items:
-                # Pre-encounter: any actor can be freely repositioned
                 if self.hex_tree is not None:
                     scene_pos = self.mapToScene(event.pos())
                     real_hex_index = self._scene_pos_to_hex_idx(scene_pos)
                     if real_hex_index is not None:
-                        actor = self.character_objs[self.character_items.index(self.selected_item)]
-                        map_offset = self.map_item.pos()
-                        from engine.size_utils import hex_count, get_size_cat, compute_footprint
-                        is_multihex = actor is not None and hex_count(actor) > 1
-                        if is_multihex and self._map_obj_ref is not None:
-                            coords = list(self._map_obj_ref.arrayCenters)
-                            if real_hex_index < len(coords):
-                                anchor_coord = coords[real_hex_index]
-                                size_cat = get_size_cat(actor)
-                                fp_coords = compute_footprint(anchor_coord, size_cat, self._map_obj_ref)
-                                fp_indices = [self._map_obj_ref.convertToViewerCoords(c) for c in fp_coords]
-                                fp_positions = [
-                                    (self.hex_centers_base[i][0] + map_offset.x(),
-                                     self.hex_centers_base[i][1] + map_offset.y())
-                                    for i in fp_indices if i < len(self.hex_centers_base)
-                                ]
-                                fp_px, pos_x, pos_y = self._build_footprint_pixmap(actor, fp_positions)
-                                if fp_px is not None:
-                                    self._clean_pixmaps[self.selected_item] = fp_px
-                                    self.selected_item.setPixmap(fp_px)
-                                    self.selected_item.setPos(pos_x, pos_y)
+                        if self._multi_drag_active and self._multi_drag_start_indices:
+                            # Move all selected actors, keeping relative hex offsets
+                            anchor_item = self.selected_item
+                            anchor_start = self._multi_drag_start_indices.get(anchor_item)
+                            if anchor_start is not None:
+                                delta_idx = real_hex_index  # dest hex for the dragged actor
+                                self._snap_item_to_hex(anchor_item, delta_idx)
+                                self._pre_enc_last_snap_idx = delta_idx
+                                # Move other items visually to keep formation
+                                map_offset = self.map_item.pos()
+                                for it in self._multi_selected_items:
+                                    if it is anchor_item:
+                                        continue
+                                    other_start = self._multi_drag_start_indices.get(it)
+                                    if other_start is None:
+                                        continue
+                                    ax, ay = self.hex_centers_base[anchor_start]
+                                    ox, oy = self.hex_centers_base[other_start]
+                                    dx, dy = ox - ax, oy - ay
+                                    dest_cx, dest_cy = self.hex_centers_base[delta_idx]
+                                    target_cx = dest_cx + dx + map_offset.x()
+                                    target_cy = dest_cy + dy + map_offset.y()
+                                    item_scale = it.scale() if it.scale() != 0 else 1.0
+                                    clean = self._clean_pixmaps.get(it)
+                                    icon_w = (clean.width() * item_scale) if clean else it.boundingRect().width()
+                                    icon_h = (clean.height() * item_scale) if clean else it.boundingRect().height()
+                                    it.setPos(target_cx - icon_w / 2, target_cy - icon_h / 2)
                         else:
-                            snap_center_local = self.hex_centers_base[real_hex_index]
-                            snap_hex_scene = (
-                                snap_center_local[0] + map_offset.x(),
-                                snap_center_local[1] + map_offset.y()
-                            )
-                            clean = self._clean_pixmaps.get(self.selected_item)
-                            icon_w = clean.width() if clean else self.selected_item.boundingRect().width()
-                            icon_h = clean.height() if clean else self.selected_item.boundingRect().height()
-                            self.selected_item.setPos(snap_hex_scene[0] - icon_w / 2, snap_hex_scene[1] - icon_h / 2)
-                        self._pre_enc_last_snap_idx = real_hex_index
+                            # Single-actor drag
+                            actor = self.character_objs[self.character_items.index(self.selected_item)]
+                            map_offset = self.map_item.pos()
+                            from engine.size_utils import hex_count, get_size_cat, compute_footprint
+                            is_multihex = actor is not None and hex_count(actor) > 1
+                            if is_multihex and self._map_obj_ref is not None:
+                                coords = list(self._map_obj_ref.arrayCenters)
+                                if real_hex_index < len(coords):
+                                    anchor_coord = coords[real_hex_index]
+                                    size_cat = get_size_cat(actor)
+                                    fp_coords = compute_footprint(anchor_coord, size_cat, self._map_obj_ref)
+                                    fp_indices = [self._map_obj_ref.convertToViewerCoords(c) for c in fp_coords]
+                                    fp_positions = [
+                                        (self.hex_centers_base[i][0] + map_offset.x(),
+                                         self.hex_centers_base[i][1] + map_offset.y())
+                                        for i in fp_indices if i < len(self.hex_centers_base)
+                                    ]
+                                    fp_px, pos_x, pos_y = self._build_footprint_pixmap(actor, fp_positions)
+                                    if fp_px is not None:
+                                        self._clean_pixmaps[self.selected_item] = fp_px
+                                        self.selected_item.setPixmap(fp_px)
+                                        self.selected_item.setPos(pos_x, pos_y)
+                            else:
+                                self._snap_item_to_hex(self.selected_item, real_hex_index)
+                            self._pre_enc_last_snap_idx = real_hex_index
             elif self.selected_item == turnCharacterItem:
 
                 if self.snap_tree is not None:
@@ -1551,7 +1786,46 @@ class CustomGraphicsView(QGraphicsView):
 
         
     def mouseReleaseEvent(self, event):
+        # ── Rubber-band: finalize selection on right-button release ─────────
+        if event.button() == Qt.RightButton and self._rubber_band_active:
+            self._finish_rubber_band()
+            return
+
         if event.button() == Qt.LeftButton:
+            if self._multi_drag_active and self._pre_encounter and self._map_obj_ref is not None:
+                anchor_item = self.selected_item
+                if (anchor_item in self.character_items
+                        and self._pre_enc_last_snap_idx is not None):
+                    anchor_actor = self.character_objs[self.character_items.index(anchor_item)]
+                    anchor_start = self._multi_drag_start_indices.get(anchor_item)
+                    anchor_dest  = self._pre_enc_last_snap_idx
+                    coords = list(self._map_obj_ref.arrayCenters)
+                    if anchor_dest < len(coords):
+                        self._map_obj_ref.repositionActor(anchor_actor, coords[anchor_dest])
+                    # Commit other actors at their relative offset destinations
+                    for it in self._multi_selected_items:
+                        if it is anchor_item:
+                            continue
+                        other_start = self._multi_drag_start_indices.get(it)
+                        if other_start is None or anchor_start is None:
+                            continue
+                        ax, ay = self.hex_centers_base[anchor_start]
+                        ox, oy = self.hex_centers_base[other_start]
+                        # Find the hex nearest to the visual position of this item
+                        snap_idx = self._scene_pos_to_hex_idx(
+                            self._item_center_scene(it)
+                        )
+                        if snap_idx is not None and snap_idx < len(coords):
+                            other_actor = self.character_objs[self.character_items.index(it)]
+                            self._map_obj_ref.repositionActor(other_actor, coords[snap_idx])
+                self.loadFromEncounter(self.encounter)
+                self._multi_drag_active = False
+                self._multi_drag_start_indices = {}
+                self.selected_item = None
+                self._pre_enc_last_snap_idx = None
+                return
+
+            # ── Single-actor pre-encounter drop ─────────────────────────────────
             if (self._pre_encounter
                     and self.selected_item in self.character_items
                     and self._pre_enc_last_snap_idx is not None
@@ -3747,9 +4021,38 @@ class MapWidget(QMainWindow):
             self._secondary_map_window.update_target_highlight(target_indices)
 
     def _on_walls_changed(self, wall_indices: set):
-        """Sync wall indices from the view into the engine map."""
-        if self.myEncounter.map is not None:
-            self.myEncounter.map.walls = wall_indices
+        """Sync wall coords from the view into the engine map.
+
+        The view grid starts at pixel (top_left_x + r, top_left_y + r·sin) while the
+        model starts at pixel (0, 0).  By subtracting hex_centers_base[0] (the first
+        view hex's scene position) from every hex's scene position we get coordinates
+        relative to the first hex, which are identical to the model's pixel coords
+        because the same step sizes are used.  col_round(dx / x_mod) then gives
+        the exact (col, row) as generated by Map.defineArrayGrid — no map-origin
+        or top_left arithmetic required.
+        """
+        if self.myEncounter.map is None:
+            return
+        if not self.map_view.hex_centers_base:
+            return
+        map_obj = self.myEncounter.map
+        if not hasattr(map_obj, 'radius') or map_obj.radius <= 0:
+            return
+        import math
+        a = 2 * math.pi / 6
+        x_mod = map_obj.radius * (1 + math.cos(a))  # 1.5 * r
+        y_mod = map_obj.radius * math.sin(a)          # r * sin(60°)
+        origin_x, origin_y = self.map_view.hex_centers_base[0]
+
+        wall_coords = set()
+        for i in wall_indices:
+            if i < len(self.map_view.hex_centers_base):
+                px, py = self.map_view.hex_centers_base[i]
+                coord = (map_obj.col_round((px - origin_x) / x_mod),
+                         map_obj.col_round((py - origin_y) / y_mod))
+                if coord in map_obj._coord_idx:
+                    wall_coords.add(coord)
+        map_obj.walls = wall_coords
 
     def _on_persistent_spell_created(self, ps):
         """Paint and track a new persistent spell zone on the map."""
@@ -4448,8 +4751,9 @@ class MapWidget(QMainWindow):
 
     def run_command(self):
         self.turn_action_panel.log('Starting Combat!')
-        # Lock out pre-encounter repositioning
+        # Lock out pre-encounter repositioning and clear any multi-selection
         self.map_view._pre_encounter = False
+        self.map_view._clear_multi_selection()
         # Snapshot BEFORE calcTurn so serial 1 covers the first turn header logged below
         self.saveTurnSnapshot()
         turns = self.myEncounter.calcTurn()
@@ -4480,6 +4784,10 @@ class MapWidget(QMainWindow):
         # Enable pre-encounter drag mode so actors can be repositioned before combat
         self.map_view._map_obj_ref = self.myEncounter.map
         self.map_view._pre_encounter = True
+
+        # Sync any walls that were painted before the map was created
+        if self.map_view._wall_indices:
+            self._on_walls_changed(set(self.map_view._wall_indices))
 
     
         

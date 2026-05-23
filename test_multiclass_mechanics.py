@@ -164,9 +164,9 @@ for test_case in test_cases:
         player = Player(**test_case['config'])
         case_passed = True
         
-        for test_name, test_func, expected in test_case['tests']:
+        for test_name, check_fn, expected in test_case['tests']:
             try:
-                result = test_func(player)
+                result = check_fn(player)
                 status = "PASS" if result == expected else "FAIL"
                 
                 if result == expected:
