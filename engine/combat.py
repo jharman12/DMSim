@@ -57,7 +57,13 @@ def _safe_move(actor, dest_coord, map_obj):
     For multi-hex actors, if the full footprint doesn't fit at dest_coord,
     falls back to the nearest valid anchor instead.
     For small/medium actors, keeps existing moveToNearest logic.
+    Never moves an actor onto a wall hex.
     """
+    # Refuse to move onto any wall hex
+    walls = getattr(map_obj, 'walls', set())
+    if dest_coord in walls:
+        return
+
     size_cat = get_size_cat(actor)
     if size_cat not in ('Tiny', 'Small', 'Medium'):
         if not can_place_footprint(dest_coord, size_cat, map_obj, actor):

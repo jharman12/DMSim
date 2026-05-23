@@ -164,57 +164,64 @@ class Map:
 
     def defineArrayGrid(self, heightNumber, height=None, width=None):
         """
-        Initialize the hexagonal grid. 
-        If graphicsViewer is provided, uses its bounding rect; otherwise uses provided height/width.
+        Initialize the hexagonal grid.
+        When a graphicsViewer is provided the traversal matches drawHexGrid
+        exactly (same start, same boundaries) so every model index i maps
+        to view index i with no conversion required.
         """
         if self.graphicsViewer is not None:
-            # Use graphics viewer dimensions
             map_rect = self.graphicsViewer.map_item.boundingRect()
-            height = map_rect.height() 
+            height = map_rect.height()
             width = map_rect.width()
         else:
-            # Use provided dimensions or defaults
             if height is None or width is None:
                 height = 1
                 width = 0.5
-        
+
         dprint(height, width)
-        startingPoint = [0, 0]
         r = height / (2 * (1 + (heightNumber - 1) * 2 * math.cos(math.pi * 60 / 180)))
         self.radius = r
         a = 2 * math.pi / 6
-        x, y = startingPoint
-        self.arrayCenters = {}
-        self.arrayCenters.clear()
+        x_mod = r * (1 + math.cos(a))
+        y_mod = r * math.sin(a)
 
-        while y + r * math.sin(a) <= height + 2 * startingPoint[1]:
+        self.arrayCenters = {}
+
+        if self.graphicsViewer is not None:
+            # Start at the same pixel as drawHexGrid so indices are identical.
+            # Coords are normalised relative to origin so first hex is always (0,0).
+            origin_x = r
+            origin_y = r * math.sin(a)
+            x, y = origin_x, origin_y
+            inner_limit = width + r        # matches drawHexGrid: <= width + startingPoint[0] + r
+            outer_limit = height           # matches drawHexGrid: y + r*sin <= height + 2*startingPoint[1]
+        else:
+            # Headless / test mode: plain (0,0) origin, original boundaries.
+            origin_x, origin_y = 0.0, 0.0
+            x, y = 0.0, 0.0
+            inner_limit = width
+            outer_limit = height
+
+        while y + r * math.sin(a) <= outer_limit:
             previousY = y
             previousX = x
             j = 0
-            while x + r * (1 + math.cos(a)) <= width + startingPoint[0]:
-                a = 2*math.pi /6
-                x_mod = self.radius * (1 + math.cos(a))
-                y_mod =  self.radius * math.sin(a)
-                center = (self.col_round(x/x_mod), self.col_round(y/y_mod))
-                self.arrayCenters[center] = ''
-
+            while x + r * (1 + math.cos(a)) <= inner_limit:
+                coord = (self.col_round((x - origin_x) / x_mod),
+                         self.col_round((y - origin_y) / y_mod))
+                self.arrayCenters[coord] = ''
                 x += r * (1 + math.cos(a))
                 y += (-1) ** j * r * math.sin(a)
                 j += 1
-
             x = previousX
             y = previousY
             y += 2 * r * math.sin(a)
 
-        # Build O(1) coord ↔ index caches. Keys never change after grid init.
         self._rebuild_coord_cache()
 
     def _rebuild_coord_cache(self):
         """Rebuild the cached coord list and reverse-index dict.
-
-        Called once after defineArrayGrid (and after repositionActor which can
-        theoretically be called on a different grid, though keys are stable).
-        """
+        Called once after defineArrayGrid; keys are stable after that."""
         self._coord_list: list = list(self.arrayCenters.keys())
         self._coord_idx: dict = {c: i for i, c in enumerate(self._coord_list)}
 
@@ -282,7 +289,10 @@ class Map:
 
         partySide = []
         enemySide = []
+        walls = getattr(self, 'walls', set())
         for key in self.arrayCenters.keys():
+            if key in walls:
+                continue  # never spawn on a wall hex
             if key[0] <= partyX:
                 partySide.append(key)
             else:
@@ -333,9 +343,12 @@ class Map:
         size_cat = get_size_cat(actor) if actor is not None else 'Medium'
         multi_hex = size_cat not in ('Tiny', 'Small', 'Medium')
 
+        walls = getattr(self, 'walls', set())
         for index in nearIndexList:
             distance = self.distanceCalc(index, startIndex)
             coord = self._coord_list[index]
+            if coord in walls:
+                continue  # never return a wall hex
             if multi_hex:
                 valid = can_place_footprint(coord, size_cat, self, actor)
             else:
