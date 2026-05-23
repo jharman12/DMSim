@@ -756,34 +756,28 @@ class CustomGraphicsView(QGraphicsView):
 
     def _find_path(self, start_idx: int, end_idx: int) -> list:
         """BFS returning the list of hex indices on the shortest wall-aware path,
-        or [] if unreachable. Walls block traversal."""
+        or [] if unreachable. Uses the cached _neighbors_of() and _coord_idx map."""
+        from collections import deque
         map_obj = getattr(self.encounter, 'map', None)
         if map_obj is None:
             return []
+        if not hasattr(map_obj, '_coord_idx') or not hasattr(map_obj, '_neighbors_of'):
+            return []
 
-        coords = list(map_obj.arrayCenters)
-        n = len(coords)
+        coords = map_obj._coord_list
         walls = getattr(map_obj, 'walls', set())
-
-        def _hex_dist(a, b):
-            drow = abs(a[1] - b[1])
-            dcol = abs(a[0] - b[0])
-            return dcol + max(0, (drow - dcol) / 2)
-
-        neighbors = [
-            [j for j in range(n) if i != j and _hex_dist(coords[i], coords[j]) == 1]
-            for i in range(n)
-        ]
+        # walls stores coord tuples — convert to indices using the cached lookup
+        wall_idx_set = {map_obj._coord_idx[c] for c in walls if c in map_obj._coord_idx}
 
         # BFS with parent tracking — no movement limit, walls block
         parent = {start_idx: None}
-        queue = [start_idx]
+        queue = deque([start_idx])
         while queue:
-            cur = queue.pop(0)
+            cur = queue.popleft()
             if cur == end_idx:
                 break
-            for nb in neighbors[cur]:
-                if nb not in parent and nb not in walls:
+            for nb in map_obj._neighbors_of(coords[cur]):
+                if nb not in parent and nb not in wall_idx_set:
                     parent[nb] = cur
                     queue.append(nb)
 
@@ -2623,12 +2617,29 @@ class TurnLogWidget(QWidget):
 class TurnOrderWidget(QWidget):
     def __init__(self):
         super().__init__()
-        mainLayout = QHBoxLayout()
+        mainLayout = QVBoxLayout()
+        mainLayout.setContentsMargins(4, 4, 4, 4)
         self.box = QGroupBox("Turn Order")
         mainLayout.addWidget(self.box)
-        layout = QHBoxLayout()
+        box_layout = QVBoxLayout()
+        box_layout.setContentsMargins(4, 4, 4, 4)
+        self.box.setLayout(box_layout)
+
+        # Scroll area so icons don't get clipped when dock is narrow
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll.setStyleSheet("QScrollArea { border: none; }")
+        scroll.setFixedHeight(88)
+        box_layout.addWidget(scroll)
+
+        icon_container = QWidget()
+        layout = QHBoxLayout(icon_container)
         layout.setSpacing(10)
-        self.box.setLayout(layout)
+        layout.setContentsMargins(4, 4, 4, 4)
+        scroll.setWidget(icon_container)
+
         # Placeholder icons
         placeholder_pix = QPixmap(50, 50)
         placeholder_pix.fill(Qt.darkGray)
@@ -2638,7 +2649,6 @@ class TurnOrderWidget(QWidget):
         self.current_icon.setPixmap(placeholder_pix)
         self.current_icon.setFixedSize(70, 70)
         self.current_icon.setScaledContents(True)
-
 
         layout.addWidget(self.current_icon)
 
@@ -2675,9 +2685,12 @@ class TurnActionPanel(QWidget):
         self._textScale = None
         box = QGroupBox("Turn Actions")
         final_layout = QVBoxLayout()
+        final_layout.setContentsMargins(6, 6, 6, 6)
+        final_layout.setSpacing(0)
         final_layout.addWidget(box)
         main_layout = QVBoxLayout()
         main_layout.setSpacing(10)
+        main_layout.setContentsMargins(8, 8, 8, 8)
         box.setLayout(main_layout)
         # -------------------------------
         # TURN INDICATOR
@@ -3447,10 +3460,16 @@ class MapWidget(QMainWindow):
         # ------------------------------------------------------------------
         # CENTRAL WIDGET: map toolbar + hex grid view
         # ------------------------------------------------------------------
+        # Wider dock separators give a clearer visual gap between panels
+        self.setStyleSheet(
+            "QMainWindow::separator { width: 6px; height: 6px; background: #2a2a3a; }"
+            "QMainWindow::separator:hover { background: #4a4a6a; }"
+        )
+
         self.map_frame = QFrame()
         map_frame_layout = QVBoxLayout(self.map_frame)
-        map_frame_layout.setContentsMargins(0, 0, 0, 0)
-        map_frame_layout.setSpacing(5)
+        map_frame_layout.setContentsMargins(6, 6, 6, 6)
+        map_frame_layout.setSpacing(6)
 
         # ---- Buttons above the map ----
         top_button_row = QHBoxLayout()
@@ -3601,16 +3620,24 @@ class MapWidget(QMainWindow):
         self.turn_action_panel.select_bonus_target_button.clicked.connect(self.bonusSpellButton_pressed)
         self.turn_action_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
+        # Wrap in scroll area so Turn Actions dock scrolls when too small to show all controls
+        _action_scroll = QScrollArea()
+        _action_scroll.setWidget(self.turn_action_panel)
+        _action_scroll.setWidgetResizable(True)
+        _action_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        _action_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        _action_scroll.setStyleSheet("QScrollArea { border: none; }")
+
         action_dock = QDockWidget("Turn Actions", self)
         action_dock.setObjectName("TurnActionsDock")
-        action_dock.setWidget(self.turn_action_panel)
+        action_dock.setWidget(_action_scroll)
         action_dock.setAllowedAreas(Qt.AllDockWidgetAreas)
         action_dock.setFeatures(
             QDockWidget.DockWidgetMovable |
             QDockWidget.DockWidgetFloatable |
             QDockWidget.DockWidgetClosable
         )
-        action_dock.setMinimumWidth(250)
+        action_dock.setMinimumWidth(260)
         self.addDockWidget(Qt.RightDockWidgetArea, action_dock)
         action_dock.setContextMenuPolicy(Qt.CustomContextMenu)
         action_dock.customContextMenuRequested.connect(
@@ -3671,6 +3698,7 @@ class MapWidget(QMainWindow):
         self._bonus_action_used = False
         self._targeting_bonus = False   # True when "Select Bonus Target" mode is active
         self._bonus_choice = None       # The bonus action myAction object being targeted
+        self._num_attacks = 1           # Number of attacks for current weapon action
 
         self._secondary_map_window = None   # SecondaryMapWindow instance
 
@@ -4020,6 +4048,30 @@ class MapWidget(QMainWindow):
         if self._secondary_map_window is not None and self._secondary_map_window.isVisible():
             self._secondary_map_window.update_target_highlight(target_indices)
 
+    def _restore_wall_visuals(self, map_obj):
+        """Sync model wall coord-tuples → view _wall_indices and repaint wall hexes.
+
+        Called after loading a saved encounter so the painted wall colours are
+        restored to match the pickled map.walls set.
+        """
+        if not self.map_view.hex_centers_base or not map_obj.walls:
+            return
+        if not hasattr(map_obj, '_coord_idx'):
+            return
+
+        view_indices = set()
+        for coord in map_obj.walls:
+            try:
+                idx = map_obj.convertToViewerCoords(coord)
+                if idx < len(self.map_view.hex_items):
+                    view_indices.add(idx)
+            except (KeyError, IndexError):
+                pass
+
+        self.map_view._wall_indices = view_indices
+        if view_indices:
+            self.map_view.setHexColors(self.map_view.wallFill, list(view_indices))
+
     def _on_walls_changed(self, wall_indices: set):
         """Sync wall coords from the view into the engine map.
 
@@ -4148,6 +4200,7 @@ class MapWidget(QMainWindow):
         # Rebuild the map view from restored state
         self.map_view._map_obj_ref = enc.map
         self.map_view.loadFromEncounter(enc)
+        self._restore_wall_visuals(enc.map)
         self.updateTurnOrder()
         self._rebuild_persistent_zones()
 
@@ -4411,15 +4464,51 @@ class MapWidget(QMainWindow):
             self.turn_action_panel.bonus_targets_label.setText(targetString)
             if not targetsHit:
                 self.turn_action_panel.log("⚔️ No actors at bonus target location — action will miss.")
+            self._set_target_mode(False)
         else:
-            self.turnChoice.targets = targetsHit
-            self.turnChoice.area_coords = all_area_coords
-            self.turn_action_panel.targets_label.setText(targetString)
-            if not targetsHit:
-                self.turn_action_panel.log("⚔️ No actors at target location — action will miss.")
+            is_weapon_attack = (
+                self.turnChoice is not None
+                and getattr(self.turnChoice, 'type', None) == 'Wdmg'
+            )
+            if is_weapon_attack and self._num_attacks > 1:
+                # Accumulate targets up to the attack count
+                existing = list(self.turnChoice.targets) if self.turnChoice.targets else []
+                for coord in targetsHit:
+                    if coord not in existing:
+                        existing.append(coord)
+                    if len(existing) >= self._num_attacks:
+                        break
+                self.turnChoice.targets = existing
+                self.turnChoice.area_coords = all_area_coords
 
-        # Targeting mode complete — deactivate the button
-        self._set_target_mode(False)
+                # Build a per-attack label showing progress
+                ac = self.myEncounter.map.arrayCenters
+                assigned = [ac[c].name for c in existing if ac.get(c, '') != '']
+                parts = []
+                for idx in range(self._num_attacks):
+                    if idx < len(assigned):
+                        parts.append(f"Attack {idx + 1}: {assigned[idx]}")
+                    else:
+                        parts.append(f"Attack {idx + 1}: (select target)")
+                self.turn_action_panel.targets_label.setText(' | '.join(parts))
+
+                if len(existing) < self._num_attacks:
+                    # More attacks need targets — keep targeting mode on
+                    self.map_view.spellAreaCheck = True
+                    self.turn_action_panel.select_target_button.setChecked(True)
+                    self.turn_action_panel.log(
+                        f"⚔️ Select target for Attack {len(existing) + 1}..."
+                    )
+                    return  # don't deactivate yet
+            else:
+                self.turnChoice.targets = targetsHit
+                self.turnChoice.area_coords = all_area_coords
+                self.turn_action_panel.targets_label.setText(targetString)
+                if not targetsHit:
+                    self.turn_action_panel.log("⚔️ No actors at target location — action will miss.")
+
+            # Targeting mode complete — deactivate the button
+            self._set_target_mode(False)
 
     def actionChanged(self):
         action = self.turn_action_panel.action_dropdown.currentText()
@@ -4427,6 +4516,18 @@ class MapWidget(QMainWindow):
             self.turn_action_panel.move_input.setEnabled(False)
         else:
             self.turn_action_panel.move_input.setEnabled(True)
+
+        # Compute attack count for multi-attack targeting
+        if self.actor is not None and getattr(self.actor, 'is_player', False):
+            self._num_attacks = 1 + getattr(self.actor, 'twoAttacks', 0)
+        else:
+            self._num_attacks = 1
+
+        # Clear any previously accumulated targets when the action changes
+        if self.turnChoice is not None:
+            self.turnChoice.targets = []
+        self.turn_action_panel.targets_label.setText("")
+
         # Configure target params for the new action and auto-activate targeting
         self._setup_target_params()
         self._set_target_mode(True)

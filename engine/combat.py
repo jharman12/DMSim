@@ -630,8 +630,16 @@ def doAction(actor, map_obj, turnChoice):
     if turnChoice.type == 'Wdmg':
         weaponChoice = [x for x in actor.weaponList if x.name == turnChoice.name][0]
         _safe_move(actor, turnChoice.moveCoord, map_obj)
-        target = map_obj.arrayCenters[turnChoice.targets[0]]
-        weaponAttack(actor, target, weaponChoice, map_obj)
+        targets = [
+            map_obj.arrayCenters[c] for c in turnChoice.targets
+            if map_obj.arrayCenters.get(c, '') != ''
+        ]
+        if not targets and turnChoice.targets:
+            # Fallback: coords may have shifted; resolve first one
+            first_occupant = map_obj.arrayCenters.get(turnChoice.targets[0])
+            if first_occupant and first_occupant != '':
+                targets = [first_occupant]
+        weaponAttack(actor, targets, weaponChoice, map_obj)
 
     elif turnChoice.type in ('Sdmg', 'cc'):
         castSpellTurn(actor, turnChoice, map_obj)
@@ -757,15 +765,13 @@ def castSpellTurn(actor, turnChoice, map_obj):
             person.cc = [spell['lvl'], save, actor.spellDC]
 
 
-def weaponAttack(actor, target, weap, map_obj):
-    targDistance = actor_to_actor_distance(actor, target, map_obj)
+def weaponAttack(actor, targets, weap, map_obj):
+    """Execute weapon attacks against a list of targets.
 
-    if targDistance > weap.range / 5:
-        dprint(actor.name, 'out of range to hit', target.name, 'with', weap.name, '...', targDistance, '..', weap.range / 5)
-        safe_log(
-            '\t' + actor.name + ' out of range to hit ' + target.name + ' with ' + weap.name
-            + ' ... ' + str(targDistance) + ' .. ' + str(weap.range / 5), map_obj
-        )
+    Each attack i uses targets[i % len(targets)] so you can pass one target
+    (all attacks on same enemy) or multiple targets (one per attack).
+    """
+    if not targets:
         return
 
     if not actor.is_player:
@@ -775,33 +781,46 @@ def weaponAttack(actor, target, weap, map_obj):
         numAttack = actor.twoAttacks + 1
         prof = actor.proficiency
 
-    rollToHit = [x + int(weap.attackMod) + int(prof) for x in rollDice(numAttack, 20, map_obj)]
-    hits = []
-    for roll in rollToHit:
+    for i in range(numAttack):
+        target = targets[i % len(targets)]
+        if not getattr(target, 'alive', 1):
+            continue
+
+        targDistance = actor_to_actor_distance(actor, target, map_obj)
+        if targDistance > weap.range / 5:
+            dprint(actor.name, 'out of range to hit', target.name, 'with', weap.name)
+            safe_log(
+                '\t' + actor.name + ' out of range to hit ' + target.name + ' with ' + weap.name
+                + ' ... ' + str(targDistance) + ' .. ' + str(weap.range / 5), map_obj
+            )
+            continue
+
+        roll = rollDice(1, 20, map_obj)[0] + int(weap.attackMod) + int(prof)
         safe_log(
             '\tRolling to Hit against ' + target.name + '\n\t\tRoll: '
-            + str(roll - int(weap.attackMod) - int(prof)) + ' + ' + str(int(weap.attackMod) + prof),
+            + str(roll - int(weap.attackMod) - int(prof)) + ' + ' + str(int(weap.attackMod) + int(prof)),
             map_obj
         )
-        if roll >= int(target.ac):
-            safe_log('\t\t' + str(roll) + ' hits against ' + str(target.ac), map_obj)
-            hits.append(2 if roll == 20 + int(prof) + int(weap.attackMod) else 1)
 
-    dmg = 0
-    for hit in hits:
+        if roll < int(target.ac):
+            safe_log('\t\t' + str(roll) + ' misses against ' + str(target.ac), map_obj)
+            continue
+
+        is_crit = (roll == 20 + int(prof) + int(weap.attackMod))
+        hit_val = 2 if is_crit else 1
+        safe_log('\t\t' + str(roll) + ' hits against ' + str(target.ac), map_obj)
+
         if not actor.is_player:
             dmg = sum(rollDice(int(weap.diceCount[0]), int(weap.diceType[0]), map_obj)) + int(weap.dmgMod)
-            if hit == 2:
-                dmg = sum(rollDice(int(weap.diceCount[0]), int(weap.diceType[0]), map_obj))
+            if is_crit:
+                dmg += sum(rollDice(int(weap.diceCount[0]), int(weap.diceType[0]), map_obj))
         else:
-            dmg += rollDice(int(weap.diceCount), int(re.findall(r'\d+', weap.diceType)[0]), map_obj)[0] + int(weap.dmgMod)
-            if hit == 2:
+            dmg = rollDice(int(weap.diceCount), int(re.findall(r'\d+', weap.diceType)[0]), map_obj)[0] + int(weap.dmgMod)
+            if is_crit:
                 dmg += rollDice(int(weap.diceCount), int(re.findall(r'\d+', weap.diceType)[0]), map_obj)[0]
+            dmg += actor.classMeleeDmg([hit_val], dmg)
 
-    if actor.is_player:
-        dmg += actor.classMeleeDmg(hits, dmg)
-
-    takeDmg(actor, target, dmg, map_obj)
+        takeDmg(actor, target, dmg, map_obj)
 
 
 def takeDmg(actor, target, dmg, map_obj):

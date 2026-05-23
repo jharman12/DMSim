@@ -110,13 +110,20 @@ class interactiveEncounter:
                     map.party.remove(deadActor)
                 else:
                     map.enemy.remove(deadActor)
-                actorCoord = [coord for coord in list(map.arrayCenters) if map.arrayCenters[coord] == deadActor][0]
-                map.arrayCenters[actorCoord] = ''
+                # Clear ALL footprint hexes (multi-hex actors occupy multiple coords)
+                for coord in list(map.arrayCenters):
+                    if map.arrayCenters[coord] is deadActor:
+                        map.arrayCenters[coord] = ''
                 del self.sortedInitList[deadActor]
-                charIndex = self.graphicsViewer.character_objs.index(deadActor)
-                self.graphicsViewer.scene.removeItem(self.graphicsViewer.character_items[charIndex])
-                del self.graphicsViewer.character_items[charIndex]
-                del self.graphicsViewer.character_objs[charIndex]
+                if deadActor in self.graphicsViewer.character_objs:
+                    charIndex = self.graphicsViewer.character_objs.index(deadActor)
+                    dead_item = self.graphicsViewer.character_items[charIndex]
+                    self.graphicsViewer.scene.removeItem(dead_item)
+                    # Clean up pixmap caches so loadFromEncounter won't ghost this actor
+                    self.graphicsViewer._clean_pixmaps.pop(dead_item, None)
+                    self.graphicsViewer._original_pixmaps.pop(dead_item, None)
+                    del self.graphicsViewer.character_items[charIndex]
+                    del self.graphicsViewer.character_objs[charIndex]
 
         return deadActors
 

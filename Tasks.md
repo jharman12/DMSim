@@ -37,7 +37,7 @@ Done 32.) When combat is done, either players group kill all enemies or all play
 Done 33.) The "map image" in the encounter builder should really have two layers. I want users to be able to select images on their drive, but once selected, it should save that image into a sub folder in the App. This is because I dont want to open the app to a bug where they move a folder with an image saved as a map and cause an encounter to bug out when it assumes its still in the older folder. Is this the best way to solve this issue? To have a "select from saved maps" button and a "import new map" button.
 Done 34.) In the encounter window, once the players simulate the combat, I need a way to rank the difficulty that the simulation expects it to be. This should take into account how many spell slots the players used, their current health, if any player went down, and how many times they won. If there is a small chance for the players to lose, then it will be deadly. If the players lose every time, it should be Total Party Kill (TPK). And so forth, can you make an algorithm to rank these appropiately? Also display that ranking.
 
-skip 35.) for all of the monsters that I have saved, generate a stock image for their icon based off of their names. Do not use any copy rated images here.
+35.) for all of the monsters that I have saved, generate a stock image for their icon based off of their names. Do not use any copy rated images here.
 
 Done 36.) The map needs to be able to handle a lot of hexes (maps able to handle an army 1000+ enemies). Currently, the hexes outlines are set at the beginning such that you can see the outline zoomed all the way out. When zooming in on a map the Num hexes set to 99, the polygon outline of the hexes begin to look way to large. I need the hexes outline to scale based off of the zoom level.
 Done 37.) Similarly to task 36, the map begins getting blurry when you zoom in too much. Is there a way of fixing this?
@@ -45,9 +45,14 @@ Done 38.) The character icons also get extremely blurry when adding a lot of hex
 Done 39.) Make the game log be a dock as well such that we can move it around if needed.
 Done 40.) When more than one enemy of a single type in the encounter builder, dont lis the same enemy multiple times, have for example "Orc x 10". And when you delete an enemy with multiple of the same selected, have a pop-up to enter how many or to set current number.
 Done 41.) Walls are not working properly. actors are just walking through walls now since the distances of hexes has been cached.
+Done 42.) Actors are some times moving off map when they die instead of being deleted off the map.
+Done 43.) Give more spacing between widgets horizontally in the encounter window. Add optional scroll bars for docks that get smaller than expected.
+Done 44.) Currently, player actors who can attack multiple times in one turn are forced to attack the same target twice. I would like for them to be able to attack two different targets with their two attacks. I need the GUI and the engine to be able to handle this
+Done 45.) Dis calc is still using old calculation method and not the cached one.
+Done 46.) Save encounter needs to save walls as well
 
-42.) Actors are some times moving off map when they die instead of being deleted off the map.
-43.) Give more spacing between widgets horizontally in the encounter window. Add optional scroll bars for docks that get smaller than expected.
-44.) Currently, player actors who can attack multiple times in one turn are forced to attack the same target twice. I would like for them to be able to attack two different targets with their two attacks. I need the GUI and the engine to be able to handle this
-45.) Dis calc is still using old calculation method and not the cached one.
-46.) Save encounter needs to save walls as well
+47.) If an action can target two actors, but only one target was selected, have a pop-up that asks the user if the the action should target the same actor twice.
+48.) It seems the engine walls and the GUI walls still dont line up perfectly or something. I am some times seeing actors pass through walls or end their turn on a wall when the actors turn is decided by the engine.
+49.) I want walls to optionally have a health bar and AC associated with them. The engine should consider this when deciding the best path for an actor to take. It should see if walking around the wall would be faster or if destroying the wall would be faster. This should consider the actors average damage to the wall and how many turns it would take to destroy it vs how many turns it takes to run around. 
+50.) Implement optionally giving walls health and ac. This should work using the left click and drag when the wall button is pressed, highlighting all selected walls and then right clicking on one of the walls. There should be an "Edit walls" options. This should open a wall pop-up window that has the option to edit the walls colors (should have a color pallete editor like microsoft products have) and combo box with options "destructible" and "non-destructible". If destructible is selected, a clean looking option should appear below the combo box with options to input the health and ac of the walls.
+51.) Distance calc button should have a toolbar like the walls button with options "Pathing distance" and "Straight Line Distance". pathing should be the distance to path around walls and straight line should distance ignoring walls.
