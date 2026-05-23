@@ -107,7 +107,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Acolyte.png"
   },
   "Adult Silver Dragon": {
     "name": "Adult Silver Dragon",
@@ -178,7 +178,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Adult_Silver_Dragon.png",
     "size": 25
   },
   "Air Elemental": {
@@ -224,7 +224,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Air_Elemental.png",
     "size": 25
   },
   "Ancient Silver Dragon": {
@@ -296,7 +296,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Ancient_Silver_Dragon.png",
     "size": 200
   },
   "Androsphinx": {
@@ -524,7 +524,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Androsphinx.png",
     "size": 25
   },
   "Ape": {
@@ -583,7 +583,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Ape.png",
     "size": 25
   },
   "Archmage": {
@@ -894,14 +894,14 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Archmage.png"
   },
   "Assassin": {
     "name": "Assassin",
     "size": 25,
     "type": "humanoid",
     "subtype": "any race",
-    "alignment": "any non-\u00ad\u2010good alignment",
+    "alignment": "any non-­‐good alignment",
     "ac": 15,
     "hp": 78,
     "speed": 30,
@@ -956,7 +956,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Assassin.png"
   },
   "Awakened Shrub": {
     "name": "Awakened Shrub",
@@ -1001,7 +1001,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Awakened_Shrub.png",
     "size": 25
   },
   "Awakened Tree": {
@@ -1047,7 +1047,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Awakened_Tree.png",
     "size": 25
   },
   "Axe Beak": {
@@ -1093,7 +1093,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Axe_Beak.png",
     "size": 25
   },
   "Baboon": {
@@ -1139,7 +1139,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Baboon.png",
     "size": 25
   },
   "Badger": {
@@ -1185,7 +1185,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Badger.png",
     "size": 25
   },
   "Bandit": {
@@ -1193,7 +1193,7 @@
     "size": 25,
     "type": "humanoid",
     "subtype": "any race",
-    "alignment": "any non-\u00ad\u2010lawful",
+    "alignment": "any non-­‐lawful",
     "ac": 12,
     "hp": 11,
     "speed": 30,
@@ -1248,14 +1248,14 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Bandit.png"
   },
   "Bandit Captain": {
     "name": "Bandit Captain",
     "size": 25,
     "type": "humanoid",
     "subtype": "any race",
-    "alignment": "any non-\u00ad\u2010lawful",
+    "alignment": "any non-­‐lawful",
     "ac": 15,
     "hp": 65,
     "speed": 30,
@@ -1310,7 +1310,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Bandit_Captain.png"
   },
   "Bat": {
     "name": "Bat",
@@ -1355,7 +1355,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Bat.png",
     "size": 25
   },
   "Berserker": {
@@ -1405,7 +1405,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Berserker.png"
   },
   "Black Bear": {
     "name": "Black Bear",
@@ -1463,7 +1463,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Black_Bear.png",
     "size": 25
   },
   "Black Pudding": {
@@ -1509,7 +1509,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Black_Pudding.png",
     "size": 25
   },
   "Black ram": {
@@ -1528,7 +1528,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Black_ram.png",
     "size": 25
   },
   "Blinded": {
@@ -1547,7 +1547,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Blinded.png",
     "size": 25
   },
   "Blink Dog": {
@@ -1593,7 +1593,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Blink_Dog.png",
     "size": 25
   },
   "Blood Hawk": {
@@ -1639,7 +1639,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Blood_Hawk.png",
     "size": 25
   },
   "Boar": {
@@ -1685,7 +1685,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Boar.png",
     "size": 25
   },
   "Brown Bear": {
@@ -1744,7 +1744,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Brown_Bear.png",
     "size": 25
   },
   "Camel": {
@@ -1790,7 +1790,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Camel.png",
     "size": 25
   },
   "Cat": {
@@ -1836,7 +1836,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Cat.png",
     "size": 25
   },
   "Charmed": {
@@ -1855,7 +1855,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Charmed.png",
     "size": 25
   },
   "Clay Golem": {
@@ -1901,7 +1901,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Clay_Golem.png",
     "size": 25
   },
   "Cloud Giant": {
@@ -2021,7 +2021,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Cloud_Giant.png",
     "size": 25
   },
   "Commoner": {
@@ -2071,7 +2071,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Commoner.png"
   },
   "Constrictor Snake": {
     "name": "Constrictor Snake",
@@ -2129,7 +2129,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Constrictor_Snake.png",
     "size": 25
   },
   "Crab": {
@@ -2175,7 +2175,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Crab.png",
     "size": 25
   },
   "Crocodile": {
@@ -2221,7 +2221,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Crocodile.png",
     "size": 25
   },
   "Cultist": {
@@ -2229,7 +2229,7 @@
     "size": 25,
     "type": "humanoid",
     "subtype": "any race",
-    "alignment": "any non-\u00ad\u2010good alignment",
+    "alignment": "any non-­‐good alignment",
     "ac": 12,
     "hp": 9,
     "speed": 30,
@@ -2271,14 +2271,14 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Cultist.png"
   },
   "Cult Fanatic": {
     "name": "Cult Fanatic",
     "size": 25,
     "type": "humanoid",
     "subtype": "any race",
-    "alignment": "any non-\u00ad\u2010good alignment",
+    "alignment": "any non-­‐good alignment",
     "ac": 13,
     "hp": 33,
     "speed": 30,
@@ -2401,7 +2401,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Cult_Fanatic.png"
   },
   "Death Dog": {
     "name": "Death Dog",
@@ -2446,7 +2446,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Death_Dog.png",
     "size": 25
   },
   "Deer": {
@@ -2492,7 +2492,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Deer.png",
     "size": 25
   },
   "Dire Wolf": {
@@ -2538,7 +2538,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Dire_Wolf.png",
     "size": 25
   },
   "Djinni": {
@@ -2625,7 +2625,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Djinni.png",
     "size": 25
   },
   "Draft Horse": {
@@ -2671,7 +2671,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Draft_Horse.png",
     "size": 25
   },
   "Dragon Turtle": {
@@ -2743,7 +2743,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Dragon_Turtle.png",
     "size": 25
   },
   "Drider": {
@@ -2836,7 +2836,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Drider.png",
     "size": 25
   },
   "Druid": {
@@ -2967,7 +2967,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Druid.png"
   },
   "Dryad": {
     "name": "Dryad",
@@ -3033,7 +3033,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Dryad.png",
     "size": 25
   },
   "Duergar": {
@@ -3096,7 +3096,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Duergar.png"
   },
   "Dust Mephit": {
     "name": "Dust Mephit",
@@ -3125,7 +3125,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Dust_Mephit.png",
     "size": 25
   },
   "Eagle": {
@@ -3171,7 +3171,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Eagle.png",
     "size": 25
   },
   "Earth Elemental": {
@@ -3217,7 +3217,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Earth_Elemental.png",
     "size": 25
   },
   "Efreeti": {
@@ -3297,7 +3297,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Efreeti.png",
     "size": 25
   },
   "Elephant": {
@@ -3356,7 +3356,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Elephant.png",
     "size": 25
   },
   "Elk": {
@@ -3415,7 +3415,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Elk.png",
     "size": 25
   },
   "Ettercap": {
@@ -3461,7 +3461,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Ettercap.png",
     "size": 25
   },
   "Ettin": {
@@ -3520,7 +3520,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Ettin.png",
     "size": 25
   },
   "Falcon": {
@@ -3539,7 +3539,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Falcon.png",
     "size": 25
   },
   "Fire Elemental": {
@@ -3585,7 +3585,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Fire_Elemental.png",
     "size": 25
   },
   "Fire Giant": {
@@ -3644,7 +3644,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Fire_Giant.png",
     "size": 25
   },
   "Flame": {
@@ -3663,7 +3663,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Flame.png",
     "size": 25
   },
   "Flesh Golem": {
@@ -3709,7 +3709,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Flesh_Golem.png",
     "size": 25
   },
   "Flying Snake": {
@@ -3755,7 +3755,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Flying_Snake.png",
     "size": 25
   },
   "Frightened": {
@@ -3774,7 +3774,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Frightened.png",
     "size": 25
   },
   "Frog": {
@@ -3805,7 +3805,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Frog.png",
     "size": 25
   },
   "Frost Giant": {
@@ -3864,7 +3864,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Frost_Giant.png",
     "size": 25
   },
   "Gargoyle": {
@@ -3923,7 +3923,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Gargoyle.png",
     "size": 25
   },
   "Gelatinous Cube": {
@@ -3954,7 +3954,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Gelatinous_Cube.png",
     "size": 25
   },
   "Ghast": {
@@ -4013,7 +4013,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Ghast.png",
     "size": 25
   },
   "Ghost": {
@@ -4059,7 +4059,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Ghost.png",
     "size": 25
   },
   "Ghoul": {
@@ -4118,7 +4118,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Ghoul.png",
     "size": 25
   },
   "Giant Ape": {
@@ -4177,7 +4177,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Ape.png",
     "size": 25
   },
   "Giant Badger": {
@@ -4236,7 +4236,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Badger.png",
     "size": 25
   },
   "Giant Bat": {
@@ -4282,7 +4282,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Bat.png",
     "size": 25
   },
   "Giant Boar": {
@@ -4328,7 +4328,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Boar.png",
     "size": 25
   },
   "Giant Centipede": {
@@ -4374,7 +4374,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Centipede.png",
     "size": 25
   },
   "Giant Constrictor Snake": {
@@ -4433,7 +4433,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Constrictor_Snake.png",
     "size": 25
   },
   "Giant Crab": {
@@ -4479,7 +4479,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Crab.png",
     "size": 25
   },
   "Giant Crocodile": {
@@ -4538,7 +4538,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Crocodile.png",
     "size": 25
   },
   "Giant Eagle": {
@@ -4597,7 +4597,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Eagle.png",
     "size": 25
   },
   "Giant Elk": {
@@ -4656,7 +4656,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Elk.png",
     "size": 25
   },
   "Giant Fire Beetle": {
@@ -4702,7 +4702,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Fire_Beetle.png",
     "size": 25
   },
   "Giant Frog": {
@@ -4748,7 +4748,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Frog.png",
     "size": 25
   },
   "Giant Goat": {
@@ -4779,7 +4779,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Goat.png",
     "size": 25
   },
   "Giant Hyena": {
@@ -4825,7 +4825,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Hyena.png",
     "size": 25
   },
   "Giant Lizard": {
@@ -4871,7 +4871,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Lizard.png",
     "size": 25
   },
   "Giant Octopus": {
@@ -4917,7 +4917,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Octopus.png",
     "size": 25
   },
   "Giant Owl": {
@@ -4963,7 +4963,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Owl.png",
     "size": 25
   },
   "Giant Poisonous Snake": {
@@ -5009,7 +5009,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Poisonous_Snake.png",
     "size": 25
   },
   "Giant Rat": {
@@ -5055,7 +5055,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Rat.png",
     "size": 25
   },
   "Giant Scorpion": {
@@ -5114,7 +5114,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Scorpion.png",
     "size": 25
   },
   "Giant Sea Horse": {
@@ -5160,7 +5160,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Sea_Horse.png",
     "size": 25
   },
   "Giant Shark": {
@@ -5206,7 +5206,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Shark.png",
     "size": 25
   },
   "Giant Spider": {
@@ -5238,7 +5238,7 @@
         "dmgMod": 0
       },
       {
-        "name": "Web (Recharge 5\u20136)",
+        "name": "Web (Recharge 5–6)",
         "attackType": "Ranged",
         "range": 5,
         "attackMod": 5,
@@ -5265,7 +5265,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Spider.png",
     "size": 25
   },
   "Giant Toad": {
@@ -5311,7 +5311,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Toad.png",
     "size": 25
   },
   "Giant Vulture": {
@@ -5370,7 +5370,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Vulture.png",
     "size": 25
   },
   "Giant Wasp": {
@@ -5416,7 +5416,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Wasp.png",
     "size": 25
   },
   "Giant Weasel": {
@@ -5462,7 +5462,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Weasel.png",
     "size": 25
   },
   "Giant Wolf Spider": {
@@ -5508,7 +5508,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Giant_Wolf_Spider.png",
     "size": 25
   },
   "Gibbering Mouther": {
@@ -5538,7 +5538,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Gibbering_Mouther.png",
     "size": 25
   },
   "Gladiator": {
@@ -5601,7 +5601,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Gladiator.png"
   },
   "Gnoll": {
     "name": "Gnoll",
@@ -5702,7 +5702,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Gnoll.png"
   },
   "Goat": {
     "name": "Goat",
@@ -5732,7 +5732,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Goat.png",
     "size": 25
   },
   "Goblin": {
@@ -5795,7 +5795,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Goblin.png"
   },
   "Gorgon": {
     "name": "Gorgon",
@@ -5824,7 +5824,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Gorgon.png",
     "size": 25
   },
   "Grappled": {
@@ -5843,7 +5843,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Grappled.png",
     "size": 25
   },
   "Gray Ooze": {
@@ -5889,7 +5889,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Gray_Ooze.png",
     "size": 25
   },
   "Green Hag": {
@@ -5976,7 +5976,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Green_Hag.png",
     "size": 25
   },
   "Grick": {
@@ -6035,7 +6035,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Grick.png",
     "size": 25
   },
   "Griffon": {
@@ -6094,7 +6094,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Griffon.png",
     "size": 25
   },
   "Grimlock": {
@@ -6128,7 +6128,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Grimlock.png"
   },
   "Guard": {
     "name": "Guard",
@@ -6177,7 +6177,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Guard.png"
   },
   "Guardian Naga": {
     "name": "Guardian Naga",
@@ -6437,7 +6437,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Guardian_Naga.png",
     "size": 25
   },
   "Gynosphinx": {
@@ -6704,7 +6704,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Gynosphinx.png",
     "size": 25
   },
   "Harpy": {
@@ -6763,7 +6763,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Harpy.png",
     "size": 25
   },
   "Hawk": {
@@ -6809,7 +6809,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Hawk.png",
     "size": 25
   },
   "Hell Hound": {
@@ -6855,7 +6855,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Hell_Hound.png",
     "size": 25
   },
   "Hill Giant": {
@@ -6914,7 +6914,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Hill_Giant.png",
     "size": 25
   },
   "Hippogriff": {
@@ -6973,7 +6973,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Hippogriff.png",
     "size": 25
   },
   "Hobgoblin": {
@@ -7036,7 +7036,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Hobgoblin.png"
   },
   "Homunculus": {
     "name": "Homunculus",
@@ -7081,7 +7081,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Homunculus.png",
     "size": 25
   },
   "Hunter Shark": {
@@ -7127,7 +7127,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Hunter_Shark.png",
     "size": 25
   },
   "Hydra": {
@@ -7173,7 +7173,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Hydra.png",
     "size": 25
   },
   "Hyena": {
@@ -7219,7 +7219,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Hyena.png",
     "size": 25
   },
   "Ice Mephit": {
@@ -7249,7 +7249,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Ice_Mephit.png",
     "size": 25
   },
   "Invisible Stalker": {
@@ -7295,7 +7295,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Invisible_Stalker.png",
     "size": 25
   },
   "Iron Golem": {
@@ -7354,7 +7354,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Iron_Golem.png",
     "size": 25
   },
   "Jackal": {
@@ -7400,7 +7400,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Jackal.png",
     "size": 25
   },
   "Killer Whale": {
@@ -7446,7 +7446,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Killer_Whale.png",
     "size": 25
   },
   "Knight": {
@@ -7509,7 +7509,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Knight.png"
   },
   "Kobold": {
     "name": "Kobold",
@@ -7571,7 +7571,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Kobold.png"
   },
   "Kraken": {
     "name": "Kraken",
@@ -7633,7 +7633,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Kraken.png"
   },
   "Lamia": {
     "name": "Lamia",
@@ -7725,7 +7725,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Lamia.png",
     "size": 25
   },
   "Lich": {
@@ -7995,7 +7995,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Lich.png",
     "size": 25
   },
   "Lion": {
@@ -8054,7 +8054,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Lion.png",
     "size": 25
   },
   "Lizard": {
@@ -8100,7 +8100,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Lizard.png",
     "size": 25
   },
   "Lizardfolk": {
@@ -8189,7 +8189,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Lizardfolk.png"
   },
   "Longbow": {
     "name": "Longbow",
@@ -8207,7 +8207,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Longbow.png",
     "size": 25
   },
   "Mage": {
@@ -8439,7 +8439,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Mage.png"
   },
   "Magma Mephit": {
     "name": "Magma Mephit",
@@ -8468,7 +8468,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Magma_Mephit.png",
     "size": 25
   },
   "Magmin": {
@@ -8514,7 +8514,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Magmin.png",
     "size": 25
   },
   "Mammoth": {
@@ -8573,7 +8573,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Mammoth.png",
     "size": 25
   },
   "Manticore": {
@@ -8645,7 +8645,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Manticore.png",
     "size": 25
   },
   "Mastiff": {
@@ -8691,7 +8691,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Mastiff.png",
     "size": 25
   },
   "Medusa": {
@@ -8722,7 +8722,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Medusa.png",
     "size": 25
   },
   "Merfolk": {
@@ -8772,7 +8772,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Merfolk.png"
   },
   "Merrow": {
     "name": "Merrow",
@@ -8843,7 +8843,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Merrow.png",
     "size": 25
   },
   "Mimic": {
@@ -8877,7 +8877,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Mimic.png"
   },
   "Minotaur": {
     "name": "Minotaur",
@@ -8935,7 +8935,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Minotaur.png",
     "size": 25
   },
   "Minotaur Skeleton": {
@@ -8994,7 +8994,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Minotaur_Skeleton.png",
     "size": 25
   },
   "Mule": {
@@ -9025,7 +9025,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Mule.png",
     "size": 25
   },
   "Mummy": {
@@ -9071,7 +9071,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Mummy.png",
     "size": 25
   },
   "Mummy Lord": {
@@ -9318,7 +9318,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Mummy_Lord.png",
     "size": 25
   },
   "Nature Summer oak tree": {
@@ -9337,7 +9337,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Nature_Summer_oak_tree.png",
     "size": 25
   },
   "Nightmare": {
@@ -9383,7 +9383,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Nightmare.png",
     "size": 25
   },
   "Night Hag": {
@@ -9413,7 +9413,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Night_Hag.png",
     "size": 25
   },
   "Noble": {
@@ -9463,7 +9463,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Noble.png"
   },
   "Ochre Jelly": {
     "name": "Ochre Jelly",
@@ -9508,7 +9508,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Ochre_Jelly.png",
     "size": 25
   },
   "Octopus": {
@@ -9554,7 +9554,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Octopus.png",
     "size": 25
   },
   "Ogre": {
@@ -9613,7 +9613,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Ogre.png",
     "size": 25
   },
   "Ogre Zombie": {
@@ -9643,7 +9643,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Ogre_Zombie.png",
     "size": 25
   },
   "Oni": {
@@ -9743,7 +9743,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Oni.png",
     "size": 25
   },
   "Orc": {
@@ -9806,7 +9806,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Orc.png"
   },
   "Otyugh": {
     "name": "Otyugh",
@@ -9864,7 +9864,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Otyugh.png",
     "size": 25
   },
   "Owl": {
@@ -9910,7 +9910,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Owl.png",
     "size": 25
   },
   "Owlbear": {
@@ -9969,7 +9969,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Owlbear.png",
     "size": 25
   },
   "Panther": {
@@ -10028,7 +10028,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Panther.png",
     "size": 25
   },
   "Pegasus": {
@@ -10074,7 +10074,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Pegasus.png",
     "size": 25
   },
   "Phase Spider": {
@@ -10120,7 +10120,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Phase_Spider.png",
     "size": 25
   },
   "Poisonous Snake": {
@@ -10166,7 +10166,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Poisonous_Snake.png",
     "size": 25
   },
   "Polar Bear": {
@@ -10225,7 +10225,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Polar_Bear.png",
     "size": 25
   },
   "Pony": {
@@ -10271,7 +10271,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Pony.png",
     "size": 25
   },
   "Priest": {
@@ -10462,7 +10462,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Priest.png"
   },
   "Prone": {
     "name": "Prone",
@@ -10480,7 +10480,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Prone.png",
     "size": 25
   },
   "Pseudodragon": {
@@ -10539,7 +10539,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Pseudodragon.png",
     "size": 25
   },
   "Purple Worm": {
@@ -10598,7 +10598,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Purple_Worm.png",
     "size": 25
   },
   "Quipper": {
@@ -10644,7 +10644,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Quipper.png",
     "size": 25
   },
   "Rakshasa": {
@@ -10731,7 +10731,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Rakshasa.png",
     "size": 25
   },
   "Rat": {
@@ -10777,7 +10777,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Rat.png",
     "size": 25
   },
   "Raven": {
@@ -10823,7 +10823,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Raven.png",
     "size": 25
   },
   "Reef Shark": {
@@ -10869,7 +10869,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Reef_Shark.png",
     "size": 25
   },
   "Remorhaz": {
@@ -10915,7 +10915,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Remorhaz.png",
     "size": 25
   },
   "Rhinoceros": {
@@ -10961,7 +10961,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Rhinoceros.png",
     "size": 25
   },
   "Riding Horse": {
@@ -11033,7 +11033,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Riding_Horse.png",
     "size": 25
   },
   "Roc": {
@@ -11092,7 +11092,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Roc.png",
     "size": 25
   },
   "Roper": {
@@ -11151,7 +11151,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Roper.png",
     "size": 25
   },
   "Rust Monster": {
@@ -11197,7 +11197,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Rust_Monster.png",
     "size": 25
   },
   "Sahuagin": {
@@ -11273,7 +11273,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Sahuagin.png"
   },
   "Salamander": {
     "name": "Salamander",
@@ -11331,7 +11331,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Salamander.png",
     "size": 25
   },
   "Satyr": {
@@ -11403,7 +11403,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Satyr.png",
     "size": 25
   },
   "Scorpion": {
@@ -11449,7 +11449,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Scorpion.png",
     "size": 25
   },
   "Scout": {
@@ -11512,7 +11512,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Scout.png"
   },
   "Sea Hag": {
     "name": "Sea Hag",
@@ -11542,7 +11542,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Sea_Hag.png",
     "size": 25
   },
   "Sea Horse": {
@@ -11573,7 +11573,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Sea_Horse.png",
     "size": 25
   },
   "Shadow": {
@@ -11619,7 +11619,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Shadow.png",
     "size": 25
   },
   "Shambling Mound": {
@@ -11665,7 +11665,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Shambling_Mound.png",
     "size": 25
   },
   "Shield Guardian": {
@@ -11711,7 +11711,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Shield_Guardian.png",
     "size": 25
   },
   "Shrieker": {
@@ -11742,7 +11742,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Shrieker.png",
     "size": 25
   },
   "Silver Dragon Wyrmling": {
@@ -11788,7 +11788,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Silver_Dragon_Wyrmling.png",
     "size": 25
   },
   "Skeleton": {
@@ -11847,7 +11847,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Skeleton.png",
     "size": 25
   },
   "Specter": {
@@ -11893,7 +11893,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Specter.png",
     "size": 25
   },
   "Spider": {
@@ -11939,7 +11939,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Spider.png",
     "size": 25
   },
   "Spirit Naga": {
@@ -12186,7 +12186,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Spirit_Naga.png",
     "size": 25
   },
   "Sprite": {
@@ -12245,7 +12245,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Sprite.png",
     "size": 25
   },
   "Spy": {
@@ -12308,7 +12308,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Spy.png"
   },
   "Steam Mephit": {
     "name": "Steam Mephit",
@@ -12337,7 +12337,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Steam_Mephit.png",
     "size": 25
   },
   "Stirge": {
@@ -12396,7 +12396,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Stirge.png",
     "size": 25
   },
   "Stone Giant": {
@@ -12455,7 +12455,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Stone_Giant.png",
     "size": 25
   },
   "Stone Golem": {
@@ -12501,7 +12501,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Stone_Golem.png",
     "size": 25
   },
   "Storm Giant": {
@@ -12641,7 +12641,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Storm_Giant.png",
     "size": 25
   },
   "Stunned": {
@@ -12660,7 +12660,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Stunned.png",
     "size": 25
   },
   "Swarm of Bats": {
@@ -12706,7 +12706,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Swarm_of_Bats.png",
     "size": 25
   },
   "Swarm of Insects": {
@@ -12752,7 +12752,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Swarm_of_Insects.png",
     "size": 25
   },
   "Swarm of Poisonous Snakes": {
@@ -12798,7 +12798,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Swarm_of_Poisonous_Snakes.png",
     "size": 25
   },
   "Swarm of Quippers": {
@@ -12844,7 +12844,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Swarm_of_Quippers.png",
     "size": 25
   },
   "Swarm of Rats": {
@@ -12890,7 +12890,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Swarm_of_Rats.png",
     "size": 25
   },
   "Swarm of Ravens": {
@@ -12936,7 +12936,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Swarm_of_Ravens.png",
     "size": 25
   },
   "Tarrasque": {
@@ -13025,14 +13025,14 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Tarrasque.png"
   },
   "Thug": {
     "name": "Thug",
     "size": 25,
     "type": "humanoid",
     "subtype": "any race",
-    "alignment": "any non-\u00ad\u2010good alignment",
+    "alignment": "any non-­‐good alignment",
     "ac": 11,
     "hp": 32,
     "speed": 30,
@@ -13087,7 +13087,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Thug.png"
   },
   "Tiger": {
     "name": "Tiger",
@@ -13145,7 +13145,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Tiger.png",
     "size": 25
   },
   "Treant": {
@@ -13204,7 +13204,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Treant.png",
     "size": 25
   },
   "Tribal Warrior": {
@@ -13254,7 +13254,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Tribal_Warrior.png"
   },
   "Troll": {
     "name": "Troll",
@@ -13312,7 +13312,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Troll.png",
     "size": 25
   },
   "Unicorn": {
@@ -13412,7 +13412,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Unicorn.png",
     "size": 25
   },
   "Vampire": {
@@ -13448,7 +13448,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Vampire.png"
   },
   "Vampire Spawn": {
     "name": "Vampire Spawn",
@@ -13506,7 +13506,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Vampire_Spawn.png",
     "size": 25
   },
   "Veteran": {
@@ -13582,7 +13582,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Veteran.png"
   },
   "Violet Fungus": {
     "name": "Violet Fungus",
@@ -13627,7 +13627,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Violet_Fungus.png",
     "size": 25
   },
   "Vulture": {
@@ -13673,7 +13673,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Vulture.png",
     "size": 25
   },
   "Warhorse": {
@@ -13719,7 +13719,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Warhorse.png",
     "size": 25
   },
   "Warhorse Skeleton": {
@@ -13765,7 +13765,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Warhorse_Skeleton.png",
     "size": 25
   },
   "War Hammer": {
@@ -13784,7 +13784,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/War_Hammer.png",
     "size": 25
   },
   "Water Elemental": {
@@ -13830,7 +13830,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Water_Elemental.png",
     "size": 25
   },
   "Weasel": {
@@ -13876,7 +13876,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Weasel.png",
     "size": 25
   },
   "Werebear": {
@@ -13926,7 +13926,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Werebear.png"
   },
   "Wereboar": {
     "name": "Wereboar",
@@ -13975,7 +13975,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Wereboar.png"
   },
   "Wererat": {
     "name": "Wererat",
@@ -14050,7 +14050,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Wererat.png"
   },
   "Weretiger": {
     "name": "Weretiger",
@@ -14112,7 +14112,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Weretiger.png"
   },
   "Werewolf": {
     "name": "Werewolf",
@@ -14174,7 +14174,7 @@
       0,
       []
     ],
-    "image": null
+    "image": "/App/Monsters/Werewolf.png"
   },
   "Wight": {
     "name": "Wight",
@@ -14219,7 +14219,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Wight.png",
     "size": 25
   },
   "Winged woman": {
@@ -14238,7 +14238,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Winged_woman.png",
     "size": 25
   },
   "Winter Wolf": {
@@ -14284,7 +14284,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Winter_Wolf.png",
     "size": 25
   },
   "Wolf": {
@@ -14330,7 +14330,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Wolf.png",
     "size": 25
   },
   "Worg": {
@@ -14376,7 +14376,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Worg.png",
     "size": 25
   },
   "Wraith": {
@@ -14422,7 +14422,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Wraith.png",
     "size": 25
   },
   "Wyvern": {
@@ -14494,7 +14494,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Wyvern.png",
     "size": 25
   },
   "Xorn": {
@@ -14553,7 +14553,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Xorn.png",
     "size": 25
   },
   "Young Silver Dragon": {
@@ -14612,7 +14612,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Young_Silver_Dragon.png",
     "size": 25
   },
   "Zombie": {
@@ -14642,7 +14642,7 @@
       0,
       []
     ],
-    "image": null,
+    "image": "/App/Monsters/Zombie.png",
     "size": 25
   }
 }

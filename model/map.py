@@ -27,6 +27,7 @@ class Map:
         self.party = partyList
         self.enemy = enemyList
         self.walls: set = set()           # (col, row) coord tuples for impassable wall hexes
+        self.wall_data: dict = {}         # coord → {'hp': None, 'ac': None, 'color': '#707070', 'destructible': False}
         self.persistent_spells: list = [] # active PersistentSpell zones
         self.populateMap(self.party, self.enemy)
         

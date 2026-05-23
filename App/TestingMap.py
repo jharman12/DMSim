@@ -96,7 +96,8 @@ import sys
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QTextEdit, QCheckBox, QMenuBar, QMenu, QAction,
     QLabel, QPushButton, QLineEdit, QScrollArea, QFrame, QProgressBar, QComboBox, QSplitter, QSplitterHandle, QGroupBox,
-    QMainWindow, QDockWidget, QToolBar, QMessageBox
+    QMainWindow, QDockWidget, QToolBar, QMessageBox,
+    QDialog, QFormLayout, QDialogButtonBox, QSpinBox, QColorDialog,
 )
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QFont
 
@@ -184,6 +185,73 @@ def set_font(widget, size, weight=QFont.Normal, monospace=False):
     widget.setFont(font)
 
 
+class WallEditorDialog(QDialog):
+    """Dialog for editing wall properties: color, destructibility, HP, AC."""
+
+    def __init__(self, existing: dict = None, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Edit Wall Properties")
+        self.setMinimumWidth(300)
+        existing = existing or {}
+
+        layout = QVBoxLayout(self)
+        form = QFormLayout()
+
+        # Color picker
+        self._color = existing.get('color', '#707070')
+        self._color_btn = QPushButton()
+        self._color_btn.setFixedHeight(28)
+        self._color_btn.setStyleSheet(f"background-color: {self._color};")
+        self._color_btn.clicked.connect(self._pick_color)
+        form.addRow("Wall Color:", self._color_btn)
+
+        # Destructible toggle
+        self._destructible_cb = QCheckBox("Destructible")
+        self._destructible_cb.setChecked(bool(existing.get('destructible', False)))
+        self._destructible_cb.toggled.connect(self._on_destructible_toggled)
+        form.addRow("", self._destructible_cb)
+
+        # HP
+        self._hp_spin = QSpinBox()
+        self._hp_spin.setRange(1, 9999)
+        self._hp_spin.setValue(int(existing.get('hp') or 27))
+        form.addRow("Hit Points:", self._hp_spin)
+
+        # AC
+        self._ac_spin = QSpinBox()
+        self._ac_spin.setRange(1, 30)
+        self._ac_spin.setValue(int(existing.get('ac') or 15))
+        form.addRow("Armor Class:", self._ac_spin)
+
+        layout.addLayout(form)
+
+        btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        btns.accepted.connect(self.accept)
+        btns.rejected.connect(self.reject)
+        layout.addWidget(btns)
+
+        # Enable/disable HP+AC fields based on current checkbox state
+        self._on_destructible_toggled(self._destructible_cb.isChecked())
+
+    def _pick_color(self):
+        color = QColorDialog.getColor(QColor(self._color), self, "Choose Wall Color")
+        if color.isValid():
+            self._color = color.name()
+            self._color_btn.setStyleSheet(f"background-color: {self._color};")
+
+    def _on_destructible_toggled(self, checked: bool):
+        self._hp_spin.setEnabled(checked)
+        self._ac_spin.setEnabled(checked)
+
+    def get_values(self) -> dict:
+        destructible = self._destructible_cb.isChecked()
+        return {
+            'color': self._color,
+            'destructible': destructible,
+            'hp': self._hp_spin.value() if destructible else None,
+            'ac': self._ac_spin.value() if destructible else None,
+        }
+
 
 class CustomGraphicsView(QGraphicsView):
     affectedSaved = pyqtSignal(list)
@@ -210,6 +278,8 @@ class CustomGraphicsView(QGraphicsView):
         self.wall_mode = False
         self._wall_indices: set = set()
         self._wall_drag_adding: bool = True   # True = painting walls, False = erasing
+        self._wall_edit_mode: bool = False    # True = selecting walls for editing
+        self._selected_wall_indices: set = set()  # walls selected for editing
 
         # Wall mode overlay toolbar (top-right of view)
         self._wall_toolbar = QFrame(self)
@@ -233,12 +303,20 @@ class CustomGraphicsView(QGraphicsView):
             "QPushButton { color: #eee; border: 1px solid #555; border-radius: 4px; padding: 3px 8px; }"
             "QPushButton:checked { background-color: #7a1a1a; color: #ffffff; border: 2px solid #ff4444; }"
         )
+        self._wall_edit_btn = QPushButton("✏ Edit")
+        self._wall_edit_btn.setCheckable(True)
+        self._wall_edit_btn.setStyleSheet(
+            "QPushButton { color: #eee; border: 1px solid #555; border-radius: 4px; padding: 3px 8px; }"
+            "QPushButton:checked { background-color: #6a5a1a; color: #ffffff; border: 2px solid #ffcc44; }"
+        )
 
         self._wall_create_btn.clicked.connect(self._wall_mode_create)
         self._wall_delete_btn.clicked.connect(self._wall_mode_delete)
+        self._wall_edit_btn.clicked.connect(self._wall_mode_edit)
 
         tbl.addWidget(self._wall_create_btn)
         tbl.addWidget(self._wall_delete_btn)
+        tbl.addWidget(self._wall_edit_btn)
         self._wall_toolbar.adjustSize()
         self._wall_toolbar.setVisible(False)
         self._wall_toolbar.setAttribute(Qt.WA_TransparentForMouseEvents, False)
@@ -296,6 +374,34 @@ class CustomGraphicsView(QGraphicsView):
         self._fog_toolbar.adjustSize()
         self._fog_toolbar.setVisible(False)
         self._fog_toolbar.setAttribute(Qt.WA_TransparentForMouseEvents, False)
+
+        # Distance mode overlay toolbar (Pathing / Straight-Line toggle)
+        self._dist_mode_straight: bool = False   # False = pathing, True = straight-line
+        self._dist_toolbar = QFrame(self)
+        self._dist_toolbar.setStyleSheet(
+            "QFrame { background: rgba(30,30,40,220); border: 1px solid #555; border-radius: 6px; }"
+        )
+        dtbl = QHBoxLayout(self._dist_toolbar)
+        dtbl.setContentsMargins(6, 4, 6, 4)
+        dtbl.setSpacing(6)
+        _btn_ss = (
+            "QPushButton { color: #eee; border: 1px solid #555; border-radius: 4px; padding: 3px 8px; }"
+            "QPushButton:checked { background-color: #1a6fa8; color: #fff; border: 2px solid #4ab0ff; }"
+        )
+        self._dist_path_btn = QPushButton("🗺 Pathing")
+        self._dist_path_btn.setCheckable(True)
+        self._dist_path_btn.setChecked(True)
+        self._dist_path_btn.setStyleSheet(_btn_ss)
+        self._dist_line_btn = QPushButton("📐 Straight Line")
+        self._dist_line_btn.setCheckable(True)
+        self._dist_line_btn.setStyleSheet(_btn_ss)
+        self._dist_path_btn.clicked.connect(self._dist_use_pathing)
+        self._dist_line_btn.clicked.connect(self._dist_use_straight)
+        dtbl.addWidget(self._dist_path_btn)
+        dtbl.addWidget(self._dist_line_btn)
+        self._dist_toolbar.adjustSize()
+        self._dist_toolbar.setVisible(False)
+        self._dist_toolbar.setAttribute(Qt.WA_TransparentForMouseEvents, False)
 
         self._persistent_zones: dict = {}  # spell_name -> list[hex_index]
 
@@ -453,13 +559,99 @@ class CustomGraphicsView(QGraphicsView):
 
     def _wall_mode_create(self):
         self._wall_drag_adding = True
+        self._wall_edit_mode = False
         self._wall_create_btn.setChecked(True)
         self._wall_delete_btn.setChecked(False)
+        self._wall_edit_btn.setChecked(False)
+        self._clear_wall_selection()
 
     def _wall_mode_delete(self):
         self._wall_drag_adding = False
+        self._wall_edit_mode = False
         self._wall_delete_btn.setChecked(True)
         self._wall_create_btn.setChecked(False)
+        self._wall_edit_btn.setChecked(False)
+        self._clear_wall_selection()
+
+    def _wall_mode_edit(self):
+        self._wall_edit_mode = True
+        self._wall_edit_btn.setChecked(True)
+        self._wall_create_btn.setChecked(False)
+        self._wall_delete_btn.setChecked(False)
+
+    def _clear_wall_selection(self):
+        """Deselect all selected walls and restore wall fill color."""
+        for idx in self._selected_wall_indices:
+            if idx in self._wall_indices:
+                self.setHexColors(self.wallFill, [idx])
+        self._selected_wall_indices.clear()
+
+    def _toggle_wall_selection(self, idx: int):
+        """Toggle selection of a wall hex; highlight it with selection color."""
+        if idx not in self._wall_indices:
+            return
+        if idx in self._selected_wall_indices:
+            self._selected_wall_indices.discard(idx)
+            self.setHexColors(self.wallFill, [idx])
+        else:
+            self._selected_wall_indices.add(idx)
+            self.setHexColors(QColor(255, 200, 50, 200), [idx])  # gold = selected wall
+
+    def _show_wall_edit_dialog(self):
+        """Open the wall editor dialog for the currently selected wall(s)."""
+        if not self._selected_wall_indices:
+            return
+        # Gather existing wall_data from the encounter map (if available)
+        map_obj = getattr(getattr(self, 'encounter', None), 'map', None)
+        existing = {}
+        if map_obj and hasattr(map_obj, 'wall_data'):
+            # Use data from first selected wall as starting values
+            first_idx = next(iter(self._selected_wall_indices))
+            first_coord = self._idx_to_wall_coord(first_idx, map_obj)
+            if first_coord and first_coord in map_obj.wall_data:
+                existing = map_obj.wall_data[first_coord]
+
+        dlg = WallEditorDialog(existing, parent=self)
+        if dlg.exec_() != QDialog.Accepted:
+            return
+        result = dlg.get_values()
+
+        if map_obj and hasattr(map_obj, 'wall_data'):
+            for idx in self._selected_wall_indices:
+                coord = self._idx_to_wall_coord(idx, map_obj)
+                if coord:
+                    if coord not in map_obj.wall_data:
+                        map_obj.wall_data[coord] = {}
+                    map_obj.wall_data[coord].update(result)
+
+        # Repaint selected walls with chosen color
+        fill_color = QColor(result.get('color', '#707070'))
+        fill_color.setAlpha(220)
+        for idx in list(self._selected_wall_indices):
+            self.setHexColors(fill_color, [idx])
+        # Store hex-level color overrides so walls keep custom colors after hex refresh
+        if not hasattr(self, '_wall_hex_colors'):
+            self._wall_hex_colors: dict = {}
+        for idx in self._selected_wall_indices:
+            self._wall_hex_colors[idx] = fill_color
+
+        self._clear_wall_selection()
+
+    def _idx_to_wall_coord(self, idx: int, map_obj):
+        """Convert a view hex index to the model coord tuple for this wall hex."""
+        import math
+        if not self.hex_centers_base or idx >= len(self.hex_centers_base):
+            return None
+        if not hasattr(map_obj, 'radius') or map_obj.radius <= 0:
+            return None
+        a = 2 * math.pi / 6
+        x_mod = map_obj.radius * (1 + math.cos(a))
+        y_mod = map_obj.radius * math.sin(a)
+        origin_x, origin_y = self.hex_centers_base[0]
+        px, py = self.hex_centers_base[idx]
+        coord = (map_obj.col_round((px - origin_x) / x_mod),
+                 map_obj.col_round((py - origin_y) / y_mod))
+        return coord if coord in map_obj._coord_idx else None
 
     # ------------------------------------------------------------------
     # Fog of war toolbar
@@ -493,6 +685,66 @@ class CustomGraphicsView(QGraphicsView):
         """Map combo index → hex-radius used when painting/erasing fog."""
         # Small=0 → radius 0 (1 hex), Medium=1 → 1, Large=2 → 2, Huge=3 → 3
         self._fog_brush_radius = index
+
+    # ------------------------------------------------------------------
+    # Distance mode toolbar
+    # ------------------------------------------------------------------
+
+    def show_dist_toolbar(self, visible: bool):
+        """Show or hide the distance mode overlay toolbar."""
+        self._dist_toolbar.setVisible(visible)
+        if visible:
+            self._position_dist_toolbar()
+
+    def _position_dist_toolbar(self):
+        """Place the distance toolbar in the top-right of the view."""
+        self._dist_toolbar.adjustSize()
+        margin = 10
+        x = self.width() - self._dist_toolbar.width() - margin
+        self._dist_toolbar.move(x, margin)
+        self._dist_toolbar.raise_()
+
+    def _dist_use_pathing(self):
+        self._dist_mode_straight = False
+        self._dist_path_btn.setChecked(True)
+        self._dist_line_btn.setChecked(False)
+        self._dist_start_idx = None
+        self._dist_path_indices = []
+        self._refresh_hex_colors()
+        self._dist_label.setVisible(False)
+
+    def _dist_use_straight(self):
+        self._dist_mode_straight = True
+        self._dist_line_btn.setChecked(True)
+        self._dist_path_btn.setChecked(False)
+        self._dist_start_idx = None
+        self._dist_path_indices = []
+        self._refresh_hex_colors()
+        self._dist_label.setVisible(False)
+
+    def _find_straight_line_path(self, start_idx: int, end_idx: int) -> list:
+        """Return a straight-line interpolated path (ignores walls) as index list.
+        Uses pixel coords and KD-tree for nearest-hex lookup."""
+        if not self.hex_centers_base or self.hex_tree is None:
+            return [start_idx, end_idx]
+        if start_idx >= len(self.hex_centers_base) or end_idx >= len(self.hex_centers_base):
+            return [start_idx, end_idx]
+        x0, y0 = self.hex_centers_base[start_idx]
+        x1, y1 = self.hex_centers_base[end_idx]
+        dx, dy = x1 - x0, y1 - y0
+        # Use distance in hex-steps as step count
+        step_size = self.radius * 1.5 if self.radius > 0 else 1
+        steps = max(1, int((dx**2 + dy**2) ** 0.5 / step_size))
+        path = [start_idx]
+        for i in range(1, steps + 1):
+            t = i / steps
+            ix = x0 + dx * t
+            iy = y0 + dy * t
+            dists, idxs = self.hex_tree.query([[ix, iy]], k=1)
+            closest = int(idxs[0])
+            if path[-1] != closest:
+                path.append(closest)
+        return path
 
     def _fog_hex_cluster(self, center_idx: int) -> list[int]:
         """Return all hex indices within _fog_brush_radius hexes of center_idx.
@@ -745,6 +997,7 @@ class CustomGraphicsView(QGraphicsView):
             self._dist_path_indices = []
             self._dist_label.setVisible(False)
             self.unsetCursor()
+            self.show_dist_toolbar(False)
         else:
             # Cancel any other exclusive modes
             self.wall_mode = False
@@ -753,6 +1006,7 @@ class CustomGraphicsView(QGraphicsView):
             self._dist_start_idx = None
             self._dist_path_indices = []
             self._dist_label.setVisible(False)
+            self.show_dist_toolbar(True)
 
     def _find_path(self, start_idx: int, end_idx: int) -> list:
         """BFS returning the list of hex indices on the shortest wall-aware path,
@@ -766,7 +1020,6 @@ class CustomGraphicsView(QGraphicsView):
 
         coords = map_obj._coord_list
         walls = getattr(map_obj, 'walls', set())
-        # walls stores coord tuples — convert to indices using the cached lookup
         wall_idx_set = {map_obj._coord_idx[c] for c in walls if c in map_obj._coord_idx}
 
         # BFS with parent tracking — no movement limit, walls block
@@ -809,8 +1062,9 @@ class CustomGraphicsView(QGraphicsView):
 
         hexes = len(path) - 1 if path else 0
         feet = hexes * 5
+        mode_tag = " (straight)" if self._dist_mode_straight else ""
         if path:
-            text = f"📏  {feet} ft  ({hexes} hexes)"
+            text = f"📏  {feet} ft  ({hexes} hexes){mode_tag}"
         else:
             text = "📏  No path"
         self._dist_label.setText(text)
@@ -827,14 +1081,19 @@ class CustomGraphicsView(QGraphicsView):
         lbl.move(x, y)
 
     def _refresh_hex_colors(self):
-        """Reset all hexes and re-apply movement, zones, walls."""
+        """Reset all hexes and re-apply movement, zones, walls (with custom colors)."""
         self.setHexColors(self.defaultFill, list(range(len(self.hex_items))))
         if self.curMoveCoords:
             self.setHexColors(self.moveFill, self.curMoveCoords)
         for idxs in self._persistent_zones.values():
             self.setHexColors(self.persistFill, idxs)
         if self._wall_indices:
+            # First paint all walls with default fill, then apply any custom colors
             self.setHexColors(self.wallFill, list(self._wall_indices))
+            wall_hex_colors = getattr(self, '_wall_hex_colors', {})
+            for idx, color in wall_hex_colors.items():
+                if idx in self._wall_indices:
+                    self.setHexColors(color, [idx])
 
     def show_prev_turn_path(self, from_idx: int, to_idx: int | None):
         """Highlight the actor's previous-turn movement path in purple."""
@@ -1233,6 +1492,12 @@ class CustomGraphicsView(QGraphicsView):
             # Check if clicked a character icon
             clicked_item = self.itemAt(event.pos())
 
+            # Wall edit mode: right-click opens edit dialog
+            if self.wall_mode and self._wall_edit_mode:
+                if self._selected_wall_indices:
+                    self._show_wall_edit_dialog()
+                return
+
             # Pre-encounter: right-click on multi-selected actor → Group popup
             if (self._pre_encounter
                     and clicked_item in self.character_items
@@ -1291,14 +1556,21 @@ class CustomGraphicsView(QGraphicsView):
                         self._refresh_hex_colors()
                         self.setHexColors(self.distStartFill, [idx])
                     else:
-                        # Second click — compute and display path
-                        path = self._find_path(self._dist_start_idx, idx)
+                        # Second click — compute and display path (pathing or straight-line)
+                        if self._dist_mode_straight:
+                            path = self._find_straight_line_path(self._dist_start_idx, idx)
+                        else:
+                            path = self._find_path(self._dist_start_idx, idx)
                         self._show_dist_path(path, self._dist_start_idx, idx)
                 return
 
             # Wall-placement mode: apply according to selected Create/Delete mode
             if self.wall_mode and item in self.hex_items:
                 idx = self.hex_items.index(item)
+                if self._wall_edit_mode:
+                    # Edit mode: left-click selects/deselects wall hexes
+                    self._toggle_wall_selection(idx)
+                    return
                 if self._wall_drag_adding:
                     if idx not in self._wall_indices:
                         self._wall_indices.add(idx)
@@ -1385,6 +1657,8 @@ class CustomGraphicsView(QGraphicsView):
             self._position_wall_toolbar()
         if self._fog_toolbar.isVisible():
             self._position_fog_toolbar()
+        if self._dist_toolbar.isVisible():
+            self._position_dist_toolbar()
 
     def handleSpellAreaCheck(self, mouse_pos):
         # need to pass hex distance and spell range through here
@@ -1430,8 +1704,8 @@ class CustomGraphicsView(QGraphicsView):
             if self.spellAreaCheck:
                 self.handleSpellAreaCheck(scene_pos)
 
-        # Wall drag-paint: paint/erase walls while LMB held
-        if self.wall_mode and event.buttons() == Qt.LeftButton:
+        # Wall drag-paint: paint/erase walls while LMB held (not in edit mode)
+        if self.wall_mode and not self._wall_edit_mode and event.buttons() == Qt.LeftButton:
             item = self.itemAt(event.pos())
             if item in self.hex_items:
                 idx = self.hex_items.index(item)
@@ -4059,6 +4333,7 @@ class MapWidget(QMainWindow):
         if not hasattr(map_obj, '_coord_idx'):
             return
 
+        wall_data = getattr(map_obj, 'wall_data', {})
         view_indices = set()
         for coord in map_obj.walls:
             try:
@@ -4070,41 +4345,56 @@ class MapWidget(QMainWindow):
 
         self.map_view._wall_indices = view_indices
         if view_indices:
-            self.map_view.setHexColors(self.map_view.wallFill, list(view_indices))
+            # Apply per-wall custom colors if available
+            default_wall_fill = self.map_view.wallFill
+            for coord in map_obj.walls:
+                try:
+                    idx = map_obj.convertToViewerCoords(coord)
+                except (KeyError, IndexError):
+                    continue
+                data = wall_data.get(coord, {})
+                color_str = data.get('color', None)
+                if color_str and color_str != '#707070':
+                    fill = QColor(color_str)
+                    fill.setAlpha(220)
+                    self.map_view.setHexColors(fill, [idx])
+                else:
+                    self.map_view.setHexColors(default_wall_fill, [idx])
 
     def _on_walls_changed(self, wall_indices: set):
-        """Sync wall coords from the view into the engine map.
+        """Sync wall indices from the view into the engine map.
 
-        The view grid starts at pixel (top_left_x + r, top_left_y + r·sin) while the
-        model starts at pixel (0, 0).  By subtracting hex_centers_base[0] (the first
-        view hex's scene position) from every hex's scene position we get coordinates
-        relative to the first hex, which are identical to the model's pixel coords
-        because the same step sizes are used.  col_round(dx / x_mod) then gives
-        the exact (col, row) as generated by Map.defineArrayGrid — no map-origin
-        or top_left arithmetic required.
+        Both drawHexGrid (view) and defineArrayGrid (model) traverse the hex grid
+        in identical row-major order, so view index i corresponds to model
+        _coord_list[i] directly — no pixel-math conversion required.
         """
         if self.myEncounter.map is None:
             return
         if not self.map_view.hex_centers_base:
             return
         map_obj = self.myEncounter.map
-        if not hasattr(map_obj, 'radius') or map_obj.radius <= 0:
+        if not hasattr(map_obj, '_coord_list') or not map_obj._coord_list:
             return
-        import math
-        a = 2 * math.pi / 6
-        x_mod = map_obj.radius * (1 + math.cos(a))  # 1.5 * r
-        y_mod = map_obj.radius * math.sin(a)          # r * sin(60°)
-        origin_x, origin_y = self.map_view.hex_centers_base[0]
 
-        wall_coords = set()
+        new_coords = set()
         for i in wall_indices:
-            if i < len(self.map_view.hex_centers_base):
-                px, py = self.map_view.hex_centers_base[i]
-                coord = (map_obj.col_round((px - origin_x) / x_mod),
-                         map_obj.col_round((py - origin_y) / y_mod))
-                if coord in map_obj._coord_idx:
-                    wall_coords.add(coord)
-        map_obj.walls = wall_coords
+            if i < len(map_obj._coord_list):
+                new_coords.add(map_obj._coord_list[i])
+
+        # Add wall_data defaults for newly-added walls
+        if not hasattr(map_obj, 'wall_data'):
+            map_obj.wall_data = {}
+        for coord in new_coords - map_obj.walls:
+            if coord not in map_obj.wall_data:
+                map_obj.wall_data[coord] = {
+                    'hp': None, 'ac': None,
+                    'color': '#707070', 'destructible': False
+                }
+        # Clean wall_data for removed walls
+        for coord in map_obj.walls - new_coords:
+            map_obj.wall_data.pop(coord, None)
+
+        map_obj.walls = new_coords
 
     def _on_persistent_spell_created(self, ps):
         """Paint and track a new persistent spell zone on the map."""
@@ -4741,6 +5031,29 @@ class MapWidget(QMainWindow):
             currAction = self.turn_action_panel.action_dropdown.currentText()
             self.turnChoice.type = [x.type for x in self.turnChoices if x.name == currAction][0]
             self.turnChoice.name = currAction
+
+            # Task 47: If multi-attack weapon but only 1 unique target selected, ask to double-up
+            if (self.turnChoice.type == 'Wdmg'
+                    and self._num_attacks > 1
+                    and len(self.turnChoice.targets) < self._num_attacks
+                    and len(self.turnChoice.targets) == 1):
+                target_name = self.myEncounter.map.arrayCenters.get(
+                    self.turnChoice.targets[0], None
+                )
+                target_name = getattr(target_name, 'name', 'the target') if target_name else 'the target'
+                reply = QMessageBox.question(
+                    self,
+                    "Multi-Attack Target",
+                    f"Only 1 target selected for {self._num_attacks} attacks.\n"
+                    f"Attack {self._target_name_plural(self._num_attacks)} at {target_name}?",
+                    QMessageBox.Yes | QMessageBox.Cancel,
+                    QMessageBox.Yes,
+                )
+                if reply != QMessageBox.Yes:
+                    return
+                # Fill remaining attack slots with the same target
+                self.turnChoice.targets = self.turnChoice.targets * self._num_attacks
+
             # Snapshot actor position before the action so we can measure distance moved
             pre_index = get_actor_anchor_index(self.actor, self.myEncounter.map)
             self.controller.take_action(self.actor, self.turnChoice)
@@ -4760,6 +5073,11 @@ class MapWidget(QMainWindow):
             self.map_view.setCurMoveCoords(newMoveHexes)
             # One-spell rule: if action was a level 1+ spell, disable bonus action spells
             self._apply_one_spell_rule()
+
+    @staticmethod
+    def _target_name_plural(n: int) -> str:
+        """Return 'twice', 'three times', etc."""
+        return {1: 'once', 2: 'twice', 3: 'three times'}.get(n, f'{n} times')
 
     def bonusTurnButton(self):
         """Execute the selected bonus action."""
