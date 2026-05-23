@@ -10,7 +10,8 @@ from engine.utils import safe_log, dprint
 from engine.dice import rollDice, rollSave, rollDeathSave, printDeathSaves
 from engine.targeting import (
     drawLine, coordWithinReach, moveWithingReach,
-    bestSphere, bestLine2, bestSquare, bestCone, calcMoveHexes, _bfs_path_dest,
+    bestSphere, bestLine2, bestSquare, bestCone, calcMoveHexes,
+    _bfs_path_dest, _bfs_cost_from,
 )
 from engine.persistent import (
     create_persistent_spell, end_concentration, concentration_save,
@@ -201,22 +202,35 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
     # BFS-reachable hexes — respects walls and actor footprint
     moveMatrix = [i for i in calcMoveHexes(actor, map_obj) if _dest_valid(i)]
 
-    # (dist_from_me, dist_to_closest_target) for each reachable valid hex
+    # Wall-aware BFS cost from the closest target.  Used to rank move candidates
+    # by true path distance to the target rather than straight-line distance.
+    _target_bfs_cost = _bfs_cost_from(closestIndex, map_obj)
+
+    # (dist_from_me, bfs_dist_to_closest_target) for each reachable valid hex
     distanceMatrix = [
-        (map_obj.distanceCalc(myIndex, index), map_obj.distanceCalc(closestIndex, index))
+        (map_obj.distanceCalc(myIndex, index), _target_bfs_cost.get(index, 99999))
         for index in moveMatrix
     ]
 
     def _best_dest(target_index, weap_range_hexes):
-        """Return the coord to move to in order to get within weap_range_hexes of
-        target_index, following the wall-aware BFS path.  Falls back to the nearest
-        reachable valid hex if the direct path is blocked or occupied."""
+        """Return the coord to move to in order to get as close as possible to
+        target_index within the actor's movement range, routing around walls.
+
+        Strategy:
+        1. BFS-path toward target; if the destination step is a valid empty hex, use it.
+        2. If the BFS destination is occupied by another actor, pick the reachable
+           valid hex that minimises wall-aware BFS distance to the target.
+        3. If BFS returns None (target unreachable this turn), still advance: pick
+           the reachable valid hex closest by wall-aware BFS path to the target.
+        4. If no moves at all, stay put.
+        """
         dest_idx = _bfs_path_dest(myIndex, target_index, int(effective_speed / 5), map_obj)
         if dest_idx is not None and _dest_valid(dest_idx):
             return _coords[dest_idx]
-        # BFS dest invalid (occupied) — pick nearest valid reachable hex
+        # BFS dest is None or occupied — use wall-aware BFS cost to rank candidates
+        bfs_cost = _bfs_cost_from(target_index, map_obj)
         if moveMatrix:
-            return _coords[min(moveMatrix, key=lambda idx: map_obj.distanceCalc(target_index, idx))]
+            return _coords[min(moveMatrix, key=lambda idx: bfs_cost.get(idx, 99999))]
         return myCoord
 
     turnChoices = []
@@ -235,10 +249,13 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
 
         anyOpenSpot = [x for x in distanceMatrix if x[1] <= int(weap.range) / 5]
         if len(anyOpenSpot) == 0:
+            # No reachable hex is within weapon range this turn — advance as
+            # close as possible toward the target instead of standing still.
+            newCoord = _best_dest(closestIndex, int(weap.range) / 5)
             turnChoices.append(myAction(
                 name=weap.name, type='Wdmg', mod=0, numHit=0,
                 currCoord=map_obj._coord_list[myIndex],
-                moveCoord=map_obj._coord_list[myIndex], targets=[]
+                moveCoord=newCoord, targets=[]
             ))
             continue
 

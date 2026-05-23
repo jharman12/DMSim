@@ -122,6 +122,30 @@ def calcMoveHexes(actor, map_obj, type=None):
     ]
 
 
+def _bfs_cost_from(source_idx, map_obj, ignore_occupants=True):
+    """Return a dict {hex_idx: BFS_steps} for every hex reachable from source_idx,
+    routing around walls.  Occupants are ignored (pass-through) so this gives the
+    true wall-aware path distance from any hex to source_idx.
+
+    This is used to rank movement candidates by wall-aware distance to the target.
+    """
+    from collections import deque
+
+    coords = map_obj._coord_list
+    walls  = getattr(map_obj, 'walls', set())
+    wall_idx_set = {map_obj._coord_idx[c] for c in walls if c in map_obj._coord_idx}
+
+    cost  = {source_idx: 0}
+    queue = deque([source_idx])
+    while queue:
+        cur = queue.popleft()
+        for nb in map_obj._neighbors_of(coords[cur]):
+            if nb not in cost and nb not in wall_idx_set:
+                cost[nb] = cost[cur] + 1
+                queue.append(nb)
+    return cost
+
+
 def coordWithinReach(actorCoord, targetCoord, reach, map_obj):
     """Return the destination coord the actor should move to in order to get
     within *reach* hexes of targetCoord, routing around walls via BFS path-following.
@@ -148,7 +172,7 @@ def coordWithinReach(actorCoord, targetCoord, reach, map_obj):
 
     moveTo = map_obj._coord_list[dest_idx]
     if map_obj.arrayCenters.get(moveTo) not in ('', actor):
-        return map_obj.nearestFreeHex(start_idx, dest_idx)
+        return map_obj.nearestFreeHex(start_idx, dest_idx, actor=actor)
     return moveTo
 
 
@@ -181,7 +205,7 @@ def moveWithingReach(actor, target, reach, map_obj):
 
     moveTo = map_obj._coord_list[dest_idx]
     if map_obj.arrayCenters.get(moveTo) not in ('', actor):
-        map_obj.moveToNearest(actor, target)
+        map_obj.moveToNearest(actor, targetCoord)
     else:
         map_obj.moveActor(actor, moveTo)
 
