@@ -205,6 +205,7 @@ class interactiveEncounter:
 
         dprint("calcTurn: hit max auto-step limit — returning None")
         return None
+
     def removeDeadActors(self):
         map = self.map
         totalList = map.party + map.enemy
@@ -233,100 +234,4 @@ class interactiveEncounter:
                     del self.graphicsViewer.character_objs[charIndex]
 
         return deadActors
-
-    def calcTurn(self):
-        """Advance the encounter until the next interactive actor's turn.
-
-        Uses an iterative loop instead of recursion to avoid Python stack
-        overflow when many automated actors act in a row.
-        Returns the interactive turn object when an interactive actor is
-        reached, or None when combat ends.
-        """
-        _MAX_AUTO_STEPS = 10000  # safety valve
-
-        for _step in range(_MAX_AUTO_STEPS):
-            if len(self.sortedInitList) == 0:
-                return None
-
-            actor = list(self.sortedInitList)[self.curTurn]
-            self.map.combatLog('Current Turn:' + str(self.curTurn) + '\n\t' + actor.name)
-
-            # Reset per-turn action economy
-            actor.hasAction = True
-            actor.hasBonusAction = True
-
-            for healthCheck in list(self.sortedInitList.keys()):
-                dprint('\t\t', healthCheck.name, healthCheck.health)
-
-            # --- Persistent zone effects at start of turn ---
-            actor_died = False
-            for ps in list(self.map.persistent_spells):
-                apply_zone_to_actor(ps, actor, self.map)
-                self.removeDeadActors()
-                if actor not in self.map.party and actor not in self.map.enemy:
-                    actor_died = True
-                    break
-
-            if actor_died:
-                if not self.sortedInitList:
-                    return None
-                self.nextTurn()
-                continue
-
-            # --- Log restrained status ---
-            if getattr(actor, 'restrained', []):
-                self.map.combatLog(f'\t{actor.name} is Restrained (speed 0; can try to break free)')
-
-            # --- Crowd-control check ---
-            if actor.legRes >= 1 and len(actor.cc) > 0:
-                actor.legRes -= 1
-                actor.cc = []
-                self.nextTurn()
-                continue
-
-            if len(actor.cc) > 0:
-                zone_applied = len(actor.cc) > 3 and actor.cc[3] is True
-                if zone_applied:
-                    self.map.combatLog('\t' + actor.name + ' is incapacitated by the zone effect.')
-                    actor.cc = []
-                    self.nextTurn()
-                    continue
-                self.map.combatLog('\t' + actor.name + ' is cc\'ed. Rolling Save')
-                rollSave(actor, actor.cc[1][0], actor.cc[2])
-                actor.cc = []
-                self.nextTurn()
-                continue
-
-            # --- Actor takes their turn ---
-            if actor in self.map.enemy:
-                if len(self.map.party) == 0:
-                    return None
-                is_interactive = actor.name in getattr(self, 'interactive_actors', set())
-                if is_interactive:
-                    turn = takeTurn(actor, self.map, interactive=True)
-                    if turn is None:
-                        self.nextTurn()
-                        continue
-                    return turn
-                else:
-                    takeTurn(actor, self.map, interactive=False)
-                    self.nextTurn()
-                    continue
-            else:
-                if len(self.map.enemy) == 0:
-                    return None
-                is_interactive = actor.name in getattr(self, 'interactive_actors', set())
-                if is_interactive:
-                    turn = takeTurn(actor, self.map, interactive=True)
-                    if turn is None:
-                        self.nextTurn()
-                        continue
-                    return turn
-                else:
-                    takeTurn(actor, self.map, interactive=False)
-                    self.nextTurn()
-                    continue
-
-        dprint("calcTurn: hit max auto-step limit — returning None")
-        return None
     

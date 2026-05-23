@@ -1,0 +1,31 @@
+PASS test_all_scenarios_complete_without_crash  (1030 runs, 0 crashes)
+PASS test_no_actor_on_wall_stress
+PASS test_no_actor_vanishes_from_map
+PASS test_no_duplicate_hex_occupation
+PASS test_combat_always_resolves
+PASS test_minimum_party_win_rate  (party wins 1012/1030 = 98%)
+PASS test_100_random_encounters  (100 trials, 0 issues)
+
+====================================================================
+  STRESS TEST OUTCOME SUMMARY
+====================================================================
+  1v8_goblins                        pw=34  mw=16  stall=0  err=0  avg_rounds=10.6
+  dragon                             pw=50  mw= 0  stall=0  err=0  avg_rounds=4.4
+  full_party_1orc                    pw=50  mw= 0  stall=0  err=0  avg_rounds=1.0
+  full_party_horde                   pw=50  mw= 0  stall=0  err=0  avg_rounds=1.1
+  giant_battle                       pw=50  mw= 0  stall=0  err=0  avg_rounds=2.6
+  melee_1v1                          pw=100  mw= 0  stall=0  err=0  avg_rounds=1.4
+  melee_party_horde                  pw=100  mw= 0  stall=0  err=0  avg_rounds=2.6
+  melee_solo_hero                    pw=80  mw= 0  stall=0  err=0  avg_rounds=4.5
+  melee_troll                        pw=80  mw= 0  stall=0  err=0  avg_rounds=4.9
+  spell_archmage                     pw=79  mw= 1  stall=0  err=0  avg_rounds=2.4
+  spell_druid_horde                  pw=80  mw= 0  stall=0  err=0  avg_rounds=2.0
+  spell_lich                         pw=80  mw= 0  stall=0  err=0  avg_rounds=3.1
+  spell_vs_spell                     pw=79  mw= 1  stall=0  err=0  avg_rounds=1.9
+  wall_melee                         pw=50  mw= 0  stall=0  err=0  avg_rounds=1.6
+  wall_spell                         pw=50  mw= 0  stall=0  err=0  avg_rounds=2.5
+====================================================================
+
+====================================================================
+  Results: 7 passed, 0 failed  (1130 encounter runs)
+====================================================================
