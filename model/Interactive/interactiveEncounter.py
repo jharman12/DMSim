@@ -10,6 +10,9 @@ from PyQt5.QtCore import QThread, pyqtSignal
 
 # Add root directory to path for imports
 dmSimPath = str(pathlib.Path(__file__).parent.parent.parent.resolve())
+if getattr(sys, 'frozen', False):
+    import app_paths as _ap
+    dmSimPath = str(_ap.APP_ROOT)
 sys.path.insert(0, dmSimPath)
 from engine.combat import takeTurn, removeDeadActors
 from engine.dice import rollSave

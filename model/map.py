@@ -5,6 +5,9 @@ import sys
 import pathlib
 
 _root = pathlib.Path(__file__).parent.parent.parent
+if getattr(sys, 'frozen', False):
+    import app_paths as _ap
+    _root = _ap.APP_ROOT
 sys.path.insert(1, str(_root))
 
 from engine.combat import takeReaction

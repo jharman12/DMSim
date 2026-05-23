@@ -12,6 +12,9 @@ import pathlib
 import sys
 
 _root = pathlib.Path(__file__).parent.parent
+if getattr(sys, 'frozen', False):
+    import app_paths as _ap
+    _root = _ap.APP_ROOT
 sys.path.insert(1, str(_root))
 sys.path.insert(2, str(_root / 'actors' / 'statReader'))
 
@@ -23,7 +26,7 @@ class MonsterStore:
     def __init__(self, file_path=None):
         if file_path is None:
             # file is at workspace_root/actors/savedObjs/monsters.json
-            file_path = Path(__file__).parent.parent / "actors" / "savedObjs" / "monsters.json"
+            file_path = _root / "actors" / "savedObjs" / "monsters.json"
 
         self.file_path = Path(file_path)
         self.monsters = {}
@@ -313,7 +316,7 @@ class MonsterEditor(QWidget):
         self.update_leg_weapon_combo()
 
         # Load spell names
-        spell_file = Path(__file__).parent.parent / "spells" / "spellList.json"
+        spell_file = _root / "spells" / "spellList.json"
         with open(spell_file, "r", encoding="utf-8") as f:
             self.spell_names = sorted(json.load(f).keys())
 

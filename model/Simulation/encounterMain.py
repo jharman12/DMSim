@@ -7,6 +7,9 @@ import pathlib
 
 # Get to DMSim root directory (up from Simulation to model to DMSim)
 _root = pathlib.Path(__file__).parent.parent.parent
+if getattr(sys, 'frozen', False):
+    import app_paths as _ap
+    _root = _ap.APP_ROOT
 
 sys.path.insert(0, str(_root / 'actors' / 'statReader'))
 sys.path.insert(0, str(_root))

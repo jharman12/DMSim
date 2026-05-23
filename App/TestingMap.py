@@ -118,6 +118,9 @@ from functools import lru_cache
 import pathlib
 import re
 _root = pathlib.Path(__file__).parent.parent
+if getattr(sys, 'frozen', False):
+    import app_paths as _ap
+    _root = _ap.APP_ROOT
 sys.path.insert(1, str(_root))
 from model.player import createPartyList, Player
 from model.monster import createMonsterList, Monster

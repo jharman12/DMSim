@@ -8,6 +8,7 @@
     "level": 5,
     "ac": 18,
     "hp": 36,
+    "size": "Medium",
     "image": "A:/Code/Python/Git Repo/DMSim/App/Characters/Cobo.png",
     "mods": {
       "str": 13,
@@ -34,7 +35,8 @@
       "Shield",
       "Charm Person",
       "Scorching Ray",
-      "Web"
+      "Web",
+      "Hunger of Hadar"
     ]
   },
   "Adrel": {

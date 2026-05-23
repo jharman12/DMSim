@@ -17,9 +17,13 @@ import traceback
 import shutil
 from pathlib import Path
 
-_root = pathlib.Path(__file__).parent.parent
-sys.path.insert(1, str(_root))
-sys.path.insert(2, str(_root / 'App'))
+if getattr(sys, 'frozen', False):
+    import app_paths as _ap
+    _root = _ap.APP_ROOT
+else:
+    _root = pathlib.Path(__file__).parent.parent
+    sys.path.insert(1, str(_root))
+    sys.path.insert(2, str(_root / 'App'))
 
 from newCharWindow import CharacterEditor, CharacterStore
 from monsterWindow import MonsterEditor, MonsterStore
@@ -61,7 +65,7 @@ Add auto generate encounter by difficulty
 class EncounterStore:
     def __init__(self, file_path=None):
         if file_path is None:
-            file_path = Path(__file__).parent.parent / "actors" / "savedObjs" / "encounters.json"
+            file_path = _root / "actors" / "savedObjs" / "encounters.json"
         self.file_path = Path(file_path)
         self.encounters = {}
         self.load()

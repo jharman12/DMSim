@@ -13,7 +13,11 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 
+import sys as _sys
 _SPELL_PATH = pathlib.Path(__file__).parent.parent / "spells" / "spellList.json"
+if getattr(_sys, 'frozen', False):
+    import app_paths as _ap
+    _SPELL_PATH = _ap.APP_ROOT / "spells" / "spellList.json"
 
 # ── Enum-style constants mirroring existing spell data ────────────────────────
 

@@ -5345,5 +5345,22 @@
         ],
         "uniqueDice": "n",
         "combat": "y"
+    },
+    "Hunger of Hadar": {
+        "lvl": 2,
+        "time": "1 Action",
+        "duration": "Instantaneous",
+        "range": "150 ft",
+        "area": "sphere 20 ft",
+        "attack": "",
+        "save": "Dexterity Save",
+        "effect": "Cold",
+        "concentration": "Y",
+        "classes": "Sorcerer, Warlock",
+        "dice": [
+            "4d6"
+        ],
+        "uniqueDice": "n",
+        "combat": "y"
     }
 }

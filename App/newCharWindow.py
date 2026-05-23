@@ -12,6 +12,10 @@ from pathlib import Path
 
 _root = pathlib.Path(__file__).parent.parent
 
+if getattr(__import__('sys'), 'frozen', False):
+    import app_paths as _ap
+    _root = _ap.APP_ROOT
+
 class AutocompleteLineEdit(QLineEdit):
     """QLineEdit that accepts Tab to autocomplete with the closest match."""
     def keyPressEvent(self, event):
@@ -217,7 +221,7 @@ class CharacterEditor(QWidget):
     def _load_spell_names(self):
         """Load spell names from spellList.json for completer; fallback to empty list on error."""
         try:
-            spell_path = Path(__file__).resolve().parent.parent / "spells" / "spellList.json"
+            spell_path = _root / "spells" / "spellList.json"
             with open(spell_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             return sorted(list(data.keys()))

@@ -6,6 +6,9 @@ import json
 import pathlib
 
 _root = pathlib.Path(__file__).parent.parent
+if getattr(sys, 'frozen', False):
+    import app_paths as _ap
+    _root = _ap.APP_ROOT
 sys.path.insert(1, str(_root))
 
 from engine.dice import down_round, weibull, cone, col_round, rollDice
