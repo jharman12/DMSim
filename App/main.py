@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import (
     QPushButton, QMessageBox, QLabel, QApplication, QAction, QActionGroup,
     QListWidget, QDialog, QLineEdit, QSpinBox, QGroupBox, QListWidgetItem,
     QFileDialog, QComboBox, QTextEdit, QProgressDialog, QInputDialog,
+    QScrollArea,
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QEvent
 from PyQt5.QtGui import QPixmap
@@ -155,11 +156,26 @@ class EncounterBuilderTab(QWidget):
         self.mon_store = mon_store
         self.enc_store = enc_store
 
-        layout = QVBoxLayout(self)
+        # Wrap all content in a scroll area so the tab is scrollable on small windows
+        _content = QWidget()
+        layout = QVBoxLayout(_content)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(12)
+
+        _scroll = QScrollArea()
+        _scroll.setWidget(_content)
+        _scroll.setWidgetResizable(True)
+        _scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        _scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        _outer = QVBoxLayout(self)
+        _outer.setContentsMargins(0, 0, 0, 0)
+        _outer.addWidget(_scroll)
 
         # Encounter Management
         enc_group = QGroupBox("Encounters")
         enc_layout = QVBoxLayout()
+        enc_layout.setContentsMargins(10, 10, 10, 10)
+        enc_layout.setSpacing(8)
         # Search bar
         self.enc_search = QLineEdit()
         self.enc_search.setPlaceholderText("Search encounters...")
@@ -170,15 +186,21 @@ class EncounterBuilderTab(QWidget):
         self.update_enc_list()
         enc_layout.addWidget(self.enc_list)
         enc_buttons = QHBoxLayout()
+        enc_buttons.setSpacing(6)
         new_enc_btn = QPushButton("New")
+        new_enc_btn.setMinimumHeight(30)
         new_enc_btn.clicked.connect(self.new_encounter)
         edit_enc_btn = QPushButton("Edit")
+        edit_enc_btn.setMinimumHeight(30)
         edit_enc_btn.clicked.connect(self.edit_encounter)
         save_enc_btn = QPushButton("Save")
+        save_enc_btn.setMinimumHeight(30)
         save_enc_btn.clicked.connect(self.save_encounter)
         del_enc_btn = QPushButton("Delete")
+        del_enc_btn.setMinimumHeight(30)
         del_enc_btn.clicked.connect(self.delete_encounter)
         load_enc_btn = QPushButton("Load")
+        load_enc_btn.setMinimumHeight(30)
         load_enc_btn.clicked.connect(self.load_encounter)
         enc_buttons.addWidget(new_enc_btn)
         enc_buttons.addWidget(edit_enc_btn)
@@ -189,6 +211,7 @@ class EncounterBuilderTab(QWidget):
 
         # Resume saved combat button (loads a .dmsave file)
         resume_btn = QPushButton("▶ Resume Saved Combat")
+        resume_btn.setMinimumHeight(30)
         resume_btn.setToolTip("Load a previously saved mid-combat .dmsave file")
         resume_btn.clicked.connect(self.load_saved_combat)
         enc_layout.addWidget(resume_btn)
@@ -199,6 +222,8 @@ class EncounterBuilderTab(QWidget):
         # Encounter Details Group
         details_group = QGroupBox("Encounter Details")
         details_layout = QVBoxLayout()
+        details_layout.setContentsMargins(10, 10, 10, 10)
+        details_layout.setSpacing(8)
 
         # Name
         name_layout = QHBoxLayout()
@@ -259,6 +284,8 @@ class EncounterBuilderTab(QWidget):
     def setup_difficulty_group(self, layout):
         difficulty_group = QGroupBox("Encounter Difficulty")
         difficulty_layout = QVBoxLayout()
+        difficulty_layout.setContentsMargins(10, 10, 10, 10)
+        difficulty_layout.setSpacing(8)
         
         # Party info layout
         party_info_layout = QHBoxLayout()
@@ -286,6 +313,7 @@ class EncounterBuilderTab(QWidget):
         
         # Simulate button
         simulate_btn = QPushButton("Simulate Encounter")
+        simulate_btn.setMinimumHeight(32)
         simulate_btn.clicked.connect(self.simulate_encounter)
         difficulty_layout.addWidget(simulate_btn)
         
@@ -300,6 +328,8 @@ class EncounterBuilderTab(QWidget):
         # Create group boxes
         party_group = QGroupBox("Party")
         party_layout = QVBoxLayout()
+        party_layout.setContentsMargins(10, 10, 10, 10)
+        party_layout.setSpacing(8)
         self.party_combo = QComboBox()
         self.party_combo.setEditable(True)
         self.party_combo.addItems(self.avail_chars)
@@ -309,10 +339,13 @@ class EncounterBuilderTab(QWidget):
         self.party_list.setMinimumHeight(150)
         party_layout.addWidget(self.party_list)
         party_buttons = QHBoxLayout()
+        party_buttons.setSpacing(6)
         add_party_btn = QPushButton("Add")
+        add_party_btn.setMinimumHeight(30)
         add_party_btn.clicked.connect(lambda: self.add_from_combo(self.party_combo, self.party_list))
         self.party_combo.lineEdit().returnPressed.connect(lambda: self.add_from_combo(self.party_combo, self.party_list))
         remove_party_btn = QPushButton("Remove")
+        remove_party_btn.setMinimumHeight(30)
         remove_party_btn.clicked.connect(lambda: self.remove_from_list(self.party_list))
         party_buttons.addWidget(add_party_btn)
         party_buttons.addWidget(remove_party_btn)
@@ -321,6 +354,8 @@ class EncounterBuilderTab(QWidget):
 
         npc_group = QGroupBox("NPCs")
         npc_layout = QVBoxLayout()
+        npc_layout.setContentsMargins(10, 10, 10, 10)
+        npc_layout.setSpacing(8)
         self.npc_combo = QComboBox()
         self.npc_combo.setEditable(True)
         self.npc_combo.addItems(self.avail_chars)
@@ -330,10 +365,13 @@ class EncounterBuilderTab(QWidget):
         self.npc_list.setMinimumHeight(150)
         npc_layout.addWidget(self.npc_list)
         npc_buttons = QHBoxLayout()
+        npc_buttons.setSpacing(6)
         add_npc_btn = QPushButton("Add")
+        add_npc_btn.setMinimumHeight(30)
         add_npc_btn.clicked.connect(lambda: self.add_from_combo(self.npc_combo, self.npc_list))
         self.npc_combo.lineEdit().returnPressed.connect(lambda: self.add_from_combo(self.npc_combo, self.npc_list))
         remove_npc_btn = QPushButton("Remove")
+        remove_npc_btn.setMinimumHeight(30)
         remove_npc_btn.clicked.connect(lambda: self.remove_from_list(self.npc_list))
         npc_buttons.addWidget(add_npc_btn)
         npc_buttons.addWidget(remove_npc_btn)
@@ -342,6 +380,8 @@ class EncounterBuilderTab(QWidget):
 
         enemy_group = QGroupBox("Enemies")
         enemy_layout = QVBoxLayout()
+        enemy_layout.setContentsMargins(10, 10, 10, 10)
+        enemy_layout.setSpacing(8)
         enemy_combo_layout = QHBoxLayout()
         self.enemy_combo = QComboBox()
         self.enemy_combo.setEditable(True)
@@ -359,10 +399,13 @@ class EncounterBuilderTab(QWidget):
         self.enemy_list.setMinimumHeight(150)
         enemy_layout.addWidget(self.enemy_list)
         enemy_buttons = QHBoxLayout()
+        enemy_buttons.setSpacing(6)
         add_enemy_btn = QPushButton("Add")
+        add_enemy_btn.setMinimumHeight(30)
         add_enemy_btn.clicked.connect(self.add_multiple_enemies)
         self.enemy_combo.lineEdit().returnPressed.connect(self.add_multiple_enemies)
         remove_enemy_btn = QPushButton("Remove")
+        remove_enemy_btn.setMinimumHeight(30)
         remove_enemy_btn.clicked.connect(lambda: self.remove_from_list(self.enemy_list))
         enemy_buttons.addWidget(add_enemy_btn)
         enemy_buttons.addWidget(remove_enemy_btn)

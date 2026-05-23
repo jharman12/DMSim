@@ -3911,7 +3911,7 @@ class MapWidget(QMainWindow):
             QDockWidget.DockWidgetFloatable |
             QDockWidget.DockWidgetClosable
         )
-        action_dock.setMinimumWidth(260)
+        action_dock.setMinimumWidth(340)
         self.addDockWidget(Qt.RightDockWidgetArea, action_dock)
         action_dock.setContextMenuPolicy(Qt.CustomContextMenu)
         action_dock.customContextMenuRequested.connect(
@@ -3934,8 +3934,8 @@ class MapWidget(QMainWindow):
             QDockWidget.DockWidgetFloatable |
             QDockWidget.DockWidgetClosable
         )
-        log_dock.setMinimumHeight(80)
-        self.addDockWidget(Qt.BottomDockWidgetArea, log_dock)
+        log_dock.setMinimumWidth(200)
+        self.addDockWidget(Qt.LeftDockWidgetArea, log_dock)
         self._log_dock = log_dock
 
         # ------------------------------------------------------------------
