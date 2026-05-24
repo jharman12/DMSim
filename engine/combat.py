@@ -23,6 +23,15 @@ from engine.size_utils import (
 )
 
 
+def _parse_range_ft(range_str: str) -> int:
+    """Return the numeric feet value from a range string.
+
+    'Self', 'Touch', or any string with no digits → 0.
+    """
+    nums = re.findall(r'\d+', range_str)
+    return int(nums[0]) if nums else 0
+
+
 @dataclass
 class myAction:
     name: str
@@ -322,7 +331,7 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
             if myArea != '':
                 pass  # area healing not yet implemented
             else:
-                spellRange = int(re.findall(r'\d+', myRange)[0]) / 5
+                spellRange = _parse_range_ft(myRange) / 5
 
                 # Build a distance matrix relative to the closest ally, not the closest enemy
                 allyDistances = [map_obj.distanceCalc(myIndex, i) for i in partyList]
@@ -395,26 +404,26 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                     numToHit = bestSphere(
                         actor, map_obj,
                         int(re.findall(r'\d+', myArea)[0]),
-                        int(re.findall(r'\d+', myRange)[0]),
+                        _parse_range_ft(myRange),
                         targets=aTargets
                     )
                 case str(x) if 'cone' in x:
                     numToHit = bestCone(
                         actor, map_obj,
                         int(re.findall(r'\d+', myArea)[0]),
-                        int(re.findall(r'\d+', myRange)[0])
+                        _parse_range_ft(myRange)
                     )
                 case str(x) if 'line' in x:
                     numToHit = bestLine2(
                         actor, map_obj,
                         int(re.findall(r'\d+', myArea)[0]),
-                        int(re.findall(r'\d+', myRange)[0])
+                        _parse_range_ft(myRange)
                     )
                 case str(x) if 'square' in x:
                     numToHit = bestSquare(
                         actor, map_obj,
                         int(re.findall(r'\d+', myArea)[0]),
-                        int(re.findall(r'\d+', myRange)[0])
+                        _parse_range_ft(myRange)
                     )
 
             if myEffect in dmgTypes:
@@ -432,7 +441,7 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                         action_type=_spell_atype
                     ))
                 else:
-                    reachLimit = int(re.findall(r'\d+', myRange)[0]) / 5
+                    reachLimit = _parse_range_ft(myRange) / 5
                     moveToCoord = coordWithinReach(myCoord, numToHit[2], reachLimit, map_obj)
                     turnChoices.append(myAction(
                         name=spell, type='Sdmg', mod=numToHit[0] * avgDmg, numHit=numToHit[0],
@@ -450,7 +459,7 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                         action_type=_spell_atype
                     ))
                 else:
-                    reachLimit = int(re.findall(r'\d+', myRange)[0]) / 5
+                    reachLimit = _parse_range_ft(myRange) / 5
                     moveToCoord = coordWithinReach(myCoord, numToHit[2], reachLimit, map_obj)
                     turnChoices.append(myAction(
                         name=spell, type='cc', mod=numToHit[0] * avgDmg * 20, numHit=numToHit[0],
@@ -459,11 +468,11 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                         action_type=_spell_atype
                     ))
         else:
-            hexLimit = (int(re.findall(r'\d+', myRange)[0]) / 5) + actor.speed / 5
+            hexLimit = (_parse_range_ft(myRange) / 5) + actor.speed / 5
             distance_hits = [index for index in enemyList if map_obj.distanceCalc(myIndex, index) <= hexLimit]
             anyOpenSpot = [
                 x for x in distanceMatrix
-                if x[0] <= actor.speed / 5 and x[1] <= int(re.findall(r'\d+', myRange)[0]) / 5
+                if x[0] <= actor.speed / 5 and x[1] <= _parse_range_ft(myRange) / 5
             ]
             if len(anyOpenSpot) == 0:
                 turnChoices.append(myAction(
@@ -487,7 +496,7 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                     diceDmg = int(re.findall(r'\d+', di)[1])
                     avgDmg += 0.5 + diceCount * diceDmg / 2
 
-                reachLimit = int(re.findall(r'\d+', myRange)[0]) / 5
+                reachLimit = _parse_range_ft(myRange) / 5
                 if reachLimit >= actor.optRange:
                     moveToCoord = coordWithinReach(myCoord, closestCoord, actor.optRange, map_obj)
                     if map_obj.distanceCalc(
@@ -505,7 +514,7 @@ def takeTurn(actor, map_obj, interactive=False, gViewer=None):
                     action_type=_spell_atype
                 ))
             elif myEffect in conditionsList:
-                reachLimit = int(re.findall(r'\d+', myRange)[0]) / 5
+                reachLimit = _parse_range_ft(myRange) / 5
                 if reachLimit >= actor.optRange:
                     moveToCoord = coordWithinReach(myCoord, closestCoord, actor.optRange, map_obj)
                     if map_obj.distanceCalc(

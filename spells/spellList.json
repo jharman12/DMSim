@@ -3457,18 +3457,18 @@
         "combat": "n"
     },
     "Cone of Cold": {
-        "lvl": 5,
+        "lvl": 2,
         "time": "1 Action",
         "duration": "Instantaneous",
-        "range": "0",
-        "area": "cone 60 ft",
+        "range": "Self",
+        "area": "cone 30 ft",
         "attack": "",
         "save": "Constitution Save",
         "effect": "Cold",
         "concentration": "",
-        "classes": "Druid, Sorcerer, Wizard",
+        "classes": "Sorcerer, Warlock, Wizard",
         "dice": [
-            "8d8"
+            "3d8"
         ],
         "uniqueDice": "n",
         "combat": "y"

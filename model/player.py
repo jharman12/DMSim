@@ -104,7 +104,7 @@ class Player(Actor):
         if spellcastingAbility:
             self.spellAttackMod = self.proficiency + down_round((self.modDict[spellcastingAbility]-10)/2)
         self.spellDC = 8 + self.spellAttackMod
-        with open(str(_root / "spells" / "spellList.json"), "r") as file:
+        with open(str(_root / "spells" / "spellList.json"), "r", encoding="utf-8") as file:
             spellList = json.load(file)
         self.spells = {}
         for spell in spellList:
@@ -189,7 +189,8 @@ class Player(Actor):
             else:
                 area = int(re.findall(r'\d+', area)[0])
            
-            spellRange = int(re.findall(r'\d+', self.spells[spell]['range'])[0]) + area
+            _range_nums = re.findall(r'\d+', self.spells[spell]['range'])
+            spellRange = (int(_range_nums[0]) if _range_nums else 0) + area
             turnInfo[spell] = [avgDmg, spellRange, self.spellSlots[str(self.spells[spell]['lvl'])]]
             if avgDmg >= maxDmg:
                 maxDmg = avgDmg

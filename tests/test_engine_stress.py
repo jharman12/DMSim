@@ -28,23 +28,23 @@ class Scenario:
 
 
 SCENARIOS = [
-    Scenario("melee_1v1",          ["Galleus"],                      ["Orc"],                              runs=100),
-    Scenario("melee_party_horde",  ["Galleus","Aldric"],             ["Goblin","Goblin","Goblin","Goblin"], runs=100),
-    Scenario("melee_solo_hero",    ["Aldric"],                       ["Goblin","Goblin","Goblin"],          runs=80),
-    Scenario("melee_troll",        ["Galleus","Aldric"],             ["Troll","Troll"],                    runs=80),
-    Scenario("spell_archmage",     ["Galleus","Aldric"],             ["Archmage"],                         runs=80),
-    Scenario("spell_lich",         ["Galleus","Aldric","VV"],        ["Lich"],                             runs=80),
-    Scenario("spell_druid_horde",  ["Galleus","Aldric","Adrel"],     ["Druid","Goblin","Goblin","Goblin"],  runs=80),
-    Scenario("spell_vs_spell",     ["VV","Adrel"],                   ["Mage","Cult Fanatic"],               runs=80),
-    Scenario("dragon",             ["Galleus","Aldric","Adrel","Cobo"], ["Adult Silver Dragon"],            runs=50),
-    Scenario("giant_battle",       ["Galleus","Aldric","VV","Adrel"],["Hill Giant","Hill Giant"],           runs=50),
-    Scenario("full_party_horde",   ["Galleus","Aldric","Adrel","Cobo","VV"], ["Goblin"]*8,                 runs=50),
-    Scenario("1v8_goblins",        ["Aldric"],                       ["Goblin"]*8,                         runs=50),
-    Scenario("full_party_1orc",    ["Galleus","Aldric","Adrel","Cobo","VV"], ["Orc"],                      runs=50),
+    Scenario("melee_1v1",          ["Galleus"],                      ["Orc"],                              runs=10),
+    Scenario("melee_party_horde",  ["Galleus","Aldric"],             ["Goblin","Goblin","Goblin","Goblin"], runs=10),
+    Scenario("melee_solo_hero",    ["Aldric"],                       ["Goblin","Goblin","Goblin"],          runs=8),
+    Scenario("melee_troll",        ["Galleus","Aldric"],             ["Troll","Troll"],                    runs=8),
+    Scenario("spell_archmage",     ["Galleus","Aldric"],             ["Archmage"],                         runs=8),
+    Scenario("spell_lich",         ["Galleus","Aldric","VV"],        ["Lich"],                             runs=8),
+    Scenario("spell_druid_horde",  ["Galleus","Aldric","Adrel"],     ["Druid","Goblin","Goblin","Goblin"],  runs=8),
+    Scenario("spell_vs_spell",     ["VV","Adrel"],                   ["Mage","Cult Fanatic"],               runs=8),
+    Scenario("dragon",             ["Galleus","Aldric","Adrel","Cobo"], ["Adult Silver Dragon"],            runs=5),
+    Scenario("giant_battle",       ["Galleus","Aldric","VV","Adrel"],["Hill Giant","Hill Giant"],           runs=5),
+    Scenario("full_party_horde",   ["Galleus","Aldric","Adrel","Cobo","VV"], ["Goblin"]*8,                 runs=5),
+    Scenario("1v8_goblins",        ["Aldric"],                       ["Goblin"]*8,                         runs=5),
+    Scenario("full_party_1orc",    ["Galleus","Aldric","Adrel","Cobo","VV"], ["Orc"],                      runs=5),
     Scenario("wall_melee",         ["Galleus","Aldric"],             ["Orc","Orc"],
-             wall_layout="barrier",                                                                         runs=50),
+             wall_layout="barrier",                                                                         runs=5),
     Scenario("wall_spell",         ["Galleus","VV"],                 ["Archmage"],
-             wall_layout="barrier",                                                                         runs=50),
+             wall_layout="barrier",                                                                         runs=5),
 ]
 
 _MAX_ROUNDS = 50

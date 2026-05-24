@@ -228,6 +228,24 @@ class CharacterEditor(QWidget):
         except Exception:
             return []
 
+    def refresh_spells(self):
+        """Reload the spell list and update the autocomplete completer.
+
+        Called by MainWindow when the spell editor saves or deletes a spell.
+        """
+        self.all_spells = self._load_spell_names()
+        if self.spell_input is not None:
+            completer = self.spell_input.completer()
+            if completer is not None:
+                completer.model().setStringList(self.all_spells)
+            else:
+                from PyQt5.QtWidgets import QCompleter
+                from PyQt5.QtCore import Qt
+                new_completer = QCompleter(self.all_spells)
+                new_completer.setCaseSensitivity(Qt.CaseInsensitive)
+                new_completer.setFilterMode(Qt.MatchContains)
+                self.spell_input.setCompleter(new_completer)
+
 
     def loadCharacterDatabase(self):
         path, _ = QFileDialog.getOpenFileName(

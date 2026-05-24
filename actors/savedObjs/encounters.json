@@ -174,7 +174,7 @@
             "Orc",
             "Orc"
         ],
-        "numHexes": 90,
+        "numHexes": 50,
         "mapImage": "App\\Maps\\HelmsDeep.webp"
     },
     "Large Creature": {

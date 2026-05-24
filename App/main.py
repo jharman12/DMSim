@@ -1267,6 +1267,7 @@ class MainWindow(QMainWindow):
         self.textScaleChanged.connect(self.encounter_builder.applyFonts)
         self.textScaleChanged.connect(self.monster_editor.applyFonts)
         self.textScaleChanged.connect(self.spell_editor.applyFonts)
+        self.spell_editor.spellsChanged.connect(self.character_editor.refresh_spells)
 
         # Install event filter so the main window can capture Ctrl+Wheel
         app = QApplication.instance()

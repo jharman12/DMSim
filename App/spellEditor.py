@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (
     QListWidget, QListWidgetItem, QMessageBox, QSpinBox,
     QScrollArea, QSizePolicy, QFrame,
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 
 import sys as _sys
@@ -134,6 +134,8 @@ class DiceRow(QWidget):
 # ── Main SpellEditorTab ────────────────────────────────────────────────────────
 
 class SpellEditorTab(QWidget):
+    spellsChanged = pyqtSignal()   # emitted whenever a spell is saved or deleted
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self._spells: dict = _load_spells()
@@ -746,6 +748,7 @@ class SpellEditorTab(QWidget):
         self._editing = name
         self._refresh_list(keep_selection=name)
         QMessageBox.information(self, "Saved", f"Spell '{name}' saved successfully.")
+        self.spellsChanged.emit()
 
     def _cancel_edit(self):
         if self._editing:
@@ -771,6 +774,7 @@ class SpellEditorTab(QWidget):
         self._editing = None
         self._clear_form()
         self._refresh_list()
+        self.spellsChanged.emit()
 
     # ── Font scaling (called by MainWindow) ───────────────────────────────
 

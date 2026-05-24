@@ -61,4 +61,4 @@ Done 52.) Increase the padding in the encounter builder tab of the main window. 
 Done 53.) By default, in the encounter window, have the game log on the left side of the screen on the same row as the map and turn choice. Also, give the turn choice slightly wider than it is now, the map does not have to be as wide as it is
 
 54.) Can you create a large scale test of the engine? I would like for this to include multiple different actors (both players and monsters) with varying weapon and spells. Then run 100+ encounters to completion. The goal is to capture all types of iteractions (different spells, placements, deaths , etc..) and stress test the engine for bugs.
-55.) After editing spells, the character creation tab should update with the new spells. Right now you have to close and reopen the app. Can you fix this?
+Done 55.) After editing spells, the character creation tab should update with the new spells. Right now you have to close and reopen the app. Can you fix this?
