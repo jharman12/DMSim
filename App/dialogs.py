@@ -6,10 +6,10 @@ from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QSpinBox,
     QListWidget, QListWidgetItem, QGroupBox, QDialogButtonBox,
     QPushButton, QFrame, QCheckBox, QScrollArea, QWidget,
-    QSizePolicy, QAbstractSpinBox,
+    QSizePolicy, QAbstractSpinBox, QShortcut,
 )
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QKeySequence
 
 
 def _make_checkable_list(actors: list, checked_names: set) -> QListWidget:
@@ -83,14 +83,17 @@ class ManualRollDialog(QDialog):
     def __init__(self, actor_name: str, context: str, n: int, sides: int, parent=None):
         super().__init__(parent)
         self.setWindowTitle(f"Manual Roll - {actor_name}")
-        self.setMinimumWidth(320)
+        self.setMinimumWidth(340)
         self.setWindowFlag(Qt.WindowStaysOnTopHint)
+        QShortcut(QKeySequence("Escape"), self, self.reject)
 
         # d20 rolls (attack checks, saves) need individual values for
         # advantage/disadvantage; everything else just needs the total.
         self._per_die = (sides == 20)
 
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setSpacing(10)
 
         header = QLabel(f"<b>{actor_name}</b>")
         header.setAlignment(Qt.AlignCenter)
@@ -169,9 +172,12 @@ class ManualRollersDialog(QDialog):
     def __init__(self, all_actors: list, manual_actors: set, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Manual Dice Rollers")
-        self.setMinimumWidth(420)
+        self.setMinimumWidth(440)
+        QShortcut(QKeySequence("Escape"), self, self.reject)
 
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setSpacing(10)
 
         info = QLabel(
             "Check the actors whose dice rolls you want to enter manually.\n"
@@ -219,9 +225,12 @@ class ManualActionsDialog(QDialog):
     def __init__(self, all_actors: list, interactive_actors: set, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Manual Action Control")
-        self.setMinimumWidth(420)
+        self.setMinimumWidth(440)
+        QShortcut(QKeySequence("Escape"), self, self.reject)
 
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setSpacing(10)
 
         info = QLabel(
             "Check the actors whose actions you want to control manually.\n"

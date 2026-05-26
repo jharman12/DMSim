@@ -3,10 +3,10 @@ from PyQt5.QtWidgets import (
     QPushButton, QMessageBox, QLabel, QApplication, QAction, QActionGroup,
     QListWidget, QDialog, QLineEdit, QSpinBox, QGroupBox, QListWidgetItem,
     QFileDialog, QComboBox, QTextEdit, QProgressDialog, QInputDialog,
-    QScrollArea,
+    QScrollArea, QShortcut,
 )
-from PyQt5.QtCore import Qt, pyqtSignal, QEvent
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtCore import Qt, pyqtSignal, QEvent, QSettings
+from PyQt5.QtGui import QPixmap, QKeySequence
 
 import pathlib
 import json
@@ -104,6 +104,15 @@ class EncounterStore:
     def get_encounter(self, name):
         return self.encounters.get(name)
 
+class Spacing:
+    XS = 2
+    SM = 4
+    MD = 8
+    LG = 12
+    XL = 16
+    XXL = 24
+
+
 class TextScale:
     XS = 0
     SM = 1
@@ -193,18 +202,24 @@ class EncounterBuilderTab(QWidget):
         enc_buttons.setSpacing(6)
         new_enc_btn = QPushButton("New")
         new_enc_btn.setMinimumHeight(30)
+        new_enc_btn.setToolTip("Create a new empty encounter")
         new_enc_btn.clicked.connect(self.new_encounter)
         edit_enc_btn = QPushButton("Edit")
         edit_enc_btn.setMinimumHeight(30)
+        edit_enc_btn.setToolTip("Load the selected encounter into the editor")
         edit_enc_btn.clicked.connect(self.edit_encounter)
         save_enc_btn = QPushButton("Save")
         save_enc_btn.setMinimumHeight(30)
+        save_enc_btn.setToolTip("Save the current encounter details (Ctrl+S)")
         save_enc_btn.clicked.connect(self.save_encounter)
         del_enc_btn = QPushButton("Delete")
         del_enc_btn.setMinimumHeight(30)
+        del_enc_btn.setToolTip("Permanently delete the selected encounter")
         del_enc_btn.clicked.connect(self.delete_encounter)
-        load_enc_btn = QPushButton("Load")
+        load_enc_btn = QPushButton("▶ Start")
         load_enc_btn.setMinimumHeight(30)
+        load_enc_btn.setToolTip("Start combat with the selected encounter (F5)")
+        load_enc_btn.setProperty("class", "primary")
         load_enc_btn.clicked.connect(self.load_encounter)
         enc_buttons.addWidget(new_enc_btn)
         enc_buttons.addWidget(edit_enc_btn)
@@ -318,6 +333,7 @@ class EncounterBuilderTab(QWidget):
         # Simulate button
         simulate_btn = QPushButton("Simulate Encounter")
         simulate_btn.setMinimumHeight(32)
+        simulate_btn.setToolTip("Run an automated simulation to estimate encounter difficulty")
         simulate_btn.clicked.connect(self.simulate_encounter)
         difficulty_layout.addWidget(simulate_btn)
         
@@ -346,10 +362,12 @@ class EncounterBuilderTab(QWidget):
         party_buttons.setSpacing(6)
         add_party_btn = QPushButton("Add")
         add_party_btn.setMinimumHeight(30)
+        add_party_btn.setToolTip("Add selected character to the party")
         add_party_btn.clicked.connect(lambda: self.add_from_combo(self.party_combo, self.party_list))
         self.party_combo.lineEdit().returnPressed.connect(lambda: self.add_from_combo(self.party_combo, self.party_list))
         remove_party_btn = QPushButton("Remove")
         remove_party_btn.setMinimumHeight(30)
+        remove_party_btn.setToolTip("Remove selected character from the party")
         remove_party_btn.clicked.connect(lambda: self.remove_from_list(self.party_list))
         party_buttons.addWidget(add_party_btn)
         party_buttons.addWidget(remove_party_btn)
@@ -372,10 +390,12 @@ class EncounterBuilderTab(QWidget):
         npc_buttons.setSpacing(6)
         add_npc_btn = QPushButton("Add")
         add_npc_btn.setMinimumHeight(30)
+        add_npc_btn.setToolTip("Add selected character as an NPC (allied combatant)")
         add_npc_btn.clicked.connect(lambda: self.add_from_combo(self.npc_combo, self.npc_list))
         self.npc_combo.lineEdit().returnPressed.connect(lambda: self.add_from_combo(self.npc_combo, self.npc_list))
         remove_npc_btn = QPushButton("Remove")
         remove_npc_btn.setMinimumHeight(30)
+        remove_npc_btn.setToolTip("Remove selected NPC from the list")
         remove_npc_btn.clicked.connect(lambda: self.remove_from_list(self.npc_list))
         npc_buttons.addWidget(add_npc_btn)
         npc_buttons.addWidget(remove_npc_btn)
@@ -406,10 +426,12 @@ class EncounterBuilderTab(QWidget):
         enemy_buttons.setSpacing(6)
         add_enemy_btn = QPushButton("Add")
         add_enemy_btn.setMinimumHeight(30)
+        add_enemy_btn.setToolTip("Add the selected monster (with quantity) to the enemy list")
         add_enemy_btn.clicked.connect(self.add_multiple_enemies)
         self.enemy_combo.lineEdit().returnPressed.connect(self.add_multiple_enemies)
         remove_enemy_btn = QPushButton("Remove")
         remove_enemy_btn.setMinimumHeight(30)
+        remove_enemy_btn.setToolTip("Remove the selected enemy from the list")
         remove_enemy_btn.clicked.connect(lambda: self.remove_from_list(self.enemy_list))
         enemy_buttons.addWidget(add_enemy_btn)
         enemy_buttons.addWidget(remove_enemy_btn)
@@ -674,6 +696,8 @@ class EncounterBuilderTab(QWidget):
             return
         self.enc_store.add_encounter(name, data["party"], data["npcs"], data["enemies"], data["numHexes"], data["mapImage"])
         self.update_enc_list()
+        if hasattr(self.main_window, 'show_status'):
+            self.main_window.show_status(f"Encounter '{name}' saved.", 4000)
 
     def delete_encounter(self):
         current = self.enc_list.currentItem()
@@ -683,6 +707,8 @@ class EncounterBuilderTab(QWidget):
         name = current.text()
         self.enc_store.delete_encounter(name)
         self.update_enc_list()
+        if hasattr(self.main_window, 'show_status'):
+            self.main_window.show_status(f"Encounter '{name}' deleted.", 4000)
 
     def load_encounter(self):
         current = self.enc_list.currentItem()
@@ -697,6 +723,8 @@ class EncounterBuilderTab(QWidget):
         enemies = createMonsterList(enc_data["enemies"], path=path)
         encounter = interactiveEncounter(party, npcs, enemies, enc_data["numHexes"], _resolve_map_image(enc_data["mapImage"]))
         controller = SimController(encounter)
+        if hasattr(self.main_window, 'show_status'):
+            self.main_window.show_status(f"Encounter '{name}' loaded — starting combat.", 5000)
         self.start_callback(controller)
 
     def load_saved_combat(self):
@@ -1060,113 +1088,415 @@ class TabWidget(QtWidgets.QTabWidget):
 
 class AppThemes:
     LIGHT = """
+    /* ── Base ── */
     QWidget {
-        background-color: #f4f4f4;
-        color: #111;
-        font-family: Segoe UI;
+        background-color: #f0f2f5;
+        color: #1a1a2e;
+        font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    }
+    QMainWindow, QDialog {
+        background-color: #f0f2f5;
     }
 
+    /* ── GroupBox ── */
     QGroupBox {
-        background-color: #e8e8e8;
-        border: 1px solid #bbb;
-        border-radius: 4px;
-        margin-top: 2ex;
-        padding: 10px;
+        background-color: #e8ecf2;
+        border: 1px solid #c0c8d8;
+        border-radius: 6px;
+        margin-top: 10px;
+        padding-top: 6px;
         font-weight: bold;
     }
-
     QGroupBox::title {
         subcontrol-origin: margin;
+        subcontrol-position: top left;
         left: 10px;
-        padding: 0 5px 0 5px;
-        color: #111;
+        padding: 2px 6px;
+        color: #1a4a8a;
+        background-color: #f0f2f5;
+        border-radius: 3px;
     }
 
+    /* ── Labels ── */
     QLabel {
-        background-color: #e8e8e8;
-        color: #111;
+        background-color: transparent;
+        color: #1a1a2e;
     }
 
-    QLineEdit, QTextEdit, QComboBox {
+    /* ── Inputs ── */
+    QLineEdit, QTextEdit, QPlainTextEdit {
         background-color: #ffffff;
-        border: 1px solid #bbb;
-        padding: 4px;
+        border: 1px solid #b0bcd0;
+        border-radius: 4px;
+        padding: 4px 6px;
+        color: #1a1a2e;
+        selection-background-color: #a8c8f0;
+    }
+    QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {
+        border: 1px solid #1a6bb0;
+        background-color: #fafdff;
+    }
+    QLineEdit:read-only { background-color: #ebebeb; color: #666; }
+
+    QComboBox {
+        background-color: #ffffff;
+        border: 1px solid #b0bcd0;
+        border-radius: 4px;
+        padding: 4px 6px;
+        color: #1a1a2e;
+        min-height: 24px;
+    }
+    QComboBox:focus { border: 1px solid #1a6bb0; }
+    QComboBox::drop-down { border: none; width: 20px; }
+    QComboBox::down-arrow { image: none; width: 0; height: 0;
+        border-left: 4px solid transparent; border-right: 4px solid transparent;
+        border-top: 5px solid #666; margin-right: 4px; }
+    QComboBox QAbstractItemView {
+        background-color: #ffffff; border: 1px solid #b0bcd0;
+        selection-background-color: #d0e8f8; color: #1a1a2e;
     }
 
+    QSpinBox, QDoubleSpinBox {
+        background-color: #ffffff;
+        border: 1px solid #b0bcd0;
+        border-radius: 4px;
+        padding: 3px 6px;
+        color: #1a1a2e;
+    }
+    QSpinBox:focus, QDoubleSpinBox:focus { border: 1px solid #1a6bb0; }
+
+    /* ── Buttons ── */
     QPushButton {
-        background-color: #e0e0e0;
-        border: 1px solid #999;
-        padding: 6px;
+        background-color: #e0e8f4;
+        border: 1px solid #a0b8d8;
+        border-radius: 4px;
+        padding: 5px 12px;
+        color: #1a1a2e;
+        font-weight: 500;
+        min-height: 26px;
     }
-
-    QPushButton:hover {
-        background-color: #d6d6d6;
+    QPushButton:hover { background-color: #cddaf0; border-color: #7899c8; }
+    QPushButton:pressed { background-color: #b8cbea; }
+    QPushButton:checked { background-color: #c8f0c8; color: #1a5a1a; border: 2px solid #4caf50; }
+    QPushButton:disabled { background-color: #d8d8d8; color: #999; border-color: #ccc; }
+    QPushButton[class="primary"] {
+        background-color: #1a6bb0; color: #ffffff;
+        border: 1px solid #1254a0; border-radius: 4px;
+        padding: 6px 16px; font-weight: bold;
     }
+    QPushButton[class="primary"]:hover { background-color: #2577be; border-color: #0e4a8e; }
+    QPushButton[class="primary"]:pressed { background-color: #0f5090; }
+    QPushButton[class="primary"]:disabled { background-color: #a0b8cc; color: #ddd; }
 
+    QToolButton {
+        background-color: #e0e8f4; border: 1px solid #a0b8d8;
+        border-radius: 4px; padding: 5px 8px; color: #1a1a2e;
+    }
+    QToolButton:hover { background-color: #cddaf0; border-color: #7899c8; }
+    QToolButton:pressed { background-color: #b8cbea; }
+    QToolButton:checked { background-color: #c8f0c8; color: #1a5a1a; border: 2px solid #4caf50; }
+
+    /* ── Progress ── */
     QProgressBar {
-        border: 1px solid #aaa;
-        background: #ddd;
+        border: 1px solid #b0bcd0; border-radius: 4px;
+        background: #dde4ee; text-align: center; color: #333;
+    }
+    QProgressBar::chunk { background: #4caf50; border-radius: 3px; }
+
+    /* ── Lists & Tables ── */
+    QListWidget, QTreeWidget, QTableWidget {
+        background-color: #ffffff; border: 1px solid #c0c8d8;
+        border-radius: 4px; outline: none;
+    }
+    QListWidget::item { padding: 3px 6px; border-radius: 3px; }
+    QListWidget::item:hover { background-color: #e0eaf6; }
+    QListWidget::item:selected { background-color: #b8d4f0; color: #1a1a2e; }
+
+    /* ── Scroll bars ── */
+    QScrollBar:vertical { background: #e8ecf2; width: 10px; border-radius: 5px; margin: 0; }
+    QScrollBar::handle:vertical { background: #b0bcd0; min-height: 20px; border-radius: 5px; }
+    QScrollBar::handle:vertical:hover { background: #8899b8; }
+    QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }
+    QScrollBar:horizontal { background: #e8ecf2; height: 10px; border-radius: 5px; margin: 0; }
+    QScrollBar::handle:horizontal { background: #b0bcd0; min-width: 20px; border-radius: 5px; }
+    QScrollBar::handle:horizontal:hover { background: #8899b8; }
+    QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0px; }
+
+    /* ── Splitter ── */
+    QSplitter::handle { background: #c0c8d8; }
+    QSplitter::handle:hover { background: #1a6bb0; }
+    QSplitter::handle:horizontal { width: 4px; }
+    QSplitter::handle:vertical { height: 4px; }
+
+    /* ── Menu bar ── */
+    QMenuBar { background-color: #e4eaf4; color: #1a1a2e; border-bottom: 1px solid #c0c8d8; padding: 2px; }
+    QMenuBar::item { padding: 4px 10px; border-radius: 4px; }
+    QMenuBar::item:selected { background-color: #d0dcea; }
+    QMenuBar::item:pressed { background-color: #b8cadf; }
+
+    QMenu { background-color: #f8f9fc; color: #1a1a2e; border: 1px solid #b0bcd0; border-radius: 6px; padding: 4px; }
+    QMenu::item { padding: 5px 24px 5px 16px; border-radius: 3px; }
+    QMenu::item:selected { background-color: #d0e4f4; color: #1a1a2e; }
+    QMenu::separator { height: 1px; background: #d0d8e4; margin: 4px 8px; }
+
+    /* ── Tab bar ── */
+    QTabWidget::pane { border: 1px solid #c0c8d8; border-radius: 4px; }
+    QTabBar::tab {
+        background-color: #dce4f0; color: #555; padding: 7px 12px;
+        border: 1px solid #c0c8d8; margin: 1px; border-radius: 4px 4px 0 0;
+        min-width: 70px;
+    }
+    QTabBar::tab:selected { background-color: #ccd8f0; color: #1a1a2e; border-bottom: 2px solid #1a6bb0; font-weight: bold; }
+    QTabBar::tab:hover:!selected { background-color: #d0dcea; color: #333; }
+
+    /* ── Header ── */
+    QHeaderView::section {
+        background-color: #dce4f0; color: #1a1a2e; padding: 5px 8px;
+        border: none; border-right: 1px solid #c0c8d8; border-bottom: 1px solid #c0c8d8;
+        font-weight: bold;
+    }
+    QHeaderView::section:hover { background-color: #ccd8f0; }
+
+    /* ── Dock widgets ── */
+    QDockWidget { font-weight: bold; }
+    QDockWidget::title {
+        background-color: #dce4f0; padding: 6px 8px;
+        border-bottom: 2px solid #1a6bb0; color: #1a3060; font-weight: bold;
+    }
+    QDockWidget::close-button, QDockWidget::float-button { background: transparent; border: none; padding: 2px; }
+    QDockWidget::close-button:hover, QDockWidget::float-button:hover { background-color: #c0ccdc; border-radius: 3px; }
+
+    /* ── Tooltip ── */
+    QToolTip {
+        background-color: #fffef0; color: #1a1a2e;
+        border: 1px solid #1a6bb0; padding: 4px 8px;
+        border-radius: 4px; font-size: 10px;
     }
 
-    QProgressBar::chunk {
-        background: #4caf50;
-    }
+    /* ── Status bar ── */
+    QStatusBar { background-color: #dce4f0; color: #444; border-top: 1px solid #c0c8d8; padding: 2px 8px; font-size: 10px; }
+    QStatusBar::item { border: none; }
+
+    /* ── Checkboxes & Radio ── */
+    QCheckBox { color: #1a1a2e; spacing: 6px; }
+    QCheckBox::indicator { width: 14px; height: 14px; border: 1px solid #b0bcd0; border-radius: 3px; background: #fff; }
+    QCheckBox::indicator:checked { background-color: #1a6bb0; border-color: #1a6bb0; }
+    QCheckBox::indicator:hover { border-color: #7899c8; }
+    QRadioButton { color: #1a1a2e; spacing: 6px; }
+    QRadioButton::indicator { width: 14px; height: 14px; border-radius: 7px; border: 2px solid #b0bcd0; background: #fff; }
+    QRadioButton::indicator:checked { background-color: #1a6bb0; border-color: #1a6bb0; }
+
+    /* ── Scroll area ── */
+    QScrollArea { border: none; }
+
+    /* ── Frame separators ── */
+    QFrame[frameShape="4"], QFrame[frameShape="5"] { color: #c0c8d8; }
     """
 
     DARK = """
+    /* ── Base ── */
     QWidget {
-        background-color: #1e1e1e;
-        color: #ddd;
-        font-family: Segoe UI;
+        background-color: #1e1e2e;
+        color: #d0d4e0;
+        font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    }
+    QMainWindow, QDialog {
+        background-color: #1e1e2e;
     }
 
+    /* ── GroupBox ── */
     QGroupBox {
-        background-color: #3a3a3a;
-        border: 1px solid #555;
-        border-radius: 4px;
-        margin-top: 10ex;
-        padding: 10px;
+        background-color: #252535;
+        border: 1px solid #44485a;
+        border-radius: 6px;
+        margin-top: 10px;
+        padding-top: 6px;
         font-weight: bold;
     }
-
     QGroupBox::title {
         subcontrol-origin: margin;
+        subcontrol-position: top left;
         left: 10px;
-        padding: 0 5px 0 5px;
-        color: #ddd;
+        padding: 2px 6px;
+        color: #7ab4ff;
+        background-color: #1e1e2e;
+        border-radius: 3px;
     }
 
+    /* ── Labels ── */
     QLabel {
-        background-color: #3a3a3a;
-        color: #ddd;
+        background-color: transparent;
+        color: #d0d4e0;
     }
 
-    QLineEdit, QTextEdit, QComboBox {
-        background-color: #2a2a2a;
-        border: 1px solid #555;
-        color: #ddd;
-        padding: 4px;
+    /* ── Inputs ── */
+    QLineEdit, QTextEdit, QPlainTextEdit {
+        background-color: #16162a;
+        border: 1px solid #44485a;
+        border-radius: 4px;
+        padding: 4px 6px;
+        color: #d0d4e0;
+        selection-background-color: #2a4a7a;
+    }
+    QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {
+        border: 1px solid #5588cc;
+        background-color: #1a1a30;
+    }
+    QLineEdit:read-only { background-color: #1a1a28; color: #888; }
+
+    QComboBox {
+        background-color: #16162a;
+        border: 1px solid #44485a;
+        border-radius: 4px;
+        padding: 4px 6px;
+        color: #d0d4e0;
+        min-height: 24px;
+    }
+    QComboBox:focus { border: 1px solid #5588cc; }
+    QComboBox::drop-down { border: none; width: 20px; }
+    QComboBox::down-arrow { image: none; width: 0; height: 0;
+        border-left: 4px solid transparent; border-right: 4px solid transparent;
+        border-top: 5px solid #888; margin-right: 4px; }
+    QComboBox QAbstractItemView {
+        background-color: #1e1e2e; border: 1px solid #44485a;
+        selection-background-color: #2a4a7a; color: #d0d4e0;
     }
 
+    QSpinBox, QDoubleSpinBox {
+        background-color: #16162a;
+        border: 1px solid #44485a;
+        border-radius: 4px;
+        padding: 3px 6px;
+        color: #d0d4e0;
+    }
+    QSpinBox:focus, QDoubleSpinBox:focus { border: 1px solid #5588cc; }
+
+    /* ── Buttons ── */
     QPushButton {
-        background-color: #333;
-        border: 1px solid #555;
-        padding: 6px;
-        color: #ddd;
+        background-color: #2a2a3e;
+        border: 1px solid #44485a;
+        border-radius: 4px;
+        padding: 5px 12px;
+        color: #d0d4e0;
+        font-weight: 500;
+        min-height: 26px;
     }
-
-    QPushButton:hover {
-        background-color: #444;
+    QPushButton:hover { background-color: #343450; border-color: #6670a0; }
+    QPushButton:pressed { background-color: #1e1e30; }
+    QPushButton:checked { background-color: #1a4a1a; color: #88ee88; border: 2px solid #44cc44; }
+    QPushButton:disabled { background-color: #1e1e2a; color: #556; border-color: #333; }
+    QPushButton[class="primary"] {
+        background-color: #1a4a8a; color: #e0f0ff;
+        border: 1px solid #4a8adf; border-radius: 4px;
+        padding: 6px 16px; font-weight: bold;
     }
+    QPushButton[class="primary"]:hover { background-color: #2a5a9a; border-color: #66aaff; }
+    QPushButton[class="primary"]:pressed { background-color: #103070; }
+    QPushButton[class="primary"]:disabled { background-color: #1a2a40; color: #556; }
 
+    QToolButton {
+        background-color: #2a2a3e; border: 1px solid #44485a;
+        border-radius: 4px; padding: 5px 8px; color: #d0d4e0;
+    }
+    QToolButton:hover { background-color: #343450; border-color: #6670a0; }
+    QToolButton:pressed { background-color: #1e1e30; }
+    QToolButton:checked { background-color: #1a4a1a; color: #88ee88; border: 2px solid #44cc44; }
+
+    /* ── Progress ── */
     QProgressBar {
-        border: 1px solid #555;
-        background: #2a2a2a;
+        border: 1px solid #44485a; border-radius: 4px;
+        background: #16162a; text-align: center; color: #aaa;
+    }
+    QProgressBar::chunk { background: #4a9eff; border-radius: 3px; }
+
+    /* ── Lists & Tables ── */
+    QListWidget, QTreeWidget, QTableWidget {
+        background-color: #16162a; border: 1px solid #44485a;
+        border-radius: 4px; outline: none;
+    }
+    QListWidget::item { padding: 3px 6px; border-radius: 3px; }
+    QListWidget::item:hover { background-color: #252545; }
+    QListWidget::item:selected { background-color: #2a4a7a; color: #e0f0ff; }
+
+    /* ── Scroll bars ── */
+    QScrollBar:vertical { background: #16162a; width: 10px; border-radius: 5px; margin: 0; }
+    QScrollBar::handle:vertical { background: #44485a; min-height: 20px; border-radius: 5px; }
+    QScrollBar::handle:vertical:hover { background: #6670a0; }
+    QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }
+    QScrollBar:horizontal { background: #16162a; height: 10px; border-radius: 5px; margin: 0; }
+    QScrollBar::handle:horizontal { background: #44485a; min-width: 20px; border-radius: 5px; }
+    QScrollBar::handle:horizontal:hover { background: #6670a0; }
+    QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0px; }
+
+    /* ── Splitter ── */
+    QSplitter::handle { background: #2e2e44; }
+    QSplitter::handle:hover { background: #4a9eff; }
+    QSplitter::handle:horizontal { width: 4px; }
+    QSplitter::handle:vertical { height: 4px; }
+
+    /* ── Menu bar ── */
+    QMenuBar { background-color: #16162a; color: #d0d4e0; border-bottom: 1px solid #2e2e44; padding: 2px; }
+    QMenuBar::item { padding: 4px 10px; border-radius: 4px; }
+    QMenuBar::item:selected { background-color: #252545; }
+    QMenuBar::item:pressed { background-color: #2a2a50; }
+
+    QMenu { background-color: #1e1e30; color: #d0d4e0; border: 1px solid #44485a; border-radius: 6px; padding: 4px; }
+    QMenu::item { padding: 5px 24px 5px 16px; border-radius: 3px; }
+    QMenu::item:selected { background-color: #2a3a6a; color: #e0f0ff; }
+    QMenu::separator { height: 1px; background: #2e2e44; margin: 4px 8px; }
+
+    /* ── Tab bar ── */
+    QTabWidget::pane { border: 1px solid #2e2e44; border-radius: 4px; }
+    QTabBar::tab {
+        background-color: #252535; color: #888; padding: 7px 12px;
+        border: 1px solid #2e2e44; margin: 1px; border-radius: 4px 4px 0 0;
+        min-width: 70px;
+    }
+    QTabBar::tab:selected { background-color: #2a2a4a; color: #d0d4e0; border-bottom: 2px solid #4a9eff; font-weight: bold; }
+    QTabBar::tab:hover:!selected { background-color: #2e2e48; color: #bbb; }
+
+    /* ── Header ── */
+    QHeaderView::section {
+        background-color: #252535; color: #aaa; padding: 5px 8px;
+        border: none; border-right: 1px solid #2e2e44; border-bottom: 1px solid #2e2e44;
+        font-weight: bold;
+    }
+    QHeaderView::section:hover { background-color: #2a2a4a; color: #d0d4e0; }
+
+    /* ── Dock widgets ── */
+    QDockWidget { font-weight: bold; }
+    QDockWidget::title {
+        background-color: #16162a; padding: 6px 8px;
+        border-bottom: 2px solid #4a9eff; color: #a0c0ff; font-weight: bold;
+    }
+    QDockWidget::close-button, QDockWidget::float-button { background: transparent; border: none; padding: 2px; }
+    QDockWidget::close-button:hover, QDockWidget::float-button:hover { background-color: #2a2a44; border-radius: 3px; }
+
+    /* ── Tooltip ── */
+    QToolTip {
+        background-color: #1e1e30; color: #d0d4e0;
+        border: 1px solid #4a9eff; padding: 4px 8px;
+        border-radius: 4px; font-size: 10px;
     }
 
-    QProgressBar::chunk {
-        background: #66ccff;
-    }
+    /* ── Status bar ── */
+    QStatusBar { background-color: #16162a; color: #888; border-top: 1px solid #2e2e44; padding: 2px 8px; font-size: 10px; }
+    QStatusBar::item { border: none; }
+
+    /* ── Checkboxes & Radio ── */
+    QCheckBox { color: #d0d4e0; spacing: 6px; }
+    QCheckBox::indicator { width: 14px; height: 14px; border: 1px solid #44485a; border-radius: 3px; background: #16162a; }
+    QCheckBox::indicator:checked { background-color: #4a9eff; border-color: #4a9eff; }
+    QCheckBox::indicator:hover { border-color: #6670a0; }
+    QRadioButton { color: #d0d4e0; spacing: 6px; }
+    QRadioButton::indicator { width: 14px; height: 14px; border-radius: 7px; border: 2px solid #44485a; background: #16162a; }
+    QRadioButton::indicator:checked { background-color: #4a9eff; border-color: #4a9eff; }
+
+    /* ── Scroll area ── */
+    QScrollArea { border: none; }
+
+    /* ── Frame separators ── */
+    QFrame[frameShape="4"], QFrame[frameShape="5"] { color: #2e2e44; }
     """
 
 
@@ -1226,18 +1556,22 @@ class MainWindow(QMainWindow):
 
         #self.tabs.setMovable(False)
         #self.tabs.setUsesScrollButtons(True)
-        self.tabs.setStyleSheet("""
-            QTabBar::tab {
+        self._tab_base_style = """
+            QTabBar::tab {{
                 padding: 8px 14px;
                 min-width: 130px;
                 text-align: left;
-                transform: rotate(-180deg);   
-            }
-            QTabBar::tab:selected {
-                background: #2a2a2a;
-            }
-            
-            """)
+            }}
+            QTabBar::tab:selected {{
+                background: {sel_bg};
+                color: {sel_fg};
+                border-right: 3px solid {accent};
+                font-weight: bold;
+            }}
+        """
+        self.tabs.setStyleSheet(self._tab_base_style.format(
+            sel_bg="#2a2a4a", sel_fg="#d0d4e0", accent="#4a9eff"
+        ))
 
         layout.addWidget(self.tabs)
 
@@ -1274,9 +1608,25 @@ class MainWindow(QMainWindow):
         if app is not None:
             app.installEventFilter(self)
 
-        self.setTheme("dark")  # default
+        self.setTheme("dark")  # default (overridden by _restore_state if settings exist)
 
         self.setTextScale(self.text_scale)
+
+        # ---- Status bar ----
+        self._status_bar = self.statusBar()
+        self._status_bar.showMessage("Ready", 3000)
+
+        # ---- Keyboard shortcuts ----
+        QShortcut(QKeySequence("Ctrl+="), self, lambda: self._adjust_text_scale(1))
+        QShortcut(QKeySequence("Ctrl++"), self, lambda: self._adjust_text_scale(1))
+        QShortcut(QKeySequence("Ctrl+-"), self, lambda: self._adjust_text_scale(-1))
+        QShortcut(QKeySequence("Ctrl+0"), self, lambda: self.setTextScale(TextScale.MD))
+        QShortcut(QKeySequence("Ctrl+T"), self,
+                  lambda: self.setTheme("light" if self.current_theme == "dark" else "dark"))
+
+        # ---- Restore persisted window state (geometry, theme, scale, tab) ----
+        self._settings = QSettings("DMSim", "DMSim")
+        self._restore_state()
 
     def setTextScale(self, scale):
         self.text_scale = scale
@@ -1304,9 +1654,15 @@ class MainWindow(QMainWindow):
         if theme_name == "dark":
             app.setStyleSheet(AppThemes.DARK)
             self.dark_action.setChecked(True)
+            self.tabs.setStyleSheet(self._tab_base_style.format(
+                sel_bg="#2a2a4a", sel_fg="#d0d4e0", accent="#4a9eff"
+            ))
         else:
             app.setStyleSheet(AppThemes.LIGHT)
             self.light_action.setChecked(True)
+            self.tabs.setStyleSheet(self._tab_base_style.format(
+                sel_bg="#ccd8f0", sel_fg="#1a1a2e", accent="#1a6bb0"
+            ))
 
         self.current_theme = theme_name
 
@@ -1326,6 +1682,35 @@ class MainWindow(QMainWindow):
 
         return False
 
+
+    def _adjust_text_scale(self, delta: int):
+        scale_values = [TextScale.XS, TextScale.SM, TextScale.MD, TextScale.LG, TextScale.XL]
+        idx = scale_values.index(self.text_scale) if self.text_scale in scale_values else 2
+        new_idx = max(0, min(len(scale_values) - 1, idx + delta))
+        self.setTextScale(scale_values[new_idx])
+
+    def _restore_state(self):
+        s = self._settings
+        geom = s.value("geometry")
+        if geom:
+            self.restoreGeometry(geom)
+        theme = s.value("theme", "dark")
+        self.setTheme(theme)
+        tab = s.value("lastTab", 0, type=int)
+        if 0 <= tab < self.tabs.count():
+            self.tabs.setCurrentIndex(tab)
+
+    def closeEvent(self, event):
+        s = self._settings
+        s.setValue("geometry", self.saveGeometry())
+        s.setValue("theme", self.current_theme)
+        s.setValue("textScale", self.text_scale)
+        s.setValue("lastTab", self.tabs.currentIndex())
+        super().closeEvent(event)
+
+    def show_status(self, message: str, timeout: int = 4000):
+        """Show a message in the main window status bar."""
+        self._status_bar.showMessage(message, timeout)
 
     def startEncounter(self, controller=None, save_data=None):
         if controller is None:

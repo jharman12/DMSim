@@ -3053,9 +3053,12 @@ class TurnActionPanel(QWidget):
         action_group_layout.addLayout(targets_layout)
 
         self.move_Action_layout = QHBoxLayout()
-        self.move_input = QPushButton('Move')
+        self.move_input = QPushButton('⬡ Move')
+        self.move_input.setToolTip("Move the current actor to the highlighted hex on the map")
         self.move_Action_layout.addWidget(self.move_input)
-        self.take_turn_button = QPushButton("Take Turn")
+        self.take_turn_button = QPushButton("⚔ Take Turn")
+        self.take_turn_button.setToolTip("Execute the selected action for the current actor")
+        self.take_turn_button.setProperty("class", "primary")
         self.move_Action_layout.addWidget(self.take_turn_button)
         action_group_layout.addLayout(self.move_Action_layout)
 
@@ -3122,7 +3125,8 @@ class TurnActionPanel(QWidget):
         # -------------------------------
         # End Turn button
         # -------------------------------
-        self.endTurnButton = QPushButton('End Turn')
+        self.endTurnButton = QPushButton('⏩ End Turn')
+        self.endTurnButton.setToolTip("End the current actor's turn without taking an action")
 
         main_layout.addWidget(self.endTurnButton)
 
@@ -3810,8 +3814,8 @@ class MapWidget(QMainWindow):
         self.player_view_button.clicked.connect(self._toggle_player_view)
         top_button_row.addWidget(self.player_view_button)
 
-        self.undo_button = QPushButton("Undo Turn")
-        self.undo_button.setCheckable(True)
+        self.undo_button = QPushButton("↩ Undo Turn")
+        self.undo_button.setToolTip("Undo the last completed turn (Ctrl+Z)")
         self.undo_button.clicked.connect(self.undoTurn)
         top_button_row.addWidget(self.undo_button)
 
@@ -3833,12 +3837,25 @@ class MapWidget(QMainWindow):
         self.map_view.affectedSaved.connect(self.updateTargets)
 
         # ---- Start button at bottom of central area ----
-        self.start_button = QPushButton("Start Encounter")
+        self.start_button = QPushButton("▶ Start Encounter")
         self.start_button.setFixedHeight(40)
+        self.start_button.setToolTip("Begin the combat encounter (F5)")
+        self.start_button.setProperty("class", "primary")
         self.start_button.clicked.connect(self.run_command)
         map_frame_layout.addWidget(self.start_button)
 
         self.setCentralWidget(self.map_frame)
+
+        # ---- Status bar ----
+        self._map_status = self.statusBar()
+        self._map_status.showMessage("Place actors on the map, then click ▶ Start Encounter")
+
+        # ---- Keyboard shortcuts ----
+        from PyQt5.QtWidgets import QShortcut
+        from PyQt5.QtGui import QKeySequence
+        QShortcut(QKeySequence("F5"), self, self.start_button.click)
+        QShortcut(QKeySequence("Ctrl+Z"), self, self.undoTurn)
+        QShortcut(QKeySequence("Escape"), self, self._escape_active_mode)
 
         # ------------------------------------------------------------------
         # SETUP MAP PIXMAP, ACTORS, HEX GRID
@@ -4207,9 +4224,11 @@ class MapWidget(QMainWindow):
         if winner == 'Party':
             title = "Victory! 🎉"
             msg = "The party has defeated all enemies!\n\nCombat has ended."
+            self._map_status.showMessage("🎉 Victory! The party has won the encounter.")
         else:
             title = "Defeat! 💀"
             msg = "The party has fallen!\n\nCombat has ended."
+            self._map_status.showMessage("💀 Defeat! The party has fallen.")
 
         from PyQt5.QtWidgets import QMessageBox
         dlg = QMessageBox(self)
@@ -4217,6 +4236,18 @@ class MapWidget(QMainWindow):
         dlg.setText(msg)
         dlg.setIcon(QMessageBox.Information)
         dlg.exec_()
+
+    def _escape_active_mode(self):
+        """Escape key: deactivate any active map mode."""
+        if self.wall_button.isChecked():
+            self.wall_button.setChecked(False)
+            self._toggle_wall_mode(False)
+        elif self.fog_button.isChecked():
+            self.fog_button.setChecked(False)
+            self._toggle_fog_mode(False)
+        elif self.distance_button.isChecked():
+            self.distance_button.setChecked(False)
+            self._toggle_distance_mode(False)
 
     def _toggle_wall_mode(self, checked: bool):
         """Enable or disable wall-placement mode on the map view."""
@@ -4233,8 +4264,10 @@ class MapWidget(QMainWindow):
             self.map_view.setCursor(Qt.CrossCursor)
             # Reset to Create mode each time wall mode is activated
             self.map_view._wall_mode_create()
+            self._map_status.showMessage("Wall Mode — left-click/drag to place walls · right-click for options · Esc to exit")
         else:
             self.map_view.unsetCursor()
+            self._map_status.showMessage("Wall mode deactivated", 3000)
         self.map_view.show_wall_toolbar(checked)
 
     def _toggle_distance_mode(self, checked: bool):
@@ -4251,6 +4284,9 @@ class MapWidget(QMainWindow):
             self.map_view.show_fog_toolbar(False)
             # Deactivate spell targeting too
             self._set_target_mode(False)
+            self._map_status.showMessage("Distance Mode — click a start hex, then an end hex to measure · Esc to exit")
+        else:
+            self._map_status.showMessage("Distance mode deactivated", 3000)
         self.map_view.set_distance_mode(checked)
 
     def _toggle_fog_mode(self, checked: bool):
@@ -4269,8 +4305,10 @@ class MapWidget(QMainWindow):
         if checked:
             self.map_view.setCursor(Qt.CrossCursor)
             self.map_view._fog_mode_create()
+            self._map_status.showMessage("Fog Mode — left-click/drag to paint fog · right-click to erase · Esc to exit")
         else:
             self.map_view.unsetCursor()
+            self._map_status.showMessage("Fog mode deactivated", 3000)
         self.map_view.show_fog_toolbar(checked)
 
     def _toggle_player_view(self, checked: bool):
@@ -5173,6 +5211,7 @@ class MapWidget(QMainWindow):
 
     def run_command(self):
         self.turn_action_panel.log('Starting Combat!')
+        self._map_status.showMessage("⚔ Combat started!")
         # Lock out pre-encounter repositioning and clear any multi-selection
         self.map_view._pre_encounter = False
         self.map_view._clear_multi_selection()
